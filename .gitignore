@@ -23,3 +23,9 @@ apps/desktop/src-tauri/gen/
 credentials.json
 .env
 .env.local
+
+# Credentials — never commit
+*.pat
+credentials.json
+.env
+.env.local
