@@ -8,7 +8,6 @@ use serde::Serialize;
 use std::path::PathBuf;
 use tauri::command;
 use tauri_plugin_shell::ShellExt;
-use tauri_plugin_store::StoreExt;
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -19,40 +18,6 @@ pub struct GitResult {
     pub success: bool,
     pub stdout: String,
     pub stderr: String,
-}
-
-// ---------------------------------------------------------------------------
-// PAT management
-// ---------------------------------------------------------------------------
-
-/// Store the GitHub PAT in the app's credential store.
-///
-/// SECURITY NOTE: tauri-plugin-store writes to a JSON file on disk.
-/// The PAT is stored as plaintext. Replace with tauri-plugin-stronghold
-/// for OS-level encrypted storage before production use.
-#[command]
-pub fn store_pat(app: tauri::AppHandle, pat: String) -> Result<(), String> {
-    let store = app
-        .store("credentials.json")
-        .map_err(|e| format!("failed to open store: {}", e))?;
-    store.set("github_pat", serde_json::Value::String(pat));
-    store
-        .save()
-        .map_err(|e| format!("failed to save store: {}", e))?;
-    Ok(())
-}
-
-/// Retrieve the stored GitHub PAT.
-fn get_pat(app: &tauri::AppHandle) -> Result<String, String> {
-    let store = app
-        .store("credentials.json")
-        .map_err(|e| format!("failed to open store: {}", e))?;
-    let val = store
-        .get("github_pat")
-        .ok_or("GitHub PAT not configured. Save it in Settings.")?;
-    val.as_str()
-        .map(|s| s.to_string())
-        .ok_or("stored PAT is not a string".into())
 }
 
 // ---------------------------------------------------------------------------
@@ -74,9 +39,9 @@ async fn run_git(
     app: &tauri::AppHandle,
     project_root: &str,
     args: &[&str],
+    pat: &str,
 ) -> Result<GitResult, String> {
-    let pat = get_pat(app)?;
-    let askpass = write_askpass_script(&pat)?;
+    let askpass = write_askpass_script(pat)?;
 
     let shell = app.shell();
     let cmd = shell
@@ -105,7 +70,7 @@ async fn run_git(
 }
 
 // ---------------------------------------------------------------------------
-// Commands
+// Commands — PAT is passed from TypeScript, never stored in Rust
 // ---------------------------------------------------------------------------
 
 /// Pull latest changes from origin.
@@ -113,8 +78,9 @@ async fn run_git(
 pub async fn git_pull_roadmap(
     app: tauri::AppHandle,
     project_root: String,
+    pat: String,
 ) -> Result<GitResult, String> {
-    run_git(&app, &project_root, &["pull", "origin", "HEAD"]).await
+    run_git(&app, &project_root, &["pull", "origin", "HEAD"], &pat).await
 }
 
 /// Stage all changes in roadmap/, commit, and push to origin.
@@ -122,12 +88,13 @@ pub async fn git_pull_roadmap(
 pub async fn git_push_roadmap(
     app: tauri::AppHandle,
     project_root: String,
+    pat: String,
 ) -> Result<GitResult, String> {
     let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
     let message = format!("orqestra: sync roadmap [{}]", timestamp);
 
     // Stage roadmap/ changes
-    let stage_result = run_git(&app, &project_root, &["add", "roadmap/"]).await?;
+    let stage_result = run_git(&app, &project_root, &["add", "roadmap/"], &pat).await?;
     if !stage_result.success {
         return Ok(stage_result);
     }
@@ -137,6 +104,7 @@ pub async fn git_push_roadmap(
         &app,
         &project_root,
         &["commit", "-m", &message],
+        &pat,
     )
     .await?;
 
@@ -154,14 +122,5 @@ pub async fn git_push_roadmap(
     }
 
     // Push
-    run_git(&app, &project_root, &["push", "origin", "HEAD"]).await
-}
-
-/// Check whether a GitHub PAT is stored.
-#[command]
-pub fn has_stored_pat(app: tauri::AppHandle) -> Result<bool, String> {
-    match get_pat(&app) {
-        Ok(_) => Ok(true),
-        Err(_) => Ok(false),
-    }
+    run_git(&app, &project_root, &["push", "origin", "HEAD"], &pat).await
 }
