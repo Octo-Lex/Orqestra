@@ -1,0 +1,14 @@
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
+mod commands;
+
+fn main() {
+    tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            commands::roadmap::index_roadmap_cmd,
+            commands::roadmap::get_task,
+        ])
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}

@@ -1,0 +1,20 @@
+[package]
+name = "orqestra-desktop"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tauri      = { version = "2", features = [] }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+tracing    = { workspace = true }
+thiserror  = { workspace = true }
+
+# Core crates — bridge between Tauri commands and business logic
+md-indexer = { path = "../../../crates/md-indexer" }
+
+# Native desktop capabilities
+tauri-plugin-dialog = "2"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }

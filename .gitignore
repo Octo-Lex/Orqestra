@@ -1,0 +1,19 @@
+# Rust build artifacts
+target/
+
+# Node
+node_modules/
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tauri generated
+apps/desktop/src-tauri/gen/
