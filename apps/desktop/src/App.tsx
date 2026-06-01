@@ -5,6 +5,7 @@ import { AgentPanel } from './components/AgentPanel';
 import QueryHistory from './components/QueryHistory';
 import SemanticDiff from './components/SemanticDiff';
 import ShockwaveMerge from './components/ShockwaveMerge';
+import { SyncPanel } from './components/SyncPanel';
 import { GanttView } from './pm/GanttView';
 import { KanbanView } from './pm/KanbanView';
 import { TimeTracking } from './pm/TimeTracking';
@@ -276,6 +277,7 @@ export default function App() {
           <QueryHistory projectRoot={projectRoot} />
           <SemanticDiff projectRoot={projectRoot} />
           <ShockwaveMerge projectRoot={projectRoot} />
+          <SyncPanel />
         </>
       )}
     </div>

@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use std::sync::Mutex;
+
 mod commands;
 
 fn main() {
@@ -9,6 +11,12 @@ fn main() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .manage(commands::graph::GraphState {
             store: tokio::sync::Mutex::new(None),
+        })
+        .manage(commands::sync::SyncState {
+            engine: Mutex::new(None),
+            token_manager: Mutex::new(
+                loro_engine::sync::TokenManager::new("default-master-token")
+            ),
         })
         .invoke_handler(tauri::generate_handler![
             commands::roadmap::index_roadmap_cmd,
@@ -27,6 +35,19 @@ fn main() {
             commands::graph::query_history_cmd,
             commands::graph::read_trace_cmd,
             commands::graph::read_commit_stub_cmd,
+            commands::sync::init_sync_cmd,
+            commands::sync::open_crdt_doc_cmd,
+            commands::sync::set_crdt_field_cmd,
+            commands::sync::get_crdt_field_cmd,
+            commands::sync::get_all_fields_cmd,
+            commands::sync::export_delta_cmd,
+            commands::sync::import_delta_cmd,
+            commands::sync::load_markdown_cmd,
+            commands::sync::export_markdown_cmd,
+            commands::sync::save_snapshot_cmd,
+            commands::sync::sync_status_cmd,
+            commands::sync::generate_token_cmd,
+            commands::sync::validate_token_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

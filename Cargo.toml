@@ -4,6 +4,7 @@ members = [
     "crates/md-indexer",
     "crates/graph-store",
     "crates/git-bridge",
+    "crates/loro-engine",
     "apps/desktop/src-tauri",
 ]
 resolver = "2"

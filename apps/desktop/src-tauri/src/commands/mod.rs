@@ -3,3 +3,4 @@ pub mod commit;
 pub mod git;
 pub mod graph;
 pub mod roadmap;
+pub mod sync;
