@@ -9,12 +9,19 @@ serde      = { workspace = true }
 serde_json = { workspace = true }
 tracing    = { workspace = true }
 thiserror  = { workspace = true }
+chrono     = { version = "0.4", features = ["serde"] }
 
 # Core crates — bridge between Tauri commands and business logic
 md-indexer = { path = "../../../crates/md-indexer" }
 
 # Native desktop capabilities
 tauri-plugin-dialog = "2"
+tauri-plugin-shell = "2"
+
+# NOTE: tauri-plugin-store persists the GitHub PAT as plaintext JSON.
+# Replace with tauri-plugin-stronghold for hardware-encrypted storage
+# before production use.
+tauri-plugin-store = "2"
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

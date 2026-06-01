@@ -17,3 +17,9 @@ Thumbs.db
 
 # Tauri generated
 apps/desktop/src-tauri/gen/
+
+# Credentials — never commit
+*.pat
+credentials.json
+.env
+.env.local
