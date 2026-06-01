@@ -12,6 +12,8 @@ fn main() {
             commands::roadmap::get_task,
             commands::git::git_pull_roadmap,
             commands::git::git_push_roadmap,
+            commands::commit::semantic_commit_cmd,
+            commands::commit::backfill_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

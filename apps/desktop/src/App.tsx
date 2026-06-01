@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TaskTable } from './components/TaskTable';
+import { CommitPanel } from './components/CommitPanel';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   persistPat,
@@ -208,6 +209,9 @@ export default function App() {
 
           {/* Task table */}
           <TaskTable key={refreshKey} projectRoot={projectRoot} />
+
+          {/* Semantic commit panel */}
+          <CommitPanel projectRoot={projectRoot} />
         </>
       )}
     </div>
