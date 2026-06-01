@@ -1,0 +1,71 @@
+name: Dashboard
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - 'roadmap/**'
+      - 'crates/md-indexer/**'
+      - 'apps/dashboard/**'
+      - '.github/workflows/dashboard.yml'
+  pull_request:
+    paths:
+      - 'roadmap/**'
+      - 'crates/md-indexer/**'
+      - 'apps/dashboard/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  build-dashboard:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test md-indexer
+        run: cargo test -p md-indexer
+
+      - name: Install dashboard dependencies
+        run: cd apps/dashboard && npm ci
+
+      - name: Export roadmap JSON
+        run: cargo run --bin orqestra -- export --project-root . --format=json --out apps/dashboard/public/orqestra-roadmap.json
+
+      - name: Build dashboard
+        run: cd apps/dashboard && npm run build
+
+      - name: Upload dashboard artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dashboard-dist
+          path: apps/dashboard/dist
+
+      - name: Deploy to Cloudflare Pages
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: pages deploy apps/dashboard/dist --project-name=orqestra

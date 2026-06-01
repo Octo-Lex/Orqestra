@@ -1,0 +1,352 @@
+{
+  "generated_at": "2026-06-01T16:00:58.470309300+00:00",
+  "source": {
+    "repo": "orqestra",
+    "branch": "hardening/v1.0.1",
+    "commit": "eae6d3f"
+  },
+  "summary": {
+    "total_tasks": 13,
+    "done": 7,
+    "backlog": 6,
+    "in_progress": 0,
+    "blocked": 0,
+    "ready": 0
+  },
+  "sprints": [
+    {
+      "id": "Sprint 13",
+      "title": "Core Engine",
+      "start_date": "2026-05-15",
+      "end_date": "2026-05-31",
+      "status": "done",
+      "tasks": [
+        "TASK-2026-038",
+        "TASK-2026-040"
+      ]
+    },
+    {
+      "id": "Sprint 14",
+      "title": "AI Intelligence & Semantic Git",
+      "start_date": "2026-06-01",
+      "end_date": "2026-06-14",
+      "status": "done",
+      "tasks": [
+        "TASK-2026-042",
+        "TASK-2026-045",
+        "TASK-2026-050"
+      ]
+    },
+    {
+      "id": "Sprint 15",
+      "title": "Cloud Sync & Self-Hosting",
+      "start_date": "2026-06-15",
+      "end_date": "2026-06-28",
+      "status": "active",
+      "tasks": [
+        "TASK-2026-055",
+        "TASK-2026-056"
+      ]
+    },
+    {
+      "id": "Sprint 16",
+      "title": "Production Hardening",
+      "start_date": "2026-06-29",
+      "end_date": "2026-07-12",
+      "status": "upcoming",
+      "tasks": [
+        "TASK-2026-060",
+        "TASK-2026-061",
+        "TASK-2026-062"
+      ]
+    },
+    {
+      "id": "Sprint 17",
+      "title": "Intelligence & Security",
+      "start_date": "2026-07-13",
+      "end_date": "2026-07-26",
+      "status": "upcoming",
+      "tasks": [
+        "TASK-2026-063",
+        "TASK-2026-064",
+        "TASK-2026-065"
+      ]
+    }
+  ],
+  "tasks": [
+    {
+      "id": "TASK-2026-038",
+      "title": "md-indexer crate with parser, graph, and CLI",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 13",
+      "epic": "Core Engine",
+      "assignee": "alice",
+      "progress": 100,
+      "start_date": "2026-05-15",
+      "due_date": "2026-05-30",
+      "dependencies": [],
+      "blocks": [
+        "TASK-2026-040",
+        "TASK-2026-042"
+      ],
+      "labels": [
+        "rust",
+        "parser",
+        "foundation"
+      ]
+    },
+    {
+      "id": "TASK-2026-040",
+      "title": "Tauri desktop scaffold with task management UI",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 13",
+      "epic": "Core Engine",
+      "assignee": "alice",
+      "progress": 100,
+      "start_date": "2026-05-20",
+      "due_date": "2026-05-31",
+      "dependencies": [
+        "TASK-2026-038"
+      ],
+      "blocks": [
+        "TASK-2026-042"
+      ],
+      "labels": [
+        "tauri",
+        "react",
+        "desktop",
+        "ui"
+      ]
+    },
+    {
+      "id": "TASK-2026-042",
+      "title": "AI backfill pipeline with semantic commits",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 14",
+      "epic": "Core Engine",
+      "assignee": "bob",
+      "progress": 100,
+      "start_date": "2026-05-28",
+      "due_date": "2026-06-07",
+      "dependencies": [
+        "TASK-2026-038",
+        "TASK-2026-040"
+      ],
+      "blocks": [
+        "TASK-2026-045",
+        "TASK-2026-050"
+      ],
+      "labels": [
+        "rust",
+        "ai",
+        "git",
+        "pipeline"
+      ]
+    },
+    {
+      "id": "TASK-2026-045",
+      "title": "Multi-agent workspaces with label-based routing",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 14",
+      "epic": "AI Intelligence",
+      "assignee": "alice",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-10",
+      "dependencies": [
+        "TASK-2026-042"
+      ],
+      "blocks": [],
+      "labels": [
+        "agents",
+        "routing",
+        "workspace"
+      ]
+    },
+    {
+      "id": "TASK-2026-050",
+      "title": "Queryable knowledge graph with vector search",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 14",
+      "epic": "AI Intelligence",
+      "assignee": "bob",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-12",
+      "dependencies": [
+        "TASK-2026-042"
+      ],
+      "blocks": [],
+      "labels": [
+        "graph",
+        "search",
+        "ai",
+        "history"
+      ]
+    },
+    {
+      "id": "TASK-2026-055",
+      "title": "CRDT sync engine and public dashboard",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 15",
+      "epic": "Cloud & Sync",
+      "assignee": "alice",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-20",
+      "dependencies": [
+        "TASK-2026-050"
+      ],
+      "blocks": [],
+      "labels": [
+        "crdt",
+        "loro",
+        "sync",
+        "dashboard"
+      ]
+    },
+    {
+      "id": "TASK-2026-056",
+      "title": "Self-hosting: roadmap as source of truth + CI agents",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 15",
+      "epic": "Cloud & Sync",
+      "assignee": "alice",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-28",
+      "dependencies": [
+        "TASK-2026-055"
+      ],
+      "blocks": [],
+      "labels": [
+        "self-hosting",
+        "ci",
+        "github-actions",
+        "v1.0"
+      ]
+    },
+    {
+      "id": "TASK-2026-060",
+      "title": "Replace git CLI calls with native gix operations",
+      "status": "backlog",
+      "priority": "High",
+      "sprint": "Sprint 16",
+      "epic": "Core Engine",
+      "progress": 0,
+      "due_date": "2026-07-05",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [],
+      "labels": [
+        "rust",
+        "git",
+        "performance"
+      ]
+    },
+    {
+      "id": "TASK-2026-061",
+      "title": "Stronghold encrypted credential storage",
+      "status": "backlog",
+      "priority": "High",
+      "sprint": "Sprint 16",
+      "epic": "DX & Polish",
+      "progress": 0,
+      "due_date": "2026-07-08",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [],
+      "labels": [
+        "security",
+        "credentials",
+        "tauri"
+      ]
+    },
+    {
+      "id": "TASK-2026-062",
+      "title": "AST-based code analysis",
+      "status": "backlog",
+      "priority": "Medium",
+      "sprint": "Sprint 16",
+      "epic": "DX & Polish",
+      "progress": 0,
+      "due_date": "2026-07-12",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [],
+      "labels": [
+        "analysis",
+        "ast",
+        "intelligence"
+      ]
+    },
+    {
+      "id": "TASK-2026-063",
+      "title": "Dependency vulnerability scanning",
+      "status": "backlog",
+      "priority": "High",
+      "sprint": "Sprint 17",
+      "epic": "Security & CI",
+      "progress": 0,
+      "due_date": "2026-07-19",
+      "dependencies": [
+        "TASK-2026-060"
+      ],
+      "blocks": [],
+      "labels": [
+        "security",
+        "dependencies",
+        "scanning"
+      ]
+    },
+    {
+      "id": "TASK-2026-064",
+      "title": "CI/CD integration pipeline",
+      "status": "backlog",
+      "priority": "High",
+      "sprint": "Sprint 17",
+      "epic": "Security & CI",
+      "progress": 0,
+      "due_date": "2026-07-23",
+      "dependencies": [
+        "TASK-2026-060"
+      ],
+      "blocks": [],
+      "labels": [
+        "ci-cd",
+        "automation",
+        "pipeline"
+      ]
+    },
+    {
+      "id": "TASK-2026-065",
+      "title": "ML-Master exploration loop",
+      "status": "backlog",
+      "priority": "Medium",
+      "sprint": "Sprint 17",
+      "epic": "AI Intelligence",
+      "progress": 0,
+      "due_date": "2026-07-26",
+      "dependencies": [
+        "TASK-2026-050"
+      ],
+      "blocks": [],
+      "labels": [
+        "ai",
+        "ml-master",
+        "exploration",
+        "intelligence"
+      ]
+    }
+  ]
+}
