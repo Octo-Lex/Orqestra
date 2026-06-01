@@ -13,6 +13,7 @@ chrono     = { version = "0.4", features = ["serde"] }
 
 # Core crates — bridge between Tauri commands and business logic
 md-indexer = { path = "../../../crates/md-indexer" }
+git-bridge = { path = "../../../crates/git-bridge" }
 
 # Native desktop capabilities
 tauri-plugin-dialog = "2"
