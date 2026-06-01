@@ -24,8 +24,8 @@ credentials.json
 .env
 .env.local
 
-# Credentials — never commit
-*.pat
-credentials.json
-.env
-.env.local
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
