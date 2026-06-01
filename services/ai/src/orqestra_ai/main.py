@@ -3,6 +3,7 @@ from .models import *
 from .intent import extract_intent
 from .embed import embed
 from .explore import explore
+from .docs_agent import docs_agent, DocsAgentRequest, DocsAgentResponse
 
 app = FastAPI(title="Orqestra AI Service", version="0.1.0")
 
@@ -28,6 +29,14 @@ async def embed_route(request: EmbedRequest):
 @app.post("/explore", response_model=ExplorationResult)
 async def explore_route(request: ExploreRequest):
     return await explore(request)
+
+
+@app.post("/agent/docs", response_model=DocsAgentResponse)
+async def docs_agent_route(request: DocsAgentRequest):
+    try:
+        return await docs_agent(request)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 from .query_history import query_history as _query_history_impl

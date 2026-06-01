@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { AgentRouter, ROUTING_RULES } from '../agent/AgentRouter';
 import type { AgentResult } from '../agent/AgentWorkspace';
 import type { Task } from '../lib/orqestra';
+import { DiffReviewPanel, type AgentEditResponse } from './DiffReviewPanel';
 
 interface AgentPanelProps {
   projectRoot: string;
@@ -21,6 +22,11 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
   const [workspaces, setWorkspaces] = useState<WorkspaceCard[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [globalLog, setGlobalLog] = useState<string[]>([]);
+
+  // Docs agent (real execution path)
+  const [docsResult, setDocsResult] = useState<AgentEditResponse | null>(null);
+  const [docsLoading, setDocsLoading] = useState(false);
+  const [docsError, setDocsError] = useState<string | null>(null);
 
   // Load workspace list on mount
   useEffect(() => {
@@ -43,6 +49,48 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
       );
     } catch (e) {
       console.error('Failed to load workspaces:', e);
+    }
+  }
+
+  async function runDocsAgent() {
+    // Find the first docs-labeled task
+    const docsTask = tasks.find(t =>
+      t.frontmatter.labels.some(l => l === 'docs' || l === 'documentation' || l === 'readme')
+    );
+    if (!docsTask) {
+      setDocsError('No docs-labeled task found');
+      return;
+    }
+
+    setDocsLoading(true);
+    setDocsError(null);
+    setDocsResult(null);
+
+    try {
+      // Gather context files (README.md from project root)
+      const contextFiles: { path: string; content: string }[] = [];
+      try {
+        const readme = await invoke<string>('read_file_cmd', { path: `${projectRoot}/README.md` });
+        contextFiles.push({ path: 'README.md', content: readme });
+      } catch { /* README not available */ }
+
+      const resultStr = await invoke<string>('run_docs_agent_cmd', {
+        projectRoot,
+        task: JSON.stringify({
+          id: docsTask.frontmatter.id,
+          title: docsTask.frontmatter.title,
+          body: docsTask.body?.raw || '',
+          labels: docsTask.frontmatter.labels,
+        }),
+        contextFiles: JSON.stringify(contextFiles),
+      });
+
+      const result: AgentEditResponse = JSON.parse(resultStr);
+      setDocsResult(result);
+    } catch (e) {
+      setDocsError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setDocsLoading(false);
     }
   }
 
@@ -157,6 +205,39 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
             {totalCommits} commit{totalCommits !== 1 ? 's' : ''} produced
           </span>
         )}
+      </div>
+
+      {/* Docs agent (real execution) */}
+      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
+          <h4 style={{ margin: 0 }}>Docs Agent (Real AI Execution)</h4>
+          <button
+            onClick={runDocsAgent}
+            disabled={docsLoading}
+            style={{
+              padding: '0.3rem 0.75rem',
+              background: '#8b5cf6',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: docsLoading ? 'wait' : 'pointer',
+              fontWeight: 600,
+              fontSize: '0.85em',
+            }}
+          >
+            {docsLoading ? 'Running...' : 'Run Docs Agent'}
+          </button>
+          <span style={{ fontSize: '0.75em', color: '#6b7280' }}>
+            Calls real AI service, no auto-commit
+          </span>
+        </div>
+        <DiffReviewPanel
+          result={docsResult}
+          loading={docsLoading}
+          error={docsError}
+          onAccept={() => addLog('docs-agent', 'Change accepted by human')}
+          onReject={() => addLog('docs-agent', 'Change rejected by human')}
+        />
       </div>
 
       {/* Routing rules legend */}
