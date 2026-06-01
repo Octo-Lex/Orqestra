@@ -1,9 +1,23 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
 
 const host = process.env.TAURI_DEV_HOST;
-const browserTest = process.env.BROWSER_TEST === "1";
+
+// Check BROWSER_TEST from process env OR from .env.local file
+let browserTest = process.env.BROWSER_TEST === "1";
+if (!browserTest) {
+  try {
+    const envPath = path.resolve(__dirname, ".env.local");
+    if (fs.existsSync(envPath)) {
+      const envContent = fs.readFileSync(envPath, "utf-8");
+      browserTest = envContent.includes("BROWSER_TEST=1");
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export default defineConfig(async () => ({
   plugins: [react()],

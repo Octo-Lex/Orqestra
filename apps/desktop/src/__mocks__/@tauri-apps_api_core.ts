@@ -123,6 +123,75 @@ const MOCK_INDEX = {
       body: { context: "Rate limiting", acceptance_criteria: [], agent_notes: null, raw: "" },
       source_path: "roadmap/TASK-2026-050.md",
     },
+    {
+      frontmatter: {
+        id: "TASK-2026-055",
+        title: "Write ADR for connection pool architecture",
+        status: "ready",
+        priority: "High",
+        sprint: "Sprint-14",
+        epic: "Architecture",
+        assignee: null,
+        progress: 0,
+        dependencies: [],
+        blocks: [],
+        labels: ["architecture", "adr"],
+        time_estimate: 120,
+        time_logged: 0,
+        due_date: "2026-06-10",
+        start_date: null,
+        created: "2026-06-01",
+        updated: "2026-06-01",
+      },
+      body: { context: "ADR for connection pooling", acceptance_criteria: [], agent_notes: null, raw: "" },
+      source_path: "roadmap/TASK-2026-055.md",
+    },
+    {
+      frontmatter: {
+        id: "TASK-2026-056",
+        title: "Fix null pointer dereference in handler",
+        status: "ready",
+        priority: "Critical",
+        sprint: "Sprint-14",
+        epic: "Bugfix",
+        assignee: null,
+        progress: 0,
+        dependencies: [],
+        blocks: [],
+        labels: ["bug", "regression"],
+        time_estimate: 60,
+        time_logged: 0,
+        due_date: "2026-06-08",
+        start_date: null,
+        created: "2026-06-01",
+        updated: "2026-06-01",
+      },
+      body: { context: "Null pointer in handler", acceptance_criteria: [], agent_notes: null, raw: "" },
+      source_path: "roadmap/TASK-2026-056.md",
+    },
+    {
+      frontmatter: {
+        id: "TASK-2026-057",
+        title: "Update README with workspace documentation",
+        status: "ready",
+        priority: "Medium",
+        sprint: "Sprint-14",
+        epic: "Documentation",
+        assignee: null,
+        progress: 0,
+        dependencies: [],
+        blocks: [],
+        labels: ["docs", "readme"],
+        time_estimate: 60,
+        time_logged: 0,
+        due_date: "2026-06-09",
+        start_date: null,
+        created: "2026-06-01",
+        updated: "2026-06-01",
+      },
+      body: { context: "README update", acceptance_criteria: [], agent_notes: null, raw: "" },
+      source_path: "roadmap/TASK-2026-057.md",
+    },
   ],
   warnings: [],
 };
@@ -165,5 +234,45 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
   if (cmd === "git_pull_roadmap" || cmd === "git_push_roadmap") {
     return { success: true, stdout: "OK", stderr: "" };
   }
+
+  // Agent workspace commands
+  if (cmd === "list_workspaces_cmd") {
+    return [
+      { dir: "architect", id: "agent-architect" },
+      { dir: "bugfix", id: "agent-bugfix" },
+      { dir: "docs", id: "agent-docs" },
+    ];
+  }
+  if (cmd === "read_file_cmd") {
+    const { path } = args as { path: string };
+    if (path.includes("workspace.yml")) {
+      if (path.includes("architect")) {
+        return `id: agent-architect\nmodel: glm-5.1\nskills:\n  - ./skills/documentation/SKILL.md\nconfidence_gate:\n  auto_commit: 0.95\n  propose: 0.85\n  flag: 0.70\n  breaking_change_override: always_propose`;
+      }
+      if (path.includes("bugfix")) {
+        return `id: agent-bugfix\nmodel: glm-5.1\nskills:\n  - ./skills/debugging/SKILL.md\n  - ./skills/testing/SKILL.md\nconfidence_gate:\n  auto_commit: 0.85\n  propose: 0.65\n  flag: 0.40\n  breaking_change_override: always_propose`;
+      }
+      if (path.includes("docs")) {
+        return `id: agent-docs\nmodel: glm-5.1\nskills:\n  - ./skills/documentation/SKILL.md\nconfidence_gate:\n  auto_commit: 0.80\n  propose: 0.60\n  flag: 0.40\n  breaking_change_override: always_propose`;
+      }
+    }
+    if (path.includes("SKILL.md")) {
+      return `# Skill\nPurpose: Mock skill for testing.\nSteps:\n1. Do the thing`; 
+    }
+    return "";
+  }
+  if (cmd === "write_file_cmd") {
+    console.log(`[MOCK] Write: ${JSON.stringify(args).substring(0, 200)}`);
+    return null;
+  }
+  if (cmd === "run_agent_cmd") {
+    return JSON.stringify({
+      workspace_id: (args as Record<string, unknown>).workspaceId,
+      task_id: (args as Record<string, unknown>).taskId,
+      status: "dispatched",
+      message: "Mock dispatch",
+    });
+  }
+
   return { success: true };
 }

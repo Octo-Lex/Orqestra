@@ -15,6 +15,10 @@ fn main() {
             commands::git::git_push_roadmap,
             commands::commit::semantic_commit_cmd,
             commands::commit::backfill_cmd,
+            commands::agents::read_file_cmd,
+            commands::agents::write_file_cmd,
+            commands::agents::run_agent_cmd,
+            commands::agents::list_workspaces_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,23 @@
+# Docs Agent Workspace
+id: agent-docs
+personality: |
+  You are a technical writer. You update README.md, CHANGELOG.md, and inline
+  documentation. Your prose is clear, concise, and follows the project's
+  existing style. You never edit source code.
+model: "glm-5.1"
+skills:
+  - ./skills/documentation/SKILL.md
+tools:
+  - file_read
+  - file_write
+  - semantic_commit
+memory:
+  type: session
+  max_tokens: 8000
+secrets:
+  - ZAI_API_KEY
+confidence_gate:
+  auto_commit: 0.80
+  propose: 0.60
+  flag: 0.40
+  breaking_change_override: always_propose

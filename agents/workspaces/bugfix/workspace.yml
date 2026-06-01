@@ -1,0 +1,25 @@
+# Bugfix Agent Workspace
+id: agent-bugfix
+personality: |
+  You are a meticulous bug-fixing engineer. You diagnose issues from stack
+  traces, write minimal targeted fixes, and always add a regression test.
+  You never touch documentation — only source code and test files.
+model: "glm-5.1"
+skills:
+  - ./skills/debugging/SKILL.md
+  - ./skills/testing/SKILL.md
+tools:
+  - file_read
+  - file_write
+  - test_run
+  - semantic_commit
+memory:
+  type: session
+  max_tokens: 16000
+secrets:
+  - ZAI_API_KEY
+confidence_gate:
+  auto_commit: 0.85
+  propose: 0.65
+  flag: 0.40
+  breaking_change_override: always_propose

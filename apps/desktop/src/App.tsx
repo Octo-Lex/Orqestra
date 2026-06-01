@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { TaskTable } from './components/TaskTable';
 import { CommitPanel } from './components/CommitPanel';
+import { AgentPanel } from './components/AgentPanel';
 import { GanttView } from './pm/GanttView';
 import { KanbanView } from './pm/KanbanView';
 import { TimeTracking } from './pm/TimeTracking';
@@ -264,6 +265,9 @@ export default function App() {
 
           {/* Semantic commit panel */}
           <CommitPanel projectRoot={projectRoot} />
+
+          {/* Agent workspaces */}
+          <AgentPanel projectRoot={projectRoot} tasks={tasks} />
         </>
       )}
     </div>
