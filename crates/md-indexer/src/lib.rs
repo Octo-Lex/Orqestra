@@ -13,4 +13,4 @@ pub mod types;
 // Public API — what external crates (e.g., the Tauri app) import.
 pub use error::IndexerError;
 pub use indexer::index_roadmap;
-pub use types::{IndexResult, Task};
+pub use types::{IndexResult, Task, TaskStatus};

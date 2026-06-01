@@ -1,0 +1,17 @@
+[package]
+name = "git-bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde        = { workspace = true }
+serde_json   = { workspace = true }
+thiserror    = { workspace = true }
+tracing      = { workspace = true }
+uuid         = { workspace = true }
+chrono       = { version = "0.4", features = ["serde"] }
+gix          = { version = "0.66", features = ["blocking-http-transport-reqwest"] }
+md-indexer   = { path = "../md-indexer" }
+
+[dev-dependencies]
+tempfile = "3"

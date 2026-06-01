@@ -20,10 +20,14 @@ Respond with valid JSON matching this schema:
   "reasoning_trace": "your chain of thought"
 }"""
 
+# Initialize Anthropic SDK pointing to the Z.ai proxy gateway
+client = anthropic.AsyncAnthropic(
+    api_key=os.environ.get("ZAI_API_KEY"),
+    base_url="https://api.z.ai/api/anthropic",
+)
+
 
 async def extract_intent(request: DiffRequest) -> SemanticIntent:
-    client = anthropic.AsyncAnthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-
     user_message = f"""Commit message: {request.commit_message_draft}
 
 Diff:
@@ -35,7 +39,7 @@ Codebase context: {request.repo_context or 'not provided'}
 Extract the semantic intent as JSON."""
 
     message = await client.messages.create(
-        model="claude-sonnet-4-5",
+        model="glm-5.1",
         max_tokens=1024,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": user_message}],

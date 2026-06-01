@@ -2,7 +2,7 @@
 [workspace]
 members = [
     "crates/md-indexer",
-    "apps/desktop/src-tauri",
+    "apps/desktop/src-tauri", "crates/git-bridge",
 ]
 resolver = "2"
 
