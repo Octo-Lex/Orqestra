@@ -25,9 +25,11 @@ reqwest = { version = "0.12", features = ["json"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 
-# NOTE: tauri-plugin-store persists the GitHub PAT as plaintext JSON.
-# Replace with tauri-plugin-stronghold for hardware-encrypted storage
-# before production use.
+# Secure credential storage
+twox-hash = "2"
+getrandom = "0.3"
+
+# Settings persistence (non-credential data only)
 tauri-plugin-store = "2"
 
 [build-dependencies]
