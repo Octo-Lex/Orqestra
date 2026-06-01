@@ -362,6 +362,25 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     throw new Error(`Trace not found: ${traceId}`);
   }
 
+  // Docs agent (real execution path)
+  if (cmd === "run_docs_agent_cmd") {
+    const { task } = (args as { task: string; context_files: string });
+    const taskObj = JSON.parse(task);
+    return JSON.stringify({
+      summary: `Documentation update for ${taskObj.title || 'task'}`,
+      confidence: 0.78,
+      hasBreakingChange: false,
+      edits: [
+        {
+          path: "README.md",
+          before: "## Quick Start",
+          after: "## Quick Start\n\n> **Note:** This section was updated by the Orqestra docs agent.",
+        },
+      ],
+      notes: ["Mock response — AI service not running in browser test mode."],
+    });
+  }
+
   // Phase 5: Sync / CRDT commands
   if (cmd === "init_sync_cmd") {
     const { projectRoot, masterToken } = args as { projectRoot: string; masterToken: string };

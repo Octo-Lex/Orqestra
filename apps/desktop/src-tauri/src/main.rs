@@ -29,6 +29,7 @@ fn main() {
             commands::agents::read_file_cmd,
             commands::agents::write_file_cmd,
             commands::agents::run_agent_cmd,
+            commands::agents::run_docs_agent_cmd,
             commands::agents::list_workspaces_cmd,
             commands::graph::index_graph_cmd,
             commands::graph::query_graph_cmd,
