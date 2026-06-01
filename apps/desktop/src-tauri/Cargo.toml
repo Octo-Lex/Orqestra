@@ -14,6 +14,11 @@ chrono     = { version = "0.4", features = ["serde"] }
 # Core crates — bridge between Tauri commands and business logic
 md-indexer = { path = "../../../crates/md-indexer" }
 git-bridge = { path = "../../../crates/git-bridge" }
+graph-store = { path = "../../../crates/graph-store" }
+
+# Async runtime for graph state
+tokio = { workspace = true }
+reqwest = { version = "0.12", features = ["json"] }
 
 # Native desktop capabilities
 tauri-plugin-dialog = "2"
