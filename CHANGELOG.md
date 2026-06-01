@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-06-01
+
+### Added
+- Real roadmap JSON export via `orqestra export --format=json --out <path>`
+- `_index.md` coordinator parser for sprints, epics, and team data
+- Dashboard consumes generated `orqestra-roadmap.json` instead of hardcoded data
+- Loading and error states for dashboard data fetch
+- Footer showing generation timestamp and source commit
+- Cloudflare Pages CI workflow (`.github/workflows/dashboard.yml`)
+- `wrangler.toml` for one-command deployment
+- Production Tauri build: NSIS installer for Windows x64
+- Encrypted credential storage: `credentials.rs` with save/get/status/delete/migrate
+- `POST /agent/docs` endpoint in AI service
+- `run_docs_agent_cmd` in Tauri: calls real AI service with file scope enforcement
+- `DiffReviewPanel`: side-by-side before/after diff display with accept/reject
+- Docs agent execution path in `AgentPanel` with "Run Docs Agent" button
+- v1.0.1 policy: all agent outputs require human review, auto-commit disabled
+- Roadmap tasks TASK-2026-066 through TASK-2026-070 covering hardening work
+
+### Changed
+- Dashboard `data.ts` no longer contains hardcoded mock roadmap data
+- Dashboard `PublicKanban` and `PublicGantt` accept `tasks` prop from fetched JSON
+- Dashboard `App.tsx` is now async with fetch-based data loading
+- `tauri.conf.json` targets `nsis` instead of `all` (WiX unavailable)
+- PAT storage uses encrypted vault instead of plaintext tauri-plugin-store JSON
+- Agent execution UI distinguishes mock, proposed, and human-approved actions
+
+### Security
+- Removed plaintext PAT persistence via tauri-plugin-store
+- Added encrypted blob storage at `app-data/github-pat.enc`
+- Token masking in error messages (truncate >40 chars)
+- No raw PAT in logs or UI state
+- Migration path: legacy JSON → encrypted vault → verified → delete legacy
+
+### Known Limitations
+- Full edge worker is still backlog
+- Full gix migration is still backlog
+- AST/tree-sitter analysis is still backlog
+- ML-Master exploration remains stub
+- Agents do not auto-commit code changes
+- Dashboard not yet deployed to live Cloudflare Pages URL
+- Dashboard encryption uses XOR with machine-derived key (not AES-256-GCM)
+
 ## [1.0.0] - 2026-06-01
 
 ### Added — Phase 0: Foundation
