@@ -48,6 +48,11 @@ fn main() {
             commands::sync::sync_status_cmd,
             commands::sync::generate_token_cmd,
             commands::sync::validate_token_cmd,
+            commands::credentials::save_github_token_cmd,
+            commands::credentials::get_github_token_cmd,
+            commands::credentials::get_github_token_status_cmd,
+            commands::credentials::delete_github_token_cmd,
+            commands::credentials::migrate_github_token_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

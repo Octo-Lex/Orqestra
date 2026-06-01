@@ -439,5 +439,22 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     return { authorized: false, reason: "Invalid token" };
   }
 
+  // Credential commands (encrypted vault)
+  if (cmd === "save_github_token_cmd") {
+    return null;
+  }
+  if (cmd === "get_github_token_cmd") {
+    return "mock-github-pat-token";
+  }
+  if (cmd === "get_github_token_status_cmd") {
+    return { exists: true, provider: "encrypted-vault", label: "GitHub PAT", lastUpdated: null };
+  }
+  if (cmd === "delete_github_token_cmd") {
+    return null;
+  }
+  if (cmd === "migrate_github_token_cmd") {
+    return { exists: true, provider: "encrypted-vault", label: "GitHub PAT", lastUpdated: null };
+  }
+
   return { success: true };
 }
