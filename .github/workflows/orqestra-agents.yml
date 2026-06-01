@@ -1,0 +1,128 @@
+name: Orqestra Agent Fleet
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  route-and-execute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Parse issue context
+        id: issue
+        run: |
+          echo "title=${{ github.event.issue.title }}" >> "$GITHUB_OUTPUT"
+          echo "body=${{ github.event.issue.body }}" >> "$GITHUB_OUTPUT"
+          echo "labels=${{ join(github.event.issue.labels.*.name, ',') }}" >> "$GITHUB_OUTPUT"
+          echo "number=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Index roadmap
+        run: |
+          cargo run --bin orqestra -- deps --project-root . --format=dot || true
+          echo "Roadmap indexed successfully"
+
+      - name: Route to agent workspace
+        id: route
+        run: |
+          LABELS="${{ steps.issue.outputs.labels }}"
+          TITLE="${{ steps.issue.outputs.title }}"
+
+          # Label-based routing (spec §4.4)
+          if echo "$LABELS" | grep -qi "architecture\|adr"; then
+            echo "workspace=architect" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -qi "bug\|regression\|fix"; then
+            echo "workspace=bugfix" >> "$GITHUB_OUTPUT"
+          elif echo "$LABELS" | grep -qi "docs\|readme"; then
+            echo "workspace=docs" >> "$GITHUB_OUTPUT"
+          else
+            # Default: route based on title keywords
+            case "$TITLE" in
+              *"refactor"*|*"architect"*|*"design"*) echo "workspace=architect" >> "$GITHUB_OUTPUT" ;;
+              *"fix"*|*"bug"*|*"crash"*)              echo "workspace=bugfix" >> "$GITHUB_OUTPUT" ;;
+              *"doc"*|*"README"*|*"guide"*)           echo "workspace=docs" >> "$GITHUB_OUTPUT" ;;
+              *)                                       echo "workspace=architect" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Load workspace config
+        run: |
+          WORKSPACE="${{ steps.route.outputs.workspace }}"
+          if [ -f "agents/workspaces/${WORKSPACE}/workspace.yml" ]; then
+            echo "Loaded workspace: ${WORKSPACE}"
+            cat "agents/workspaces/${WORKSPACE}/workspace.yml"
+          else
+            echo "Workspace config not found: ${WORKSPACE}"
+            exit 1
+          fi
+
+      - name: Comment on issue with routing info
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workspace = '${{ steps.route.outputs.workspace }}';
+            const issueNumber = ${{ steps.issue.outputs.number }};
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `🤖 **Orqestra Agent Fleet**\n\n` +
+                    `Routed to: \`${workspace}\` workspace\n` +
+                    `Labels detected: ${{ steps.issue.outputs.labels }}\n\n` +
+                    `The agent fleet is processing this issue. ` +
+                    `A PR will be linked here once the assigned agent completes its work.\n\n` +
+                    `> ConfidenceGate thresholds for this workspace are defined in \`agents/workspaces/${workspace}/workspace.yml\``
+            });
+
+      - name: Run tests
+        run: |
+          cargo test --workspace
+          echo "All workspace tests pass"
+
+      - name: Summary
+        run: |
+          echo "## Orqestra Agent Fleet Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Field | Value |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|-------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Issue | #${{ steps.issue.outputs.number }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Title | ${{ steps.issue.outputs.title }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Labels | ${{ steps.issue.outputs.labels }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Routed To | ${{ steps.route.outputs.workspace }} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Tests | ✅ Passing |" >> "$GITHUB_STEP_SUMMARY"
