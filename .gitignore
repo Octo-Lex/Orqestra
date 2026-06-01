@@ -29,3 +29,6 @@ __pycache__/
 *.pyc
 .venv/
 *.egg-info/
+
+# Orqestra generated graph data
+.Orqestra/

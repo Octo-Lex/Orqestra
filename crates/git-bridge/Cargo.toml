@@ -3,6 +3,10 @@ name = "git-bridge"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "test_backfill"
+path = "src/bin/test_backfill.rs"
+
 [dependencies]
 serde        = { workspace = true }
 serde_json   = { workspace = true }
@@ -12,6 +16,7 @@ uuid         = { workspace = true }
 chrono       = { version = "0.4", features = ["serde"] }
 gix          = { version = "0.66", features = ["blocking-http-transport-reqwest"] }
 md-indexer   = { path = "../md-indexer" }
+reqwest      = { version = "0.12", features = ["json", "blocking"] }
 
 [dev-dependencies]
 tempfile = "3"
