@@ -1,5 +1,3 @@
-# Cloudflare Pages configuration for Orqestra Dashboard
-# Deploy with: npx wrangler pages deploy dist --project-name=orqestra
-
 name = "orqestra-dashboard"
 pages_build_output_dir = "dist"
+compatibility_date = "2026-06-01"
