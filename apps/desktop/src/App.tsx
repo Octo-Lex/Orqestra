@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { TaskTable } from './components/TaskTable';
 import { CommitPanel } from './components/CommitPanel';
+import { GanttView } from './pm/GanttView';
+import { KanbanView } from './pm/KanbanView';
+import { TimeTracking } from './pm/TimeTracking';
+import { ViewSwitcher, type ViewMode } from './pm/ViewSwitcher';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
   persistPat,
@@ -9,6 +13,11 @@ import {
   gitPushRoadmap,
   type GitResult,
 } from './lib/git';
+import {
+  updateTaskStatus,
+  type Task,
+  type TaskStatus,
+} from './lib/orqestra';
 
 type SyncStatus =
   | { state: 'idle' }
@@ -20,12 +29,17 @@ export default function App() {
   const [projectRoot, setProjectRoot] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle' });
   const [showSettings, setShowSettings] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
 
   // PAT lives in React state. Persisted to disk for cross-session survival,
   // but never read back from the store within the same session.
   const [pat, setPat] = useState<string | null>(null);
   const [patInput, setPatInput] = useState('');
   const [patError, setPatError] = useState<string | null>(null);
+
+  // Shared task data for all views
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // On mount, try to load persisted PAT from disk into state
   useEffect(() => {
@@ -132,7 +146,27 @@ export default function App() {
     }
   }
 
-  const [refreshKey, setRefreshKey] = useState(0);
+  // Kanban drag handler: update task status via Rust backend
+  async function handleStatusChange(taskId: string, newStatus: TaskStatus) {
+    if (!projectRoot) return;
+    try {
+      await updateTaskStatus(projectRoot, taskId, newStatus);
+      // Refresh to pick up the change
+      setRefreshKey(k => k + 1);
+    } catch (e) {
+      console.error('Failed to update task status:', e);
+    }
+  }
+
+  // Auto-schedule: placeholder — in Phase 3 this will write back dates
+  function handleAutoSchedule() {
+    alert('Auto-Schedule applied. Date adjustments calculated.\n(Write-back to .md files requires Phase 3 commit integration.)');
+  }
+
+  // Callback when TaskTable loads tasks — share with other views
+  function handleTasksLoaded(loadedTasks: Task[]) {
+    setTasks(loadedTasks);
+  }
 
   return (
     <div style={{ padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
@@ -207,8 +241,26 @@ export default function App() {
             )}
           </div>
 
-          {/* Task table */}
-          <TaskTable key={refreshKey} projectRoot={projectRoot} />
+          {/* View switcher */}
+          <ViewSwitcher current={viewMode} onChange={setViewMode} />
+
+          {/* Time tracking — always visible */}
+          <TimeTracking tasks={tasks} />
+
+          {/* Active view */}
+          {viewMode === 'table' && (
+            <TaskTable
+              key={refreshKey}
+              projectRoot={projectRoot}
+              onTasksLoaded={handleTasksLoaded}
+            />
+          )}
+          {viewMode === 'gantt' && (
+            <GanttView tasks={tasks} onAutoSchedule={handleAutoSchedule} />
+          )}
+          {viewMode === 'kanban' && (
+            <KanbanView tasks={tasks} onStatusChange={handleStatusChange} />
+          )}
 
           {/* Semantic commit panel */}
           <CommitPanel projectRoot={projectRoot} />

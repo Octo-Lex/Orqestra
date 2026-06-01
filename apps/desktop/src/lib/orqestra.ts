@@ -54,3 +54,16 @@ export async function indexRoadmap(projectRoot: string): Promise<IndexRoadmapRes
 export async function getTask(projectRoot: string, taskId: string): Promise<Task | null> {
   return invoke<Task | null>('get_task', { projectRoot, taskId });
 }
+
+export interface UpdateTaskStatusResult {
+  success: boolean;
+  newStatus: string;
+}
+
+export async function updateTaskStatus(
+  projectRoot: string,
+  taskId: string,
+  newStatus: TaskStatus,
+): Promise<UpdateTaskStatusResult> {
+  return invoke<UpdateTaskStatusResult>('update_task_status_cmd', { projectRoot, taskId, newStatus });
+}
