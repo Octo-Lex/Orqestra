@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import { TaskTable } from './components/TaskTable';
 import { CommitPanel } from './components/CommitPanel';
 import { AgentPanel } from './components/AgentPanel';
+import QueryHistory from './components/QueryHistory';
+import SemanticDiff from './components/SemanticDiff';
+import ShockwaveMerge from './components/ShockwaveMerge';
 import { GanttView } from './pm/GanttView';
 import { KanbanView } from './pm/KanbanView';
 import { TimeTracking } from './pm/TimeTracking';
@@ -268,6 +271,11 @@ export default function App() {
 
           {/* Agent workspaces */}
           <AgentPanel projectRoot={projectRoot} tasks={tasks} />
+
+          {/* Phase 4: Semantic Git & History */}
+          <QueryHistory projectRoot={projectRoot} />
+          <SemanticDiff projectRoot={projectRoot} />
+          <ShockwaveMerge projectRoot={projectRoot} />
         </>
       )}
     </div>

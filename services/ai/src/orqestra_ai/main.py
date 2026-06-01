@@ -30,7 +30,9 @@ async def explore_route(request: ExploreRequest):
     return await explore(request)
 
 
-@app.post("/query-history")
+from .query_history import query_history as _query_history_impl
+
+
+@app.post("/query-history", response_model=HistoryAnswer)
 async def query_history_route(request: HistoryQuery):
-    # Phase 4 stub
-    return {"answer": "not yet implemented", "supporting_commits": []}
+    return await _query_history_impl(request.question, request.project_root)

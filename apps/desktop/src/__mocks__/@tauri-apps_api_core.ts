@@ -274,5 +274,93 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     });
   }
 
+  // Phase 4: Graph / History commands
+  if (cmd === "index_graph_cmd") {
+    return { indexed: 2, total_triples: 20 };
+  }
+  if (cmd === "query_graph_cmd") {
+    const { predicate } = args as { predicate?: string; subject?: string; object?: string };
+    if (predicate === "has_intent") {
+      return [
+        {
+          uuid: "mock-uuid-1",
+          subject: "8d9343ab95a6",
+          predicate: "has_intent",
+          object: "Advance the status of task TASK-2026-050 (Implement rate limiting middleware) from 'backlog' to 'in-progress' via an automated pipeline.",
+          commit: "8d9343ab95a6",
+          timestamp: "2026-06-01T10:15:58Z",
+        },
+        {
+          uuid: "mock-uuid-2",
+          subject: "38e5fceb600b",
+          predicate: "has_intent",
+          object: "Reverts task TASK-2026-045 status from 'in-review' back to 'backlog' as part of testing the semantic commit pipeline.",
+          commit: "38e5fceb600b",
+          timestamp: "2026-06-01T09:11:11Z",
+        },
+      ];
+    }
+    return [];
+  }
+  if (cmd === "query_history_cmd") {
+    return {
+      answer: "Best match (score 0.286):\n  Commit: 8d9343ab95a625d33dacb323f74e0b994ef25288\n  Message: feat(ui): advance TASK-2026-050 status via pipeline\n  Intent: Advance the status of task TASK-2026-050 (Implement rate limiting middleware) from 'backlog' to 'in-progress' via an automated pipeline.\n  Confidence: 1.00\n  Concepts: task management, rate limiting middleware, sprint planning, security hardening\n  Tasks: TASK-2026-050\n  Reasoning trace:\n    The commit message explicitly states this is a pipeline-driven status advancement for task TASK-2026-050. The diff confirms this by changing a single field ('status') in a task markdown file from 'backlog' to 'in-progress'. This is a metadata-only change with no code, API, or configuration alterations, making it low risk and trivially reversible.",
+      supporting_commits: [
+        "8d9343ab95a625d33dacb323f74e0b994ef25288",
+        "38e5fceb600b401053487eaed102978731070823",
+      ],
+    };
+  }
+  if (cmd === "read_commit_stub_cmd") {
+    const { hash } = args as { hash: string };
+    if (hash.startsWith("8d9343ab")) {
+      return {
+        hash: "8d9343ab95a625d33dacb323f74e0b994ef25288",
+        conventional_message: "feat(ui): advance TASK-2026-050 status via pipeline",
+        timestamp: "2026-06-01T10:15:58Z",
+        author: { name: "orqestra-e2e", type: "human" },
+        semantic: {
+          status: "complete",
+          intent_summary: "Advance the status of task TASK-2026-050 (Implement rate limiting middleware) from 'backlog' to 'in-progress' via an automated pipeline.",
+          affected_concepts: ["task management", "rate limiting middleware", "sprint planning", "security hardening"],
+          affected_apis: [],
+          confidence: 1.0,
+          reasoning_trace_id: "b907d8fc-c241-4401-b86a-322c7c8fa3e4",
+          task_ids: ["TASK-2026-050"],
+          risk_assessment: { breaking_change: false, migration_required: null, rollback_complexity: "low" },
+        },
+      };
+    }
+    if (hash.startsWith("38e5fceb")) {
+      return {
+        hash: "38e5fceb600b401053487eaed102978731070823",
+        conventional_message: "test(phase-1): verify semantic commit pipeline",
+        timestamp: "2026-06-01T09:11:11Z",
+        author: { name: "orqestra-test", type: "human" },
+        semantic: {
+          status: "complete",
+          intent_summary: "Reverts task TASK-2026-045 status from 'in-review' back to 'backlog' as part of testing the semantic commit pipeline.",
+          affected_concepts: ["task management", "semantic commit pipeline", "project workflow"],
+          affected_apis: [],
+          confidence: 0.95,
+          reasoning_trace_id: "a61d1f98-0a76-4697-8e93-e7934495a87a",
+          task_ids: ["TASK-2026-045"],
+          risk_assessment: { breaking_change: false, migration_required: null, rollback_complexity: "low" },
+        },
+      };
+    }
+    throw new Error(`Commit not found: ${hash}`);
+  }
+  if (cmd === "read_trace_cmd") {
+    const { traceId } = args as { traceId: string };
+    if (traceId === "b907d8fc-c241-4401-b86a-322c7c8fa3e4") {
+      return "The commit message explicitly states this is a pipeline-driven status advancement for task TASK-2026-050. The diff confirms this by changing a single field ('status') in a task markdown file from 'backlog' to 'in-progress'. This is a metadata-only change with no code, API, or configuration alterations, making it low risk and trivially reversible.";
+    }
+    if (traceId === "a61d1f98-0a76-4697-8e93-e7934495a87a") {
+      return "The commit message explicitly states this is a test to verify a semantic commit pipeline. The diff shows a single change to a markdown file that tracks a project management task, moving its status field backward from 'in-review' to 'backlog'. This is a metadata-only change with no code or API impact, consistent with a pipeline verification test.";
+    }
+    throw new Error(`Trace not found: ${traceId}`);
+  }
+
   return { success: true };
 }
