@@ -10,7 +10,12 @@ const STATUS_COLORS: Record<string, string> = {
   'cancelled': '#ef4444',
 };
 
-export function TaskTable({ projectRoot }: { projectRoot: string }) {
+interface TaskTableProps {
+  projectRoot: string;
+  onTasksLoaded?: (tasks: Task[]) => void;
+}
+
+export function TaskTable({ projectRoot, onTasksLoaded }: TaskTableProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +25,7 @@ export function TaskTable({ projectRoot }: { projectRoot: string }) {
       .then(result => {
         setTasks(result.tasks);
         setWarnings(result.warnings);
+        onTasksLoaded?.(result.tasks);
       })
       .catch(err => setError(err.message ?? String(err)));
   }, [projectRoot]);
@@ -31,34 +37,38 @@ export function TaskTable({ projectRoot }: { projectRoot: string }) {
       {warnings.map((w, i) => (
         <div key={i} className="warning">⚠ {w}</div>
       ))}
-      <table>
+      <table style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Title</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Sprint</th>
-            <th>Assignee</th>
-            <th>Progress</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>ID</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Title</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Status</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Priority</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Sprint</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Assignee</th>
+            <th style={{ textAlign: 'left', padding: '0.4rem 0.5rem', borderBottom: '2px solid #e5e7eb' }}>Progress</th>
           </tr>
         </thead>
         <tbody>
           {tasks.map(task => {
             const fm = task.frontmatter;
             return (
-              <tr key={fm.id}>
-                <td><code>{fm.id}</code></td>
-                <td>{fm.title}</td>
-                <td>
-                  <span style={{ color: STATUS_COLORS[fm.status] }}>
+              <tr key={fm.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                <td style={{ padding: '0.4rem 0.5rem' }}><code style={{ fontSize: '0.85em' }}>{fm.id}</code></td>
+                <td style={{ padding: '0.4rem 0.5rem' }}>{fm.title}</td>
+                <td style={{ padding: '0.4rem 0.5rem' }}>
+                  <span style={{
+                    color: STATUS_COLORS[fm.status],
+                    fontWeight: 500,
+                    fontSize: '0.9em',
+                  }}>
                     {fm.status}
                   </span>
                 </td>
-                <td>{fm.priority}</td>
-                <td>{fm.sprint ?? '—'}</td>
-                <td>{fm.assignee ?? '—'}</td>
-                <td>
+                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.9em' }}>{fm.priority}</td>
+                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.9em', color: '#6b7280' }}>{fm.sprint ?? '—'}</td>
+                <td style={{ padding: '0.4rem 0.5rem', fontSize: '0.9em', color: '#6b7280' }}>{fm.assignee ?? '—'}</td>
+                <td style={{ padding: '0.4rem 0.5rem' }}>
                   <progress value={fm.progress} max={100} />
                   {' '}{fm.progress}%
                 </td>

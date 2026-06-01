@@ -10,6 +10,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             commands::roadmap::index_roadmap_cmd,
             commands::roadmap::get_task,
+            commands::roadmap::update_task_status_cmd,
             commands::git::git_pull_roadmap,
             commands::git::git_push_roadmap,
             commands::commit::semantic_commit_cmd,
