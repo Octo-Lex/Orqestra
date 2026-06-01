@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { TaskTable } from './components/TaskTable';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
-  storePat,
-  hasStoredPat,
+  persistPat,
+  loadPersistedPat,
   gitPullRoadmap,
   gitPushRoadmap,
   type GitResult,
@@ -19,16 +19,20 @@ export default function App() {
   const [projectRoot, setProjectRoot] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle' });
   const [showSettings, setShowSettings] = useState(false);
-  const [patInput, setPatInput] = useState('');
-  const [patSaved, setPatSaved] = useState(false);
-  const [patError, setPatError] = useState<string | null>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Check if PAT is already stored on mount
+  // PAT lives in React state. Persisted to disk for cross-session survival,
+  // but never read back from the store within the same session.
+  const [pat, setPat] = useState<string | null>(null);
+  const [patInput, setPatInput] = useState('');
+  const [patError, setPatError] = useState<string | null>(null);
+
+  // On mount, try to load persisted PAT from disk into state
   useEffect(() => {
-    hasStoredPat()
-      .then(saved => setPatSaved(saved))
-      .catch(() => setPatSaved(false));
+    loadPersistedPat()
+      .then(p => {
+        if (p) setPat(p);
+      })
+      .catch(() => {});
   }, []);
 
   async function openProject() {
@@ -39,8 +43,8 @@ export default function App() {
   async function handleSavePat() {
     setPatError(null);
     try {
-      await storePat(patInput);
-      setPatSaved(true);
+      await persistPat(patInput);
+      setPat(patInput);
       setPatInput('');
     } catch (e) {
       setPatError(e instanceof Error ? e.message : String(e));
@@ -48,17 +52,25 @@ export default function App() {
   }
 
   async function handlePull() {
-    if (!projectRoot) return;
+    if (!projectRoot || !pat) {
+      setSyncStatus({
+        state: 'error',
+        action: 'Pull',
+        message: 'GitHub PAT not configured. Save it in Settings.',
+      });
+      return;
+    }
     setSyncStatus({ state: 'loading', action: 'Pull' });
+
     try {
-      const result: GitResult = await gitPullRoadmap(projectRoot);
+      const result: GitResult = await gitPullRoadmap(projectRoot, pat);
       if (result.success) {
         setSyncStatus({
           state: 'success',
           action: 'Pull',
           message: result.stdout.trim() || 'Up to date.',
         });
-        setRefreshKey(k => k + 1); // trigger table re-render
+        setRefreshKey(k => k + 1);
       } else {
         setSyncStatus({
           state: 'error',
@@ -76,10 +88,18 @@ export default function App() {
   }
 
   async function handlePush() {
-    if (!projectRoot) return;
+    if (!projectRoot || !pat) {
+      setSyncStatus({
+        state: 'error',
+        action: 'Push',
+        message: 'GitHub PAT not configured. Save it in Settings.',
+      });
+      return;
+    }
     setSyncStatus({ state: 'loading', action: 'Push' });
+
     try {
-      const result: GitResult = await gitPushRoadmap(projectRoot);
+      const result: GitResult = await gitPushRoadmap(projectRoot, pat);
       if (result.success) {
         setSyncStatus({
           state: 'success',
@@ -87,7 +107,6 @@ export default function App() {
           message: result.stdout.trim() || 'Pushed successfully.',
         });
       } else {
-        // "nothing to commit" is okay
         const combined = result.stderr.trim() || result.stdout.trim();
         if (combined.includes('nothing to commit')) {
           setSyncStatus({
@@ -111,6 +130,8 @@ export default function App() {
       });
     }
   }
+
+  const [refreshKey, setRefreshKey] = useState(0);
 
   return (
     <div style={{ padding: '1rem', fontFamily: 'system-ui, sans-serif' }}>
@@ -138,7 +159,7 @@ export default function App() {
                   type="password"
                   value={patInput}
                   onChange={e => setPatInput(e.target.value)}
-                  placeholder={patSaved ? '•••••••• (saved)' : 'ghp_xxxxxxxxxxxx'}
+                  placeholder={pat ? '•••••••• (saved — leave blank to keep)' : 'ghp_xxxxxxxxxxxx'}
                   style={{ flexGrow: 1, padding: '0.25rem 0.5rem' }}
                 />
                 <button onClick={handleSavePat} disabled={!patInput.trim()}>
@@ -146,7 +167,7 @@ export default function App() {
                 </button>
               </div>
               {patError && <div style={{ color: 'red', marginTop: '0.25rem' }}>{patError}</div>}
-              {patSaved && !patError && (
+              {pat && !patError && (
                 <div style={{ color: 'green', marginTop: '0.25rem', fontSize: '0.85em' }}>
                   PAT stored{patInput ? ' (updated)' : ''}.
                 </div>
