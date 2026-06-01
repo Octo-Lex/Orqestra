@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-01T16:00:58.470309300+00:00",
+  "generated_at": "2026-06-01T16:35:15.738892300+00:00",
   "source": {
     "repo": "orqestra",
     "branch": "hardening/v1.0.1",
-    "commit": "eae6d3f"
+    "commit": "ea74ff3"
   },
   "summary": {
-    "total_tasks": 13,
-    "done": 7,
+    "total_tasks": 18,
+    "done": 12,
     "backlog": 6,
     "in_progress": 0,
     "blocked": 0,
@@ -50,14 +50,19 @@
     },
     {
       "id": "Sprint 16",
-      "title": "Production Hardening",
-      "start_date": "2026-06-29",
-      "end_date": "2026-07-12",
-      "status": "upcoming",
+      "title": "Operational Hardening",
+      "start_date": "2026-06-01",
+      "end_date": "2026-06-14",
+      "status": "active",
       "tasks": [
         "TASK-2026-060",
         "TASK-2026-061",
-        "TASK-2026-062"
+        "TASK-2026-062",
+        "TASK-2026-066",
+        "TASK-2026-067",
+        "TASK-2026-068",
+        "TASK-2026-069",
+        "TASK-2026-070"
       ]
     },
     {
@@ -346,6 +351,113 @@
         "ml-master",
         "exploration",
         "intelligence"
+      ]
+    },
+    {
+      "id": "TASK-2026-066",
+      "title": "Generate dashboard data from real roadmap files",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 16",
+      "epic": "Operational Hardening",
+      "assignee": "agent-architect",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-02",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [
+        "TASK-2026-067"
+      ],
+      "labels": [
+        "dashboard",
+        "md-indexer",
+        "release"
+      ]
+    },
+    {
+      "id": "TASK-2026-067",
+      "title": "Deploy public dashboard to Cloudflare Pages",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 16",
+      "epic": "Operational Hardening",
+      "assignee": "agent-architect",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-03",
+      "dependencies": [
+        "TASK-2026-066"
+      ],
+      "blocks": [],
+      "labels": [
+        "dashboard",
+        "cloudflare",
+        "ci"
+      ]
+    },
+    {
+      "id": "TASK-2026-068",
+      "title": "Produce production Tauri desktop build",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 16",
+      "epic": "Operational Hardening",
+      "assignee": "agent-architect",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-04",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [],
+      "labels": [
+        "desktop",
+        "tauri",
+        "release"
+      ]
+    },
+    {
+      "id": "TASK-2026-069",
+      "title": "Store GitHub PATs through encrypted vault",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 16",
+      "epic": "Operational Hardening",
+      "assignee": "agent-architect",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-05",
+      "dependencies": [
+        "TASK-2026-056"
+      ],
+      "blocks": [],
+      "labels": [
+        "security",
+        "credentials",
+        "desktop"
+      ]
+    },
+    {
+      "id": "TASK-2026-070",
+      "title": "Replace docs-agent mock with real AI-service call",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 16",
+      "epic": "Operational Hardening",
+      "assignee": "agent-architect",
+      "progress": 100,
+      "start_date": "2026-06-01",
+      "due_date": "2026-06-06",
+      "dependencies": [
+        "TASK-2026-069"
+      ],
+      "blocks": [],
+      "labels": [
+        "agents",
+        "ai-service",
+        "docs"
       ]
     }
   ]
