@@ -362,5 +362,82 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     throw new Error(`Trace not found: ${traceId}`);
   }
 
+  // Phase 5: Sync / CRDT commands
+  if (cmd === "init_sync_cmd") {
+    const { projectRoot, masterToken } = args as { projectRoot: string; masterToken: string };
+    console.log(`[MOCK] Init sync: ${projectRoot}, token=${masterToken.substring(0, 8)}...`);
+    return {
+      peer_id: Date.now(),
+      open_docs: [],
+    };
+  }
+  if (cmd === "open_crdt_doc_cmd") {
+    const { filePath } = args as { filePath: string };
+    console.log(`[MOCK] Open CRDT doc: ${filePath}`);
+    return null;
+  }
+  if (cmd === "set_crdt_field_cmd") {
+    const { payload } = args as { payload: { filePath: string; key: string; value: string } };
+    console.log(`[MOCK] Set CRDT field: ${payload.filePath}/${payload.key} = ${payload.value}`);
+    return null;
+  }
+  if (cmd === "get_crdt_field_cmd") {
+    return "mock-value";
+  }
+  if (cmd === "get_all_fields_cmd") {
+    const { filePath } = args as { filePath: string };
+    if (filePath.includes("TASK-2026-042")) {
+      return [
+        { key: "title", value: "Rate limiter v2" },
+        { key: "status", value: "in-progress" },
+        { key: "assignee", value: "alice" },
+        { key: "priority", value: "critical" },
+      ];
+    }
+    return [];
+  }
+  if (cmd === "export_delta_cmd") {
+    return Array.from(new Uint8Array([1, 2, 3, 4, 5])); // Mock delta bytes
+  }
+  if (cmd === "import_delta_cmd") {
+    console.log("[MOCK] Import delta");
+    return null;
+  }
+  if (cmd === "load_markdown_cmd" || cmd === "export_markdown_cmd") {
+    return null;
+  }
+  if (cmd === "save_snapshot_cmd") {
+    return null;
+  }
+  if (cmd === "sync_status_cmd") {
+    return {
+      peer_id: Date.now(),
+      open_docs: [
+        "roadmap/TASK-2026-038.md",
+        "roadmap/TASK-2026-040.md",
+        "roadmap/TASK-2026-042.md",
+      ],
+    };
+  }
+  if (cmd === "generate_token_cmd") {
+    const { request } = args as { request: { scope: string; label: string } };
+    const ts = Date.now().toString(16);
+    return `ork_${request.scope}_${ts}`;
+  }
+  if (cmd === "validate_token_cmd") {
+    const { request } = args as { request: { token: string } };
+    const token = request.token;
+    if (token.startsWith("ork_write_")) {
+      return { authorized: true, scope: { Admin: false, Write: true, Read: false } };
+    }
+    if (token.startsWith("ork_read_")) {
+      return { authorized: true, scope: { Admin: false, Write: false, Read: true } };
+    }
+    if (token === "master-secret") {
+      return { authorized: true, scope: { Admin: true, Write: true, Read: true } };
+    }
+    return { authorized: false, reason: "Invalid token" };
+  }
+
   return { success: true };
 }
