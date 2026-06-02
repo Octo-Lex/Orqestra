@@ -3,6 +3,44 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+
+## [1.0.3] - 2026-06-02
+
+### Added
+- First-run onboarding wizard with guided setup flow
+- Environment and integration readiness panel with status cards
+- Project validation before workspace load (valid/repairable/not_orqestra/invalid/inaccessible)
+- Generated sample Orqestra project for external reviewers
+- Diagnostics panel and redacted diagnostic bundle export
+- Error recovery cards for common setup failures (ROADMAP_NOT_FOUND, AI_KEY_MISSING, etc.)
+- Release artifact manifest and clearer platform labels
+- User-ready beta demo script (docs/DEMO_SCRIPT_v1.0.3.md)
+- User guide, first run guide, setup checks, diagnostics docs
+- 26 new Rust tests (onboarding, readiness, project validation, diagnostics, redaction)
+- 13 new TypeScript modules (wizard steps, readiness/diagnostics panels, lib modules)
+- 6 new Tauri commands (onboarding, validation, sample project, readiness, diagnostics, recovery)
+
+### Changed
+- README now foregrounds install/evaluation path before source-build path
+- Missing AI/cloud setup is represented as degraded readiness, not generic failure
+- Project loading now validates roadmap structure before opening the main workspace
+- Onboarding state persists across app restarts (no secrets stored)
+
+### Security
+- Diagnostics export redacts API keys, GitHub tokens, bearer tokens, and secret-like values
+- Readiness DTOs are forbidden from exposing raw secret material
+- Onboarding state excludes credentials and unlock data
+- Redaction tests verify all known secret patterns are handled
+
+### Known Limitations
+- Architect agent remains mock-mode
+- ML-Master exploration remains stub/backlog
+- Full native gix migration remains incomplete (9 shell-outs remain)
+- AST/tree-sitter analysis remains backlog
+- Edge relay / Durable Objects remain backlog
+- Some artifacts may be unsigned beta builds
+
+## [1.0.2] - 2026-06-01
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.2] - 2026-06-02

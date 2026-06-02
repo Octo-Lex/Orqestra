@@ -116,17 +116,53 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: artifacts/**/*
+          files: |
+            artifacts/**/*
+            release-artifacts.json
           draft: true
           generate_release_notes: true
           body: |
             ## Orqestra Desktop Release
 
-            **Unsigned artifacts** — these artifacts are not code-signed or notarized.
+            **Unsigned artifacts** -- these artifacts are not code-signed or notarized.
             On Windows, you may need to click "More info" → "Run anyway" to install.
             On macOS, you may need to right-click → "Open" to bypass Gatekeeper.
 
             ### Artifacts
             - **Windows**: NSIS installer (`.exe`)
-            - **macOS**: Universal binary (Apple Silicon + Intel)
+            - **macOS**: Universal binary (Apple Silicon + Intel) or separate arm64/x64
             - **Linux**: AppImage / deb package
+
+            ### Feature State
+            | Feature | Status |
+            |---------|--------|
+            | Roadmap parsing | Implemented and verified |
+            | Desktop PM views | Implemented and verified |
+            | Dashboard | Deployed at orqestra.pages.dev |
+            | OS keychain credentials | Implemented and verified |
+            | Docs/Bugfix agents | Implemented, review-only |
+            | First-run onboarding | Implemented |
+            | Diagnostics export | Implemented |
+            | Architect agent | Mock-mode |
+            | ML-Master | Stub/backlog |
+
+      - name: Generate artifact manifest
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          SHA="${GITHUB_SHA:0:12}"
+          DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          cat > release-artifacts.json << EOF
+          {
+            "version": "${VERSION}",
+            "git_sha": "${SHA}",
+            "built_at": "${DATE}",
+            "platforms": {
+              "windows-x64": { "artifact": "Orqestra_${VERSION#v}_x64-setup.exe", "signed": false },
+              "macos": { "artifact": "Orqestra.app.tar.gz or .dmg", "signed": false },
+              "linux-x64": { "artifact": "Orqestra_*.AppImage or .deb", "signed": false }
+            },
+            "known_limitations": ["Unsigned beta artifact", "macOS/Linux artifacts depend on CI runner"]
+          }
+          EOF
+          cat release-artifacts.json

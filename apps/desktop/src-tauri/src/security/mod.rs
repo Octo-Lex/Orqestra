@@ -125,3 +125,23 @@ pub fn legacy_vault_path(app_data_dir: &std::path::Path) -> PathBuf {
 pub fn legacy_meta_path(app_data_dir: &std::path::Path) -> PathBuf {
     app_data_dir.join("github-pat-meta.json")
 }
+
+// ---------------------------------------------------------------------------
+// Module-level helpers for readiness checks (no raw secrets exposed)
+// ---------------------------------------------------------------------------
+
+use keyring_store::KeyringVault;
+
+/// Check if the OS keychain is available on this platform.
+pub fn is_keyring_available() -> bool {
+    KeyringVault::new().is_available()
+}
+
+/// Check if a GitHub PAT exists in the keyring (no value returned).
+pub fn has_github_token() -> Result<bool, CredentialError> {
+    let vault = KeyringVault::new();
+    if !vault.is_available() {
+        return Ok(false);
+    }
+    vault.has_secret(KEYRING_GITHUB_PAT_ACCOUNT)
+}

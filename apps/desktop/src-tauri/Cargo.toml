@@ -19,7 +19,7 @@ loro-engine = { path = "../../../crates/loro-engine" }
 
 # Async runtime for graph state
 tokio = { workspace = true }
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", features = ["json", "blocking"] }
 
 # Native desktop capabilities
 tauri-plugin-dialog = "2"
@@ -35,6 +35,10 @@ tauri-plugin-store = "2"
 # v1.0.2: OS-keychain-backed credential storage
 keyring-core = "1"
 windows-native-keyring-store = "1"
+
+# v1.0.3: Diagnostics and readiness
+dirs = "6"
+regex-lite = "0.1"
 
 [dev-dependencies]
 tempfile = "3"
