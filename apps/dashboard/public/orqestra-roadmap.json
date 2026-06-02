@@ -1,13 +1,13 @@
 {
-  "generated_at": "2026-06-01T16:35:15.738892300+00:00",
+  "generated_at": "2026-06-02T01:50:12.083477900+00:00",
   "source": {
     "repo": "orqestra",
-    "branch": "hardening/v1.0.1",
-    "commit": "ea74ff3"
+    "branch": "hardening/v1.0.2",
+    "commit": "333fd46"
   },
   "summary": {
-    "total_tasks": 18,
-    "done": 12,
+    "total_tasks": 23,
+    "done": 17,
     "backlog": 6,
     "in_progress": 0,
     "blocked": 0,
@@ -67,14 +67,19 @@
     },
     {
       "id": "Sprint 17",
-      "title": "Intelligence & Security",
-      "start_date": "2026-07-13",
-      "end_date": "2026-07-26",
-      "status": "upcoming",
+      "title": "Productization & Trust Hardening",
+      "start_date": "2026-06-01",
+      "end_date": "2026-06-14",
+      "status": "done",
       "tasks": [
         "TASK-2026-063",
         "TASK-2026-064",
-        "TASK-2026-065"
+        "TASK-2026-065",
+        "TASK-2026-071",
+        "TASK-2026-072",
+        "TASK-2026-073",
+        "TASK-2026-074",
+        "TASK-2026-075"
       ]
     }
   ],
@@ -458,6 +463,99 @@
         "agents",
         "ai-service",
         "docs"
+      ]
+    },
+    {
+      "id": "TASK-2026-071",
+      "title": "Replace XOR credentials with OS-keychain-backed vault",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 17",
+      "epic": "Productization & Trust Hardening",
+      "progress": 100,
+      "start_date": "2026-06-02",
+      "due_date": "2026-06-15",
+      "dependencies": [],
+      "blocks": [],
+      "labels": [
+        "security",
+        "credentials",
+        "v1.0.2"
+      ]
+    },
+    {
+      "id": "TASK-2026-072",
+      "title": "Deploy dashboard from CI-generated roadmap JSON",
+      "status": "done",
+      "priority": "Critical",
+      "sprint": "Sprint 17",
+      "epic": "Productization & Trust Hardening",
+      "progress": 100,
+      "start_date": "2026-06-02",
+      "due_date": "2026-06-15",
+      "dependencies": [],
+      "blocks": [],
+      "labels": [
+        "dashboard",
+        "ci",
+        "v1.0.2"
+      ]
+    },
+    {
+      "id": "TASK-2026-073",
+      "title": "Build desktop release artifacts for Windows, macOS, and Linux",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 17",
+      "epic": "Productization & Trust Hardening",
+      "progress": 100,
+      "start_date": "2026-06-02",
+      "due_date": "2026-06-15",
+      "dependencies": [],
+      "blocks": [],
+      "labels": [
+        "desktop",
+        "tauri",
+        "release",
+        "v1.0.2"
+      ]
+    },
+    {
+      "id": "TASK-2026-074",
+      "title": "Replace semantic commit shell-out path with native gix",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 17",
+      "epic": "Productization & Trust Hardening",
+      "progress": 100,
+      "start_date": "2026-06-02",
+      "due_date": "2026-06-15",
+      "dependencies": [],
+      "blocks": [],
+      "labels": [
+        "git",
+        "gix",
+        "semantic-commit",
+        "v1.0.2"
+      ]
+    },
+    {
+      "id": "TASK-2026-075",
+      "title": "Replace bugfix-agent mock with real review-only execution",
+      "status": "done",
+      "priority": "High",
+      "sprint": "Sprint 17",
+      "epic": "Productization & Trust Hardening",
+      "progress": 100,
+      "start_date": "2026-06-02",
+      "due_date": "2026-06-15",
+      "dependencies": [],
+      "blocks": [],
+      "labels": [
+        "agents",
+        "bugfix",
+        "ai-service",
+        "v1.0.2"
       ]
     }
   ]

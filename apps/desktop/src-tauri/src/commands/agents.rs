@@ -177,6 +177,164 @@ pub fn run_docs_agent_cmd(
     Ok(serde_json::to_string(&agent_result).unwrap())
 }
 
+// ---------------------------------------------------------------------------
+// v1.0.2: Bugfix agent commands (Workstream E)
+// ---------------------------------------------------------------------------
+
+/// Read a project file for the bugfix agent file scope selector.
+#[command]
+pub fn read_project_file_cmd(
+    project_root: String,
+    path: String,
+) -> Result<String, String> {
+    let full_path = std::path::PathBuf::from(&project_root).join(&path);
+
+    // Security: must be within project root
+    let canonical_root = std::path::PathBuf::from(&project_root).canonicalize()
+        .map_err(|e| format!("Invalid project root: {e}"))?;
+    let canonical_file = full_path.canonicalize()
+        .map_err(|e| format!("Invalid file path: {e}"))?;
+    if !canonical_file.starts_with(&canonical_root) {
+        return Err("Path traversal blocked".into());
+    }
+
+    fs::read_to_string(&full_path)
+        .map_err(|e| format!("Failed to read {}: {}", path, e))
+}
+
+/// Bugfix agent result DTO
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BugfixAgentEdit {
+    pub path: String,
+    pub before: String,
+    pub after: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BugfixAgentResult {
+    pub summary: String,
+    pub confidence: f64,
+    pub has_breaking_change: bool,
+    pub edits: Vec<BugfixAgentEdit>,
+    pub needs_more_files: bool,
+    pub requested_files: Vec<RequestedFile>,
+    pub notes: Vec<String>,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RequestedFile {
+    pub path: String,
+    pub reason: String,
+}
+
+/// Run bugfix agent: calls the AI service /agent/bugfix endpoint.
+/// Only user-selected files are included in the request.
+#[command]
+pub fn run_bugfix_agent_cmd(
+    project_root: String,
+    task: String,
+    allowed_files: String,
+) -> Result<String, String> {
+    let task_obj: serde_json::Value = serde_json::from_str(&task)
+        .map_err(|e| format!("Invalid task JSON: {e}"))?;
+    let files: Vec<serde_json::Value> = serde_json::from_str(&allowed_files)
+        .map_err(|e| format!("Invalid allowed_files JSON: {e}"))?;
+
+    // Extract allowed paths for validation
+    let allowed_paths: Vec<String> = files.iter()
+        .filter_map(|f| f.get("path").and_then(|p| p.as_str()).map(String::from))
+        .collect();
+
+    let request_body = serde_json::json!({
+        "task": task_obj,
+        "allowed_files": files,
+        "constraints": {
+            "allowed_paths": allowed_paths,
+            "max_files_changed": allowed_paths.len(),
+            "auto_commit": false,
+            "may_request_more_files": true
+        }
+    });
+
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .post("http://localhost:8000/agent/bugfix")
+        .json(&request_body)
+        .timeout(std::time::Duration::from_secs(45))
+        .send()
+        .map_err(|e| format!("AI service unreachable: {e}"))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().unwrap_or_default();
+        return Err(format!("AI service error {status}: {body}"));
+    }
+
+    let result: serde_json::Value = response
+        .json()
+        .map_err(|e| format!("Invalid AI response: {e}"))?;
+
+    // Validate edits are within allowed paths
+    let mut filtered_edits = Vec::new();
+    if let Some(edits) = result.get("edits").and_then(|e| e.as_array()) {
+        for edit in edits {
+            if let Some(path) = edit.get("path").and_then(|p| p.as_str()) {
+                if allowed_paths.contains(&path.to_string()) {
+                    filtered_edits.push(BugfixAgentEdit {
+                        path: path.to_string(),
+                        before: edit.get("before").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                        after: edit.get("after").and_then(|v| v.as_str()).unwrap_or("").to_string(),
+                    });
+                }
+                // Silently drop edits to non-allowed files
+            }
+        }
+    }
+
+    let requested_files: Vec<RequestedFile> = result.get("requested_files")
+        .and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|v| {
+            Some(RequestedFile {
+                path: v.get("path")?.as_str()?.to_string(),
+                reason: v.get("reason")?.as_str()?.to_string(),
+            })
+        }).collect())
+        .unwrap_or_default();
+
+    let agent_result = BugfixAgentResult {
+        summary: result.get("summary").and_then(|v| v.as_str()).unwrap_or("No summary").to_string(),
+        confidence: result.get("confidence").and_then(|v| v.as_f64()).unwrap_or(0.0),
+        has_breaking_change: result.get("has_breaking_change").and_then(|v| v.as_bool()).unwrap_or(false),
+        edits: filtered_edits,
+        needs_more_files: result.get("needs_more_files").and_then(|v| v.as_bool()).unwrap_or(false),
+        requested_files,
+        notes: result.get("notes")
+            .and_then(|v| v.as_array())
+            .map(|arr| arr.iter().filter_map(|v| v.as_str().map(String::from)).collect())
+            .unwrap_or_default(),
+    };
+
+    // Write agent run state
+    let state_dir = std::path::PathBuf::from(&project_root)
+        .join(".Orqestra")
+        .join("agents")
+        .join("bugfix");
+    std::fs::create_dir_all(&state_dir).ok();
+    let run_state = serde_json::json!({
+        "workspaceId": "bugfix",
+        "summary": agent_result.summary,
+        "confidence": agent_result.confidence,
+        "editCount": agent_result.edits.len(),
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+    });
+    std::fs::write(state_dir.join("state.json"), serde_json::to_string_pretty(&run_state).unwrap()).ok();
+
+    Ok(serde_json::to_string(&agent_result).unwrap())
+}
+
 /// List all workspace directories under agents/workspaces/
 #[derive(Debug, serde::Serialize)]
 pub struct WorkspaceEntry {

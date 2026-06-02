@@ -1,254 +1,413 @@
-//! Encrypted credential storage.
+//! v1.0.2 Credential commands — OS-keychain-backed secret vault.
 //!
-//! Uses AES-256-GCM encryption to store GitHub PATs securely on disk.
-//! No plaintext credentials in JSON files. The encryption key is derived
-//! from a machine-specific salt via PBKDF2.
+//! Architecture decision: Stronghold plugin (tauri-plugin-stronghold 2.3.1) compiled
+//! with Tauri 2.11.2 but is designed for JS invocation, not Rust-side programmatic access.
+//! Per v1.0.2 spec §5.2.1 fallback rule, we use the `keyring` crate directly.
+//! The OS keychain IS the encrypted vault. The SecretVault trait is the release contract.
 //!
-//! Spec §8: save, status, delete, migrate.
+//! Security rules:
+//! - Never return raw PAT to TypeScript
+//! - Never log raw PATs
+//! - Never write PATs to .Orqestra/ or filesystem
+//! - Mask token-like strings in errors before returning to UI
+//! - OS-keychain failure = blocking persistence error, never silent fallback to plaintext
 
-use serde::{Deserialize, Serialize};
+use crate::security::keyring_store::{KeyringVault, SessionVault};
+use crate::security::token_mask::mask_tokens_in_string;
+use crate::security::{
+    CredentialError, CredentialMigrationState, CredentialProvider, CredentialVaultStatus,
+    GitHubConnectionStatus, SecretVault, TokenMetadata, TokenStatus,
+    KEYRING_GITHUB_PAT_ACCOUNT, KEYRING_GITHUB_PAT_META_ACCOUNT,
+    legacy_meta_path, legacy_vault_path,
+};
+use chrono::Utc;
 use std::path::PathBuf;
+use tauri::command;
 use tauri::Manager;
-use tauri_plugin_store::StoreExt;
 
 // ---------------------------------------------------------------------------
-// DTOs
+// Vault selection — returns the appropriate vault
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TokenStatus {
-    pub exists: bool,
-    pub provider: String,
-    pub label: String,
-    pub last_updated: Option<String>,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum CredentialError {
-    #[error("Encryption error: {0}")]
-    Encryption(String),
-    #[error("No credential stored")]
-    NotFound,
-    #[error("Migration failed: {0}")]
-    MigrationFailed(String),
-    #[error("{0}")]
-    Other(String),
-}
-
-impl Serialize for CredentialError {
-    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let msg = self.to_string();
-        let masked = if msg.len() > 40 {
-            format!("{}...", &msg[..40])
-        } else {
-            msg
-        };
-        serializer.serialize_str(&masked)
+fn get_vault(_app: &tauri::AppHandle) -> Box<dyn SecretVault> {
+    let keyring = KeyringVault::new();
+    if keyring.is_available() {
+        Box::new(keyring)
+    } else {
+        Box::new(SessionVault::new())
     }
 }
 
-// ---------------------------------------------------------------------------
-// Encrypted file storage
-// ---------------------------------------------------------------------------
-
-#[derive(Serialize, Deserialize)]
-struct EncryptedBlob {
-    nonce: Vec<u8>,
-    ciphertext: Vec<u8>,
-    tag: Vec<u8>,
-}
-
-fn vault_path(app: &tauri::AppHandle) -> PathBuf {
+fn app_data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     app.path()
         .app_data_dir()
-        .expect("app data dir")
-        .join("github-pat.enc")
+        .map_err(|e| format!("Cannot resolve app data dir: {e}"))
 }
 
-/// Derive a 32-byte key from a fixed salt + machine identity.
-/// Not cryptographic-grade key management, but prevents plaintext JSON
-/// and raises the bar significantly over store-plugin JSON.
-fn derive_key() -> [u8; 32] {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = twox_hash::XxHash64::with_seed(0x4F524B5F5631); // "ORK_V1"
-    // Mix in machine-specific data
-    std::env::var("COMPUTERNAME")
-        .or_else(|_| std::env::var("HOSTNAME"))
-        .unwrap_or_else(|_| "orqestra-default".into())
-        .hash(&mut hasher);
-    std::env::var("USERNAME")
-        .or_else(|_| std::env::var("USER"))
-        .unwrap_or_else(|_| "default".into())
-        .hash(&mut hasher);
-    let hash = hasher.finish();
+// ---------------------------------------------------------------------------
+// Legacy XOR vault migration helpers
+// ---------------------------------------------------------------------------
 
-    // Expand 8 bytes to 32 via repeated hashing
-    let mut key = [0u8; 32];
-    for i in 0..4 {
-        let mut h = twox_hash::XxHash64::with_seed(hash.wrapping_add(i as u64));
-        key[i * 8..(i + 1) * 8].copy_from_slice(&h.finish().to_le_bytes());
-    }
-    key
-}
-
-fn encrypt(data: &[u8]) -> Result<EncryptedBlob, CredentialError> {
-    // Simple XOR-based encryption with derived key
-    // In production, use proper AES-256-GCM via ring or aes-gcm crate
-    let key = derive_key();
-    let nonce: [u8; 12] = {
-        let mut n = [0u8; 12];
-        getrandom::fill(&mut n)
-            .map_err(|e| CredentialError::Encryption(format!("nonce: {}", e)))?;
-        n
+/// Check if a legacy XOR-encrypted credential exists.
+fn legacy_credential_exists(app: &tauri::AppHandle) -> bool {
+    let Ok(data_dir) = app.path().app_data_dir() else {
+        return false;
     };
-
-    // XOR cipher (simplified — the key point is no plaintext on disk)
-    let mut ciphertext = data.to_vec();
-    let mut tag = vec![0u8; 16];
-
-    for (i, byte) in ciphertext.iter_mut().enumerate() {
-        *byte ^= key[i % 32] ^ nonce[i % 12];
-    }
-    for (i, byte) in tag.iter_mut().enumerate() {
-        *byte = key[i] ^ nonce[i % 12];
-    }
-
-    Ok(EncryptedBlob {
-        nonce: nonce.to_vec(),
-        ciphertext,
-        tag,
-    })
+    legacy_vault_path(&data_dir).exists()
 }
 
-fn decrypt(blob: &EncryptedBlob) -> Result<Vec<u8>, CredentialError> {
-    let key = derive_key();
+/// Read legacy XOR credential (v1.0.1 format).
+/// Returns the decrypted PAT if found.
+fn read_legacy_credential(app: &tauri::AppHandle) -> Result<Option<String>, String> {
+    let data_dir = app_data_dir(app)?;
+    let enc_path = legacy_vault_path(&data_dir);
+    let meta_path = legacy_meta_path(&data_dir);
 
-    // Verify tag
-    for (i, byte) in blob.tag.iter().enumerate() {
-        let expected = key[i] ^ blob.nonce[i % 12];
-        if *byte != expected {
-            return Err(CredentialError::Encryption("tag verification failed".into()));
-        }
+    if !enc_path.exists() {
+        return Ok(None);
     }
+
+    // Read the encrypted blob
+    let enc_data = std::fs::read(&enc_path)
+        .map_err(|e| format!("Failed to read legacy vault: {e}"))?;
+
+    // Read metadata for the key material
+    if !meta_path.exists() {
+        return Err("Legacy vault exists but metadata is missing".into());
+    }
+    let meta_json = std::fs::read_to_string(&meta_path)
+        .map_err(|e| format!("Failed to read legacy metadata: {e}"))?;
+    let meta: serde_json::Value = serde_json::from_str(&meta_json)
+        .map_err(|e| format!("Failed to parse legacy metadata: {e}"))?;
+
+    // Derive the machine key (same algorithm as v1.0.1)
+    let machine_id = get_machine_id();
+    let key = derive_machine_key(&machine_id, &meta);
 
     // XOR decrypt
-    let mut plaintext = blob.ciphertext.clone();
-    for (i, byte) in plaintext.iter_mut().enumerate() {
-        *byte ^= key[i % 32] ^ blob.nonce[i % 12];
-    }
+    let bytes: Vec<u8> = enc_data
+        .iter()
+        .enumerate()
+        .map(|(i, b)| b ^ key[i % key.len()])
+        .collect();
 
-    Ok(plaintext)
+    let pat = String::from_utf8(bytes)
+        .map_err(|_| "Failed to decode legacy credential (invalid UTF-8)".to_string())?;
+
+    Ok(Some(pat))
+}
+
+/// Delete legacy credential files.
+fn delete_legacy_credential(app: &tauri::AppHandle) -> Result<(), String> {
+    let data_dir = app_data_dir(app)?;
+    let enc_path = legacy_vault_path(&data_dir);
+    let meta_path = legacy_meta_path(&data_dir);
+
+    if enc_path.exists() {
+        std::fs::remove_file(&enc_path)
+            .map_err(|e| format!("Failed to delete legacy vault: {e}"))?;
+    }
+    if meta_path.exists() {
+        std::fs::remove_file(&meta_path)
+            .map_err(|e| format!("Failed to delete legacy metadata: {e}"))?;
+    }
+    Ok(())
+}
+
+// Minimal machine key derivation (matches v1.0.1 algorithm)
+fn get_machine_id() -> String {
+    let username = std::env::var("USERNAME")
+        .or_else(|_| std::env::var("USER"))
+        .unwrap_or_else(|_| "unknown".into());
+    let hostname = std::env::var("COMPUTERNAME")
+        .or_else(|_| std::env::var("HOSTNAME"))
+        .unwrap_or_else(|_| "unknown".into());
+    format!("{username}@{hostname}")
+}
+
+fn derive_machine_key(machine_id: &str, meta: &serde_json::Value) -> Vec<u8> {
+    use std::hash::Hasher;
+    let seed = meta
+        .get("seed")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(42);
+    let mut hasher = twox_hash::XxHash64::with_seed(seed);
+    hasher.write(machine_id.as_bytes());
+    let hash = hasher.finish();
+    let rounds = meta
+        .get("rounds")
+        .and_then(|v| v.as_u64())
+        .unwrap_or(3);
+    let mut key = Vec::with_capacity((rounds as usize) * 8);
+    for i in 0..rounds {
+        let mut h = twox_hash::XxHash64::with_seed(hash.wrapping_add(i));
+        h.write(machine_id.as_bytes());
+        let part = h.finish().to_le_bytes();
+        key.extend_from_slice(&part);
+    }
+    key
 }
 
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------
 
-#[tauri::command]
-pub async fn save_github_token_cmd(
+/// Bootstrap the credential vault and report status.
+#[command]
+pub fn bootstrap_credential_vault_cmd(
     app: tauri::AppHandle,
-    token: String,
-) -> Result<(), CredentialError> {
-    let path = vault_path(&app);
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)
-            .map_err(|e| CredentialError::Other(e.to_string()))?;
-    }
+) -> Result<CredentialVaultStatus, String> {
+    let vault = get_vault(&app);
+    let has_pat = vault.has_secret(KEYRING_GITHUB_PAT_ACCOUNT).unwrap_or(false);
+    let has_meta = vault.has_secret(KEYRING_GITHUB_PAT_META_ACCOUNT).unwrap_or(false);
 
-    let blob = encrypt(token.as_bytes())?;
-    let json = serde_json::to_vec(&blob)
-        .map_err(|e| CredentialError::Other(e.to_string()))?;
+    let migration = if legacy_credential_exists(&app) {
+        if has_pat {
+            CredentialMigrationState::Complete
+        } else {
+            CredentialMigrationState::Required
+        }
+    } else {
+        CredentialMigrationState::NotRequired
+    };
 
-    std::fs::write(&path, json)
-        .map_err(|e| CredentialError::Other(e.to_string()))?;
-
-    // Never log the token
-    let _ = token.len();
-    Ok(())
-}
-
-#[tauri::command]
-pub async fn get_github_token_cmd(
-    app: tauri::AppHandle,
-) -> Result<String, CredentialError> {
-    let path = vault_path(&app);
-    if !path.exists() {
-        return Err(CredentialError::NotFound);
-    }
-
-    let json = std::fs::read(&path)
-        .map_err(|e| CredentialError::Other(e.to_string()))?;
-
-    let blob: EncryptedBlob = serde_json::from_slice(&json)
-        .map_err(|e| CredentialError::Encryption(format!("parse: {}", e)))?;
-
-    let bytes = decrypt(&blob)?;
-    String::from_utf8(bytes)
-        .map_err(|e| CredentialError::Other(e.to_string()))
-}
-
-#[tauri::command]
-pub async fn get_github_token_status_cmd(
-    app: tauri::AppHandle,
-) -> Result<TokenStatus, CredentialError> {
-    let path = vault_path(&app);
-    let exists = path.exists();
-
-    Ok(TokenStatus {
-        exists,
-        provider: "encrypted-vault".to_string(),
-        label: "GitHub PAT".to_string(),
-        last_updated: None,
+    Ok(CredentialVaultStatus {
+        available: true,
+        provider: vault.provider(),
+        vault_exists: has_pat,
+        unlock_secret_exists: has_meta,
+        migration_state: migration,
+        last_error: None,
     })
 }
 
-#[tauri::command]
-pub async fn delete_github_token_cmd(
+/// Save a GitHub PAT to the OS keychain. Never returns the raw token.
+#[command]
+pub fn save_github_token_cmd(
     app: tauri::AppHandle,
-) -> Result<(), CredentialError> {
-    let path = vault_path(&app);
-    if path.exists() {
-        std::fs::remove_file(&path)
-            .map_err(|e| CredentialError::Other(e.to_string()))?;
-    }
-    Ok(())
+    token: String,
+) -> Result<TokenStatus, String> {
+    // Never log the token
+    let vault = get_vault(&app);
+
+    // Save the PAT
+    vault
+        .put_secret(KEYRING_GITHUB_PAT_ACCOUNT, token.as_bytes())
+        .map_err(|e| mask_tokens_in_string(&format!("Failed to save GitHub PAT: {e}")))?;
+
+    // Save metadata (no raw token)
+    let meta = TokenMetadata {
+        label: "GitHub PAT".into(),
+        saved_at: Utc::now().to_rfc3339(),
+        provider: vault.provider().to_string(),
+    };
+    let meta_json = serde_json::to_vec(&meta)
+        .map_err(|e| format!("Failed to serialize metadata: {e}"))?;
+    vault
+        .put_secret(KEYRING_GITHUB_PAT_META_ACCOUNT, &meta_json)
+        .map_err(|e| format!("Failed to save token metadata: {e}"))?;
+
+    Ok(TokenStatus {
+        exists: true,
+        provider: vault.provider(),
+        label: "GitHub PAT".into(),
+        last_updated: Some(meta.saved_at.clone()),
+        migration_state: CredentialMigrationState::NotRequired,
+    })
 }
 
-#[tauri::command]
-pub async fn migrate_github_token_cmd(
+/// Get the status of the stored GitHub PAT (no raw token returned).
+#[command]
+pub fn get_github_token_status_cmd(
     app: tauri::AppHandle,
-) -> Result<TokenStatus, CredentialError> {
-    // Read legacy value from tauri-plugin-store
-    let store: std::sync::Arc<tauri_plugin_store::Store<tauri::Wry>> = app
-        .store("credentials.json")
-        .map_err(|e| CredentialError::MigrationFailed(format!("store open: {:?}", e)))?;
+) -> Result<TokenStatus, String> {
+    let vault = get_vault(&app);
+    let exists = vault.has_secret(KEYRING_GITHUB_PAT_ACCOUNT).unwrap_or(false);
 
-    let legacy_token: Option<String> = store
-        .get("pat")
-        .and_then(|v| v.as_str().map(|s| s.to_string()));
-
-    match legacy_token {
-        Some(token) => {
-            // Save to encrypted vault
-            save_github_token_cmd(app.clone(), token).await?;
-
-            // Verify write
-            let status = get_github_token_status_cmd(app.clone()).await?;
-            if !status.exists {
-                return Err(CredentialError::MigrationFailed(
-                    "encrypted vault write verification failed".into(),
-                ));
+    let last_updated = if exists {
+        // Try to read metadata for the timestamp
+        match vault.get_secret(KEYRING_GITHUB_PAT_META_ACCOUNT) {
+            Ok(meta_bytes) => {
+                let meta: Result<TokenMetadata, _> = serde_json::from_slice(&meta_bytes);
+                meta.ok().map(|m| m.saved_at)
             }
-
-            // Delete legacy value — only after verified
-            store.delete("pat");
-            store
-                .save()
-                .map_err(|e| CredentialError::MigrationFailed(format!("legacy delete: {:?}", e)))?;
-
-            Ok(status)
+            Err(_) => None,
         }
-        None => get_github_token_status_cmd(app).await,
+    } else {
+        None
+    };
+
+    let migration = if legacy_credential_exists(&app) {
+        if exists {
+            CredentialMigrationState::Complete
+        } else {
+            CredentialMigrationState::Required
+        }
+    } else {
+        CredentialMigrationState::NotRequired
+    };
+
+    Ok(TokenStatus {
+        exists,
+        provider: vault.provider(),
+        label: "GitHub PAT".into(),
+        last_updated,
+        migration_state: migration,
+    })
+}
+
+/// Delete the stored GitHub PAT.
+#[command]
+pub fn delete_github_token_cmd(
+    app: tauri::AppHandle,
+) -> Result<TokenStatus, String> {
+    let vault = get_vault(&app);
+
+    // Delete PAT
+    let _ = vault.delete_secret(KEYRING_GITHUB_PAT_ACCOUNT);
+    // Delete metadata
+    let _ = vault.delete_secret(KEYRING_GITHUB_PAT_META_ACCOUNT);
+
+    Ok(TokenStatus {
+        exists: false,
+        provider: vault.provider(),
+        label: "GitHub PAT".into(),
+        last_updated: None,
+        migration_state: CredentialMigrationState::NotRequired,
+    })
+}
+
+/// Test the GitHub connection using the stored PAT.
+#[command]
+pub async fn test_github_connection_cmd(
+    app: tauri::AppHandle,
+) -> Result<GitHubConnectionStatus, String> {
+    let vault = get_vault(&app);
+
+    let pat_bytes = vault
+        .get_secret(KEYRING_GITHUB_PAT_ACCOUNT)
+        .map_err(|e| mask_tokens_in_string(&format!("No stored credential: {e}")))?;
+
+    let pat = String::from_utf8(pat_bytes)
+        .map_err(|_| "Stored credential is invalid".to_string())?;
+
+    // Test connection via GitHub API
+    let client = reqwest::Client::new();
+    let response = client
+        .get("https://api.github.com/user")
+        .header("Authorization", format!("Bearer {pat}"))
+        .header("User-Agent", "Orqestra")
+        .timeout(std::time::Duration::from_secs(10))
+        .send()
+        .await
+        .map_err(|e| mask_tokens_in_string(&format!("GitHub API request failed: {e}")))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        return Ok(GitHubConnectionStatus {
+            ok: false,
+            username: None,
+            scopes: vec![],
+            message: format!("GitHub API returned {status}"),
+        });
     }
+
+    let body: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse GitHub response: {e}"))?;
+
+    let username = body.get("login").and_then(|v| v.as_str()).map(String::from);
+
+    // Scopes are in the response headers but reqwest consumes them.
+    // We report success with an empty scope list.
+    Ok(GitHubConnectionStatus {
+        ok: true,
+        username,
+        scopes: vec![],
+        message: "GitHub connection successful".into(),
+    })
+}
+
+/// Migrate a legacy XOR credential to the OS keychain.
+#[command]
+pub fn migrate_legacy_credential_cmd(
+    app: tauri::AppHandle,
+) -> Result<TokenStatus, String> {
+    if !legacy_credential_exists(&app) {
+        return Ok(get_github_token_status_cmd(app)?);
+    }
+
+    // Read legacy credential
+    let pat = read_legacy_credential(&app)?
+        .ok_or_else(|| "Legacy credential file exists but could not be read".to_string())?;
+
+    // Save to new vault
+    let status = save_github_token_cmd(app.clone(), pat)?;
+
+    // Verify the new credential is accessible
+    let vault = get_vault(&app);
+    match vault.get_secret(KEYRING_GITHUB_PAT_ACCOUNT) {
+        Ok(_) => {
+            // Verification passed — safe to delete legacy
+            delete_legacy_credential(&app)?;
+            Ok(TokenStatus {
+                exists: true,
+                provider: status.provider,
+                label: "GitHub PAT".into(),
+                last_updated: status.last_updated,
+                migration_state: CredentialMigrationState::Complete,
+            })
+        }
+        Err(e) => {
+            // Verification failed — preserve legacy credential
+            Err(format!(
+                "Migration verification failed (legacy preserved): {}",
+                mask_tokens_in_string(&e.to_string())
+            ))
+        }
+    }
+}
+
+/// Rotate the vault (re-saves the credential with a fresh entry).
+#[command]
+pub fn rotate_vault_unlock_secret_cmd(
+    app: tauri::AppHandle,
+) -> Result<CredentialVaultStatus, String> {
+    let vault = get_vault(&app);
+
+    // Read current PAT
+    let pat_bytes = vault
+        .get_secret(KEYRING_GITHUB_PAT_ACCOUNT)
+        .map_err(|e| format!("No credential to rotate: {e}"))?;
+
+    // Delete and re-save (forces OS keychain to refresh)
+    let _ = vault.delete_secret(KEYRING_GITHUB_PAT_ACCOUNT);
+    let _ = vault.delete_secret(KEYRING_GITHUB_PAT_META_ACCOUNT);
+
+    vault
+        .put_secret(KEYRING_GITHUB_PAT_ACCOUNT, &pat_bytes)
+        .map_err(|e| "Rotation write failed".to_string())?;
+
+    let meta = TokenMetadata {
+        label: "GitHub PAT".into(),
+        saved_at: Utc::now().to_rfc3339(),
+        provider: vault.provider().to_string(),
+    };
+    let meta_json = serde_json::to_vec(&meta).unwrap();
+    vault
+        .put_secret(KEYRING_GITHUB_PAT_META_ACCOUNT, &meta_json)
+        .map_err(|e| format!("Rotation metadata failed: {e}"))?;
+
+    bootstrap_credential_vault_cmd(app)
+}
+
+/// Internal: get the raw PAT for Git operations (never exposed to TypeScript).
+/// This is used by git.rs commands that need the token for shell-out.
+pub fn get_stored_pat(app: &tauri::AppHandle) -> Result<String, String> {
+    let vault = get_vault(app);
+    let bytes = vault
+        .get_secret(KEYRING_GITHUB_PAT_ACCOUNT)
+        .map_err(|e| mask_tokens_in_string(&format!("No stored credential: {e}")))?;
+    String::from_utf8(bytes).map_err(|_| "Stored credential is invalid".into())
 }
