@@ -6,43 +6,53 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ## Public Beta Status
 
-Orqestra v1.0.6 is a **public beta** for technical reviewers and early adopters. It includes a tested Windows x64 installer, a live dashboard, roadmap indexing, semantic commit infrastructure, and real-AI review flows. It is not yet a production product. The installer is unsigned, macOS artifacts are not yet provided, Linux is not yet verified, and some advanced agent paths remain review-only or scaffolded.
+Orqestra v1.0.7 is a **public beta** for technical reviewers and early adopters. v1.0.7 does not yet include a signed Windows installer. It adds explicit signing-blocker evidence, signature verification documentation, installer diagnostics, and platform confidence criteria so reviewers can understand and verify the current Windows beta distribution state.
 
 ## Quick Start for Public Beta Reviewers
 
 ### 1. Download
 
-Download `Orqestra_1.0.6_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download `Orqestra_1.0.7_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
 
 The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
 ### 2. Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.6_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.7_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` attached to the release.
 
-### 3. Install and Launch
+### 3. Verify Signature
+
+```powershell
+Get-AuthenticodeSignature .\Orqestra_1.0.7_x64-setup.exe
+```
+
+Expected: `Status: NotSigned` — the installer is unsigned because no code-signing certificate has been configured.
+
+### 4. Install and Launch
 
 Run the installer, then open Orqestra from the Start menu. The onboarding wizard appears.
 
-### 4. Run the No-Key Beta Demo
+### 5. Run the No-Key Beta Demo
 
-No API key needed. Click **"Try sample project"** in the onboarding wizard. Explore Table, Gantt, and Kanban views. AI features will show as "degraded" — this is correct.
-
-For step-by-step instructions, see the **[Beta Quickstart](docs/beta-quickstart.md)**.
-
-### 5. Optional: Real-AI Maintainer Mode
-
-If you have a `ZAI_API_KEY`, see the [Real-AI setup instructions](docs/beta-quickstart.md#8-optional-real-ai-maintainer-mode) in the quickstart guide.
+No API key needed. Click **"Try sample project"** in the onboarding wizard. For step-by-step instructions, see the **[Beta Quickstart](docs/beta-quickstart.md)**.
 
 ### Troubleshooting
 
-If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)** or [file an issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new/choose).
+If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)** or **[Installer Diagnostics](docs/installer-diagnostics.md)**.
 
 ---
+
+## Windows SmartScreen
+
+The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.7 records the signing blocker status and the next action toward signed distribution.
+
+Even when signing is implemented, SmartScreen may still warn for new or low-reputation downloads until reputation is established.
+
+See [Signing Plan](docs/release-signing-plan.md) for the full path.
 
 ## Platform Support
 
@@ -52,52 +62,40 @@ If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)**
 | macOS | not-built | Deferred to future release |
 | Linux x64 | built-but-unverified | CI builds exist, not locally validated |
 
+See [Platform Confidence](docs/platform-confidence.md) for what each status means and promotion criteria.
+
 ## What Works
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Roadmap parsing | Implemented and verified | Local |
 | Desktop PM views | Implemented and verified | Table, Gantt, Kanban |
-| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed, shows freshness metadata |
+| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed, freshness metadata |
 | OS keychain credentials | Implemented and verified | Windows Credential Manager |
-| Docs agent | Implemented, review-only | Real AI when ZAI_API_KEY set; degraded without it |
+| Docs agent | Implemented, review-only | Real AI when ZAI_API_KEY set |
 | Bugfix agent | Implemented, review-only | User-selected files only |
 | First-run onboarding | Implemented and verified | Guided wizard with sample project |
 | Environment readiness | Implemented and verified | Setup checks for all integrations |
-| Project validation | Implemented and verified | Validates folder before loading |
 | Diagnostics export | Implemented and verified | Redacted bundle, no raw secrets |
-| Release manifest | Implemented and verified | SHA256 checksums, provenance, platform labels |
-| Manifest validation | Implemented | `scripts/validate-release-manifest.ts` |
-| Dashboard freshness | Implemented | Release version, timestamp, source commit visible |
+| Release manifest | Implemented and verified | Provenance, signing, diagnostics, platform fields |
+| Dashboard freshness | Implemented | Version, commit, timestamp in footer |
 | Beta quickstart | Implemented | [docs/beta-quickstart.md](docs/beta-quickstart.md) |
-| Troubleshooting guide | Implemented | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Troubleshooting | Implemented | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| Installer diagnostics | Implemented | [docs/installer-diagnostics.md](docs/installer-diagnostics.md) |
+| Platform confidence | Implemented | [docs/platform-confidence.md](docs/platform-confidence.md) |
+| Issue triage | Implemented | [docs/beta-issue-triage.md](docs/beta-issue-triage.md) |
 | Issue templates | Implemented | Install, AI mode, dashboard, bug report |
-
-## No-Key Beta Mode
-
-Works out of the box with no API keys. AI features show as "degraded" or "mock". All other features work normally. This is the default reviewer experience.
-
-## Real-AI Maintainer Mode
-
-Requires `ZAI_API_KEY` in `services/ai/.env`. Docs-agent and bugfix-agent produce real AI proposals. **All agent outputs are review-only** — no autonomous commits. See the [quickstart](docs/beta-quickstart.md#8-optional-real-ai-maintainer-mode) for setup.
 
 ## Known Limitations
 
 - **Windows installer is unsigned** — SmartScreen warnings are expected
 - **macOS artifacts are not built** — not available for this release
-- **Linux artifacts are CI-built but not locally verified** — not recommended for public beta
+- **Linux artifacts are CI-built but not verified** — not recommended for public beta
 - **Architect agent** — mock-mode
 - **ML-Master exploration** — stub
 - **Edge relay / CRDT sync** — not available
-- **Full native Git** — 8 shell-outs remain (commit creation is native gix)
-- **Code signing** — planned, see [signing plan](docs/release-signing-plan.md)
-
-## Security Notes
-
-- Diagnostics export redacts all known secret patterns
-- Readiness DTOs never expose raw tokens or keys
-- Agent actions require human review before any commit
-- **Test on non-sensitive repositories first**
+- **Full native Git** — 8 shell-outs remain
+- **Code signing** — blocked, certificate not available
 
 ## Report an Issue
 
@@ -110,13 +108,7 @@ Requires `ZAI_API_KEY` in `services/ai/.env`. Docs-agent and bugfix-agent produc
 
 ## Release Provenance
 
-Each release includes `release-manifest.json` with:
-- Full 40-char Git SHAs (tag commit, source commit, build commit)
-- CI workflow run ID
-- Artifact SHA256 checksums
-- Platform status matrix
-- Distribution metadata (quickstart, troubleshooting, issue templates)
-- Dashboard freshness metadata
+Each release includes `release-manifest.json` with: full Git SHAs, CI workflow run ID, artifact checksums, signing status, platform matrix, diagnostics links, and dashboard freshness.
 
 ## Documentation
 
@@ -124,25 +116,16 @@ Each release includes `release-manifest.json` with:
 |----------|-------------|
 | [Beta Quickstart](docs/beta-quickstart.md) | Step-by-step reviewer guide |
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and fixes |
-| [User Guide](docs/USER_GUIDE.md) | Complete usage guide |
-| [First Run](docs/FIRST_RUN.md) | Quick start for new users |
-| [Setup Checks](docs/SETUP_CHECKS.md) | Environment readiness reference |
-| [Diagnostics](docs/DIAGNOSTICS.md) | Troubleshooting and export |
-| [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
+| [Installer Diagnostics](docs/installer-diagnostics.md) | Install failure diagnostic steps |
+| [Platform Confidence](docs/platform-confidence.md) | What each platform status means |
+| [Issue Triage](docs/beta-issue-triage.md) | How beta feedback is managed |
 | [Signing Plan](docs/release-signing-plan.md) | Path to signed, notarized releases |
-| [Demo Evidence](demo/v1.0.6-demo-evidence.md) | v1.0.6 verification record |
-| [Windows Smoke](demo/v1.0.6-windows-smoke.md) | Windows installer smoke test |
+| [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
 
 ## Developer Setup
 
 <details>
 <summary>Build from source</summary>
-
-### Prerequisites
-
-- Rust 1.80+, Node.js 20+, Python 3.11+, Git
-
-### Build
 
 ```bash
 git clone https://github.com/Elephant-Rock-Lab/Orqestra.git
@@ -150,17 +133,7 @@ cd Orqestra
 cargo build --workspace
 cd apps/desktop && npm ci && npm run build
 cd apps/dashboard && npm ci && npm run build
-```
-
-### Test
-
-```bash
 cargo test --workspace
-```
-
-### Validate Release Manifest
-
-```bash
 npx tsx scripts/validate-release-manifest.ts release-manifest.json
 ```
 
