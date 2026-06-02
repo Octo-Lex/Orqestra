@@ -72,6 +72,19 @@ jobs:
         if: runner.os == 'macOS'
         run: cd apps/desktop && npx tauri build --target universal-apple-darwin
 
+      - name: Rename Linux AppImage to canonical name
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          APPIMAGE=$(find target/release/bundle/appimage -name '*.AppImage' 2>/dev/null | head -1)
+          if [ -n "$APPIMAGE" ]; then
+            CANONICAL="$(dirname "$APPIMAGE")/Orqestra_1.0.9_x64.AppImage"
+            mv "$APPIMAGE" "$CANONICAL"
+            echo "Renamed: $(basename "$APPIMAGE") -> Orqestra_1.0.9_x64.AppImage"
+          else
+            echo "No AppImage found to rename"
+          fi
+
       - name: Compute SHA256 checksums
         shell: bash
         run: |
@@ -150,8 +163,24 @@ jobs:
 
           if [ -n "$WIN_INSTALLER" ]; then
             WIN_SHA256=$(sha256sum "$WIN_INSTALLER" | cut -d' ' -f1)
-            WIN_SIZE=$(stat -c%s "$WIN_INSTALLER" 2>/dev/null || stat -f%z "$WIN_INSTALLER" 2>/dev/null || echo "0")
+            WIN_SIZE=$(stat -c%s "$WIN_INSTALLER" 2>/dev/null || echo "0")
             WIN_NAME=$(basename "$WIN_INSTALLER")
+          fi
+
+          # Find Linux AppImage
+          LINUX_APPIMAGE=$(find artifacts -name "*.AppImage" 2>/dev/null | head -1)
+          LINUX_SHA256=""
+          LINUX_SIZE=""
+          LINUX_NAME=""
+          LINUX_STATUS="built-but-unverified"
+          LINUX_BUNDLE_STATUS="not-configured"
+
+          if [ -n "$LINUX_APPIMAGE" ]; then
+            LINUX_SHA256=$(sha256sum "$LINUX_APPIMAGE" | cut -d' ' -f1)
+            LINUX_SIZE=$(stat -c%s "$LINUX_APPIMAGE" 2>/dev/null || echo "0")
+            LINUX_NAME=$(basename "$LINUX_APPIMAGE")
+            LINUX_STATUS="bundle-produced-unverified"
+            LINUX_BUNDLE_STATUS="pass"
           fi
 
           cat > dist/release-manifest.json << EOF
@@ -181,19 +210,56 @@ jobs:
                 "sha256": "${WIN_SHA256}",
                 "size_bytes": ${WIN_SIZE:-0},
                 "signed": false,
+                "signature_status": "not-signed",
+                "final_artifact_state": "unsigned-final",
+                "source": "github-actions"
+              }$([ -n "$LINUX_APPIMAGE" ] && echo ",")$([ -n "$LINUX_APPIMAGE" ] && cat <<EOFINNER
+              {
+                "name": "${LINUX_NAME}",
+                "platform": "linux-x64",
+                "type": "appimage",
+                "sha256": "${LINUX_SHA256}",
+                "size_bytes": ${LINUX_SIZE:-0},
+                "signed": false,
+                "signature_status": "not-applicable",
+                "final_artifact_state": "linux-appimage-final",
+                "verification_status": "checksummed-not-smoke-tested",
                 "source": "github-actions"
               }
+EOFINNER
+              )
             ],
             "platforms": {
               "windows-x64": {
                 "status": "tested",
+                "release_blocking": true,
                 "artifact": "${WIN_NAME}",
                 "signed": false,
                 "notes": "Unsigned public beta installer"
               },
-              "macos-arm64": { "status": "not-built", "artifact": null, "signed": false, "notarized": false, "notes": "Deferred" },
-              "macos-x64": { "status": "not-built", "artifact": null, "signed": false, "notarized": false, "notes": "Deferred" },
-              "linux-x64": { "status": "built-but-unverified", "artifact": null, "signed": false, "notes": "Not recommended for public beta users" }
+              "linux-x64": {
+                "status": "${LINUX_STATUS}",
+                "release_blocking": false,
+                "compile_status": "pass",
+                "bundle_status": "${LINUX_BUNDLE_STATUS}",
+                "public_artifact": $([ -n "$LINUX_APPIMAGE" ] && echo "true" || echo "false"),
+                "smoke_tested": false,
+                "artifact": $([ -n "$LINUX_APPIMAGE" ] && echo "\"${LINUX_NAME}\"" || echo "null"),
+                "signed": false,
+                "notes": $([ -n "$LINUX_APPIMAGE" ] && echo "\"CI produced AppImage, not smoke-tested\"" || echo "\"No bundle produced\"")
+              },
+              "macos": {
+                "status": "build-feasibility-verified",
+                "release_blocking": false,
+                "compile_status": "pass",
+                "bundle_status": "not-configured",
+                "public_artifact": false,
+                "smoke_tested": false,
+                "artifact": null,
+                "signed": false,
+                "notarized": false,
+                "notes": "CI compiles universal binary, no DMG"
+              }
             },
             "verification": {
               "rust_tests": "pass",
@@ -205,15 +271,16 @@ jobs:
             },
             "limitations": [
               "Unsigned Windows installer",
-              "macOS artifacts not built",
-              "Linux artifact not verified",
+              "Linux AppImage not smoke-tested",
+              "macOS no bundled artifact",
               "Some agent paths remain review-only or scaffolded"
             ]
           }
           EOF
 
-          # Copy checksums
-          cp artifacts/orqestra-windows-x64/dist/checksums.txt dist/checksums.txt 2>/dev/null || true
+          # Merge checksums from all platforms
+          cat artifacts/orqestra-windows-x64/dist/checksums.txt 2>/dev/null > dist/checksums.txt || true
+          cat artifacts/orqestra-linux-x64/dist/checksums.txt 2>/dev/null >> dist/checksums.txt || true
 
       - name: Validate manifest
         run: npx tsx scripts/validate-release-manifest.ts dist/release-manifest.json
