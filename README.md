@@ -4,15 +4,31 @@
 
 Orqestra turns a Git repository into a structured workspace with roadmap tracking, semantic history, AI-assisted code review, and an optional public dashboard — all running locally.
 
-## Try It
+## Public Beta Status
 
-### Install (Windows)
+Orqestra v1.0.5 is a **public beta** for technical reviewers and early adopters. It includes a tested Windows x64 installer, a live dashboard, roadmap indexing, semantic commit infrastructure, and real-AI review flows. It is not yet a production product. The installer is unsigned, macOS artifacts are not yet provided, Linux is not yet verified, and some advanced agent paths remain review-only or scaffolded.
 
-Download `Orqestra_1.0.4_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+## Download and Verify
 
-> **Unsigned beta build.** Your operating system may show a warning before launch. On Windows, click "More info" -> "Run anyway".
+### Download
 
-### First Launch
+Download `Orqestra_1.0.5_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+
+### Verify the Installer
+
+```powershell
+Get-FileHash .\Orqestra_1.0.5_x64-setup.exe -Algorithm SHA256
+```
+
+Compare against the SHA256 in `release-manifest.json` or `checksums.txt` attached to the release.
+
+### Unsigned Installer Warning
+
+The installer is **unsigned**. Windows SmartScreen will show a warning. This is expected beta behavior. Click "More info" -> "Run anyway" to proceed.
+
+See [Release Signing Plan](docs/release-signing-plan.md) for the path beyond unsigned beta.
+
+## First Launch
 
 1. Launch Orqestra — the onboarding wizard appears
 2. Click **"Try sample project"** — generates a demo with 4 tasks
@@ -38,54 +54,78 @@ updated: "2026-06-01T00:00:00Z"
 Task description here.
 ```
 
-## What Works in v1.0.4
+## Platform Support
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Windows x64 | tested | NSIS installer, unsigned beta |
+| macOS | not-built | Deferred to future release |
+| Linux x64 | built-but-unverified | CI builds exist, not locally validated |
+
+## What Works in v1.0.5
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Roadmap parsing | Implemented and verified | Local |
 | Desktop PM views | Implemented and verified | Table, Gantt, Kanban |
-| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed, token-gated |
+| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed |
 | OS keychain credentials | Implemented and verified | Windows Credential Manager |
 | Docs agent | Implemented, review-only | Real AI when ZAI_API_KEY set; degraded without it |
 | Bugfix agent | Implemented, review-only | User-selected files only |
-| First-run onboarding | Implemented | Guided wizard with sample project |
-| Environment readiness | Implemented | Setup checks for all integrations |
-| Project validation | Implemented | Validates folder before loading |
+| First-run onboarding | Implemented and verified | Guided wizard with sample project |
+| Environment readiness | Implemented and verified | Setup checks for all integrations |
+| Project validation | Implemented and verified | Validates folder before loading |
 | Diagnostics export | Implemented and verified | Redacted bundle, no raw secrets |
-| Release manifest | Implemented | SHA256 checksums, platform labels, signing status |
+| Release manifest | Implemented and verified | SHA256 checksums, provenance, platform labels |
 | AI demo fixtures | Implemented | Deterministic inputs for docs/bugfix agent demos |
+| Manifest validation | Implemented | `scripts/validate-release-manifest.ts` |
 
-### Platform Artifacts
+## No-Key Beta Mode
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| Windows x64 | tested | NSIS installer |
-| macOS | not-built | Requires bundler target configuration |
-| Linux x64 | built-but-unverified | CI builds, no local validation |
+Works out of the box with no API keys. AI features show as "degraded" or "mock". All other features work normally. This is the default reviewer experience.
 
-## What Requires Setup
+## Real-AI Maintainer Mode
 
-| Integration | Setup | Enables |
-|-------------|-------|---------|
-| `ZAI_API_KEY` env var | Set before launch | Real AI output (agents work in mock mode without it) |
-| Python AI service | `cd services/ai && uv run uvicorn orqestra_ai.main:app` | Docs/bugfix agent real calls |
-| GitHub PAT | Settings → Save token | Push/pull for roadmap sync |
-| Cloudflare secrets | GitHub repo → Actions secrets | Dashboard CI auto-deploy |
+Requires `ZAI_API_KEY` set in `services/ai/.env`:
 
-## What Is NOT Done
+```bash
+cd services/ai
+echo "ZAI_API_KEY=your-key-here" > .env
+uv run uvicorn orqestra_ai.main:app
+```
 
-These features remain backlog or mock-mode:
+Docs-agent and bugfix-agent will produce real AI proposals. **All agent outputs are review-only** — no autonomous commits. Agent actions require human review before any commit.
 
-- **Architect agent** — Mock-mode, not production
-- **ML-Master exploration** — Stub, not implemented
-- **Edge relay / CRDT sync** — Not available
+## Known Limitations
+
+- **Windows installer is unsigned** — SmartScreen warnings are expected
+- **macOS artifacts are not built** — not available for this release
+- **Linux artifacts are CI-built but not locally verified** — not recommended for public beta users
+- **Architect agent** — mock-mode, not production
+- **ML-Master exploration** — stub, not implemented
+- **Edge relay / CRDT sync** — not available
 - **Full native Git** — 8 shell-outs remain (commit creation is native gix)
-- **AST code analysis** — Not started
-- **Code signing** — Artifacts are unsigned beta builds
+- **AST code analysis** — not started
+- **Code signing** — planned, see [signing plan](docs/release-signing-plan.md)
 
-## Unsigned Beta Notice
+## Security Notes
 
-Orqestra v1.0.4 desktop artifacts are **unsigned beta builds**. Your operating system may show a warning before launch. Code signing and notarization are planned for a future production release.
+- Diagnostics export redacts all known secret patterns
+- Readiness DTOs never expose raw tokens or keys
+- Agent actions require human review before any commit
+- Credential storage uses OS keychain (Windows Credential Manager)
+- **Test on non-sensitive repositories first**
+
+## Release Provenance
+
+Each release includes `release-manifest.json` with:
+- Full 40-char Git SHAs (tag commit, source commit, build commit)
+- CI workflow run ID
+- Artifact SHA256 checksums
+- Platform status matrix
+- Verification results
+
+See the manifest attached to the [v1.0.5 release](https://github.com/Elephant-Rock-Lab/Orqestra/releases/tag/v1.0.5).
 
 ## Diagnostics
 
@@ -100,8 +140,10 @@ Open the **Diagnostics** panel to export a redacted support bundle. All secrets 
 | [Setup Checks](docs/SETUP_CHECKS.md) | Environment readiness reference |
 | [Diagnostics](docs/DIAGNOSTICS.md) | Troubleshooting and export |
 | [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
-| [Demo Script](docs/DEMO_SCRIPT_v1.0.4.md) | Deterministic demo walkthrough (no-key + real-AI modes) |
-| [Demo Evidence](docs/DEMO_EVIDENCE_v1.0.4.md) | Packaged artifact verification record |
+| [Signing Plan](docs/release-signing-plan.md) | Path to signed, notarized releases |
+| [Demo Script](docs/DEMO_SCRIPT_v1.0.4.md) | Deterministic demo walkthrough |
+| [Demo Evidence](demo/v1.0.5-demo-evidence.md) | v1.0.5 verification record |
+| [Windows Smoke](demo/v1.0.5-windows-smoke.md) | Windows installer smoke test |
 
 ## Developer Setup
 
@@ -134,7 +176,7 @@ cd apps/dashboard && npm ci && npm run build
 ### Test
 
 ```bash
-# Rust tests (141 total -- 39 md-indexer + 14 git-bridge + 7 graph-store + 12 loro-engine + 10 security + 12 agents + 8 roadmap + 5 graph + 8 credentials + 3 onboarding + 5 project_validation + 5 readiness + 6 diagnostics + 7 redaction)
+# Rust tests; exact count recorded in demo evidence
 cargo test --workspace
 
 # TypeScript builds
@@ -156,22 +198,30 @@ cd apps/desktop
 npm run tauri dev
 ```
 
+### Validate Release Manifest
+
+```bash
+npx tsx scripts/validate-release-manifest.ts release-manifest.json
+```
+
 ### Architecture
 
 ```
 Orqestra/
-├── crates/
-│   ├── md-indexer/       # Markdown roadmap parser
-│   ├── git-bridge/       # Semantic commits, backfill
-│   ├── graph-store/      # Triple store for history
-│   └── loro-engine/      # CRDT per-file sync
-├── apps/
-│   ├── desktop/          # Tauri 2.x + React app
-│   └── dashboard/        # Cloudflare Pages dashboard
-├── services/
-│   └── ai/               # FastAPI AI service
-├── agents/               # Agent workspaces and skills
-└── roadmap/              # Project roadmap tasks
++-- crates/
+|   +-- md-indexer/       # Markdown roadmap parser
+|   +-- git-bridge/       # Semantic commits, backfill
+|   +-- graph-store/      # Triple store for history
+|   +-- loro-engine/      # CRDT per-file sync
++-- apps/
+|   +-- desktop/          # Tauri 2.x + React app
+|   +-- dashboard/        # Cloudflare Pages dashboard
++-- services/
+|   +-- ai/               # FastAPI AI service
++-- agents/               # Agent workspaces and skills
++-- roadmap/              # Project roadmap tasks
++-- scripts/              # Release tooling
++-- demo/                 # Demo fixtures and evidence
 ```
 
 </details>
