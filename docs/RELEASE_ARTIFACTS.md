@@ -10,11 +10,11 @@ Orqestra v1.0.4 desktop artifacts are **unsigned beta builds**. Your operating s
 
 Code signing and notarization are planned for a future production release.
 
-## v1.0.6 Artifacts
+## v1.0.7 Artifacts
 
-| Platform | Artifact | Status | Notes |
-|----------|----------|--------|-------|
-| Windows x64 | `Orqestra_1.0.6_x64-setup.exe` | tested | NSIS installer, unsigned public beta |
+| Platform | Artifact | Status | Signed | Notes |
+|----------|----------|--------|--------|-------|
+| Windows x64 | `Orqestra_1.0.7_x64-setup.exe` | tested | No | Unsigned public beta, signing blocked |
 | macOS Apple Silicon | `.dmg` | not-built | Deferred to future release |
 | macOS Intel | `.dmg` | not-built | Deferred to future release |
 | Linux x64 | `.AppImage` / `.deb` | built-but-unverified | CI builds, not locally validated |

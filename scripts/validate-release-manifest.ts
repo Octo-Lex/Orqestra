@@ -15,7 +15,7 @@
 
 import { readFileSync } from 'fs';
 
-const ALLOWED_STATUSES = ['tested', 'built-but-unverified', 'not-built', 'deferred', 'failed', 'unsupported'];
+const ALLOWED_STATUSES = ['tested', 'signed-tested', 'built-but-unverified', 'build-feasibility-verified', 'not-built', 'deferred', 'failed', 'unsupported'];
 
 const SHA256_RE = /^[a-f0-9]{64}$/;
 const GIT_SHA_RE = /^[a-f0-9]{40}$/;
@@ -120,6 +120,17 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
 const verification = manifest.verification;
 if (!verification) fail('Missing "verification" section');
 
+// Signing section
+if (manifest.signing) {
+  if (manifest.signing.windows) {
+    const ws = manifest.signing.windows;
+    if (typeof ws.signed !== 'boolean') fail('signing.windows.signed must be boolean');
+    if (!ws.status) warn('signing.windows.status missing');
+    if (ws.signed === false && !ws.blocker) warn('signing.windows.blocker should be set when unsigned');
+    if (!ws.verification_evidence) warn('signing.windows.verification_evidence path missing');
+  }
+}
+
 // Distribution section (optional but recommended)
 if (manifest.distribution) {
   if (manifest.distribution.quickstart && typeof manifest.distribution.quickstart !== 'string') {
@@ -127,6 +138,12 @@ if (manifest.distribution) {
   }
   if (manifest.distribution.troubleshooting && typeof manifest.distribution.troubleshooting !== 'string') {
     fail('distribution.troubleshooting must be a string path');
+  }
+  if (manifest.distribution.installer_diagnostics && typeof manifest.distribution.installer_diagnostics !== 'string') {
+    fail('distribution.installer_diagnostics must be a string path');
+  }
+  if (manifest.distribution.issue_triage && typeof manifest.distribution.issue_triage !== 'string') {
+    fail('distribution.issue_triage must be a string path');
   }
 }
 
@@ -137,6 +154,19 @@ if (manifest.dashboard) {
   }
   if (manifest.dashboard.generated_from_commit) {
     validateCommitSha(manifest.dashboard.generated_from_commit, 'dashboard.generated_from_commit');
+  }
+}
+
+// Diagnostics section (optional)
+if (manifest.diagnostics) {
+  if (manifest.diagnostics.installer_diagnostics && typeof manifest.diagnostics.installer_diagnostics !== 'string') {
+    fail('diagnostics.installer_diagnostics must be a string path');
+  }
+  if (manifest.diagnostics.troubleshooting && typeof manifest.diagnostics.troubleshooting !== 'string') {
+    fail('diagnostics.troubleshooting must be a string path');
+  }
+  if (manifest.diagnostics.issue_triage && typeof manifest.diagnostics.issue_triage !== 'string') {
+    fail('diagnostics.issue_triage must be a string path');
   }
 }
 

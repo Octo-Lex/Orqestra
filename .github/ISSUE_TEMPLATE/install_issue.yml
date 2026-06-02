@@ -1,6 +1,6 @@
 name: Install Issue
 description: Report a problem installing Orqestra
-labels: ["install", "bug"]
+labels: ["install", "beta"]
 body:
   - type: input
     id: os
@@ -13,7 +13,7 @@ body:
     id: installer
     attributes:
       label: Installer Filename
-      placeholder: "e.g., Orqestra_1.0.6_x64-setup.exe"
+      placeholder: "e.g., Orqestra_1.0.7_x64-setup.exe"
     validations:
       required: true
   - type: dropdown
@@ -24,6 +24,18 @@ body:
       options:
         - "yes"
         - "no"
+    validations:
+      required: true
+  - type: dropdown
+    id: signature_status
+    attributes:
+      label: Signature Status
+      description: Result of `Get-AuthenticodeSignature .\Orqestra_*.exe`
+      options:
+        - "NotSigned (expected for current beta)"
+        - "Valid (signed)"
+        - "HashMismatch"
+        - "did not check"
     validations:
       required: true
   - type: dropdown
@@ -59,10 +71,24 @@ body:
         - "Did not reach this step"
     validations:
       required: true
+  - type: input
+    id: install_location
+    attributes:
+      label: Install Location
+      placeholder: "e.g., C:\\Program Files\\Orqestra\\"
+    validations:
+      required: false
   - type: textarea
     id: details
     attributes:
-      label: Details
-      description: Error messages, screenshots, or other context. **Do not paste API keys, tokens, or secrets.**
+      label: Details / Logs
+      description: Terminal output, error messages, or screenshots. See [Installer Diagnostics](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/installer-diagnostics.md) for diagnostic steps. **Do not paste API keys, tokens, secrets, or .env files.**
     validations:
       required: false
+  - type: checkboxes
+    id: secrets_check
+    attributes:
+      label: Secrets Confirmation
+      options:
+        - label: I have removed all API keys, tokens, and secrets from this issue
+          required: true

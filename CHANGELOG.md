@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.7] - 2026-06-02
+
+### Added
+- Signing blocker evidence — manifest records exact blocker (certificate-not-available) and next action
+- Signature verification evidence file (`demo/v1.0.7-signature-verification.md`) even for unsigned artifacts
+- Installer diagnostics guide (`docs/installer-diagnostics.md`) with SHA256, signature, WebView, log, and AI service checks
+- Platform confidence document (`docs/platform-confidence.md`) explaining tested/built-but-unverified/not-built criteria
+- Public beta issue triage guide (`docs/beta-issue-triage.md`) with labels, severity, and response policy
+- `final_artifact_state` field in manifest artifacts to prevent hash-before-signing ambiguity
+- Hash ordering assertion in demo evidence
+- Install issue template updated with signature status, SHA256, SmartScreen, install location, and secrets confirmation fields
+- SmartScreen guidance split into unsigned vs. signed-but-low-reputation sections in troubleshooting
+
+### Changed
+- Release manifest now includes `signing` block, `diagnostics` block, and platform `smoke_evidence` fields
+- Manifest validator extended for signing, diagnostics, and platform evidence fields
+- README includes signature verification command and conservative SmartScreen language
+- Platform matrix unchanged: Windows tested, macOS not-built, Linux built-but-unverified
+
+### Security
+- Signing secrets must not be printed, committed, or attached to issues
+- Issue templates warn users not to share API keys, GitHub tokens, .env files, or certificate material
+- Unsigned installer warning retained prominently in README, release notes, and manifest
+- Install issue template requires secrets removal confirmation
+
+### Known Limitations
+- SmartScreen may still warn even for signed early beta installers
+- macOS artifacts remain unavailable
+- Linux remains built-but-unverified
+- Some advanced agent paths remain review-only or scaffolded
+- Code signing remains blocked (certificate not available)
+
 ## [1.0.6] - 2026-06-02
 
 ### Added

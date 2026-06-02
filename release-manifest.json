@@ -1,53 +1,58 @@
 {
   "release": {
-    "name": "Orqestra v1.0.6",
-    "tag": "v1.0.6",
+    "name": "Orqestra v1.0.7",
+    "tag": "v1.0.7",
     "channel": "public-beta",
-    "release_version": "1.0.6",
-    "app_version": "1.0.6",
+    "release_version": "1.0.7",
+    "app_version": "1.0.7",
     "date": "2026-06-02"
   },
   "provenance": {
-    "tag_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
-    "source_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
-    "build_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
+    "tag_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
+    "source_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
+    "build_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
     "workflow_run_id": "",
     "status": "local-build"
   },
+  "signing": {
+    "windows": {
+      "signed": false,
+      "status": "blocked",
+      "blocker": "certificate-not-available",
+      "next_action": "purchase-or-configure-windows-code-signing",
+      "verification_evidence": "demo/v1.0.7-signature-verification.md"
+    }
+  },
   "distribution": {
     "quickstart": "docs/beta-quickstart.md",
     "troubleshooting": "docs/troubleshooting.md",
+    "installer_diagnostics": "docs/installer-diagnostics.md",
+    "issue_triage": "docs/beta-issue-triage.md",
     "issue_templates": true,
-    "signing_readiness": "ready-without-certificate"
+    "signing_readiness": "blocked-certificate-not-available"
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.6_x64-setup.exe",
+      "name": "Orqestra_1.0.7_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "5cdf2ae0b1e1102b2e6015cac317e0fa68871c7cee2c129cece1e1a3b4c1ec80",
+      "sha256": "9d93fc31188afc1ada9c4313f47464c8d36eb47387ee8659f3fe1a94c28e6939",
       "size_bytes": 4715533,
       "signed": false,
-      "source": "local-build"
-    },
-    {
-      "name": "orqestra-desktop.exe",
-      "platform": "windows-x64",
-      "type": "portable-binary",
-      "sha256": "2c8db28a2ceb94501351c5e6322259c8d629d05cba9cc79f8c5a3a703c2e5b99",
-      "size_bytes": 18022912,
-      "signed": false,
+      "signature_status": "not-signed",
+      "final_artifact_state": "unsigned-final",
       "source": "local-build"
     }
   ],
   "platforms": {
     "windows-x64": {
       "status": "tested",
-      "artifact": "Orqestra_1.0.6_x64-setup.exe",
+      "artifact": "Orqestra_1.0.7_x64-setup.exe",
       "signed": false,
-      "notes": "Unsigned public beta installer"
+      "smoke_evidence": "demo/v1.0.7-windows-smoke.md",
+      "notes": "Unsigned tested public beta installer"
     },
     "macos-arm64": {
       "status": "not-built",
@@ -67,23 +72,28 @@
       "status": "built-but-unverified",
       "artifact": null,
       "signed": false,
-      "notes": "Not recommended for public beta users"
+      "notes": "Not promoted without smoke evidence"
     }
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
-    "release": "v1.0.6",
-    "generated_from_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c"
+    "release": "v1.0.7",
+    "generated_from_commit": "163ef91da464726830a4db450df0e1f4eb31007a"
+  },
+  "diagnostics": {
+    "installer_diagnostics": "docs/installer-diagnostics.md",
+    "troubleshooting": "docs/troubleshooting.md",
+    "issue_triage": "docs/beta-issue-triage.md"
   },
   "verification": {
     "rust_tests": "pass",
-    "rust_tests_count": 141,
     "desktop_ts_build": "pass",
     "dashboard_ts_build": "pass",
     "windows_smoke": "pass",
     "dashboard_status": "200 OK",
-    "real_ai_demo": "pass"
+    "real_ai_demo": "pass",
+    "rust_tests_count": 141
   },
   "limitations": [
     "Unsigned Windows installer",
