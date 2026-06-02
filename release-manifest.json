@@ -1,19 +1,19 @@
 {
   "release": {
-    "name": "Orqestra v1.0.7",
-    "tag": "v1.0.7",
+    "name": "Orqestra v1.0.8",
+    "tag": "v1.0.8",
     "channel": "public-beta",
-    "release_version": "1.0.7",
-    "app_version": "1.0.7",
-    "date": "2026-06-02"
+    "release_version": "1.0.8",
+    "app_version": "1.0.8",
+    "date": "2026-06-03"
   },
   "provenance": {
-    "tag_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
-    "source_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
-    "build_commit": "e9432a53de2a034a87c7a658461b7c99fd362c47",
+    "tag_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
+    "source_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
+    "build_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "",
+    "workflow_run_id": "26847116112",
     "status": "local-build"
   },
   "signing": {
@@ -30,16 +30,17 @@
     "troubleshooting": "docs/troubleshooting.md",
     "installer_diagnostics": "docs/installer-diagnostics.md",
     "issue_triage": "docs/beta-issue-triage.md",
+    "platform_confidence": "docs/platform-confidence.md",
     "issue_templates": true,
     "signing_readiness": "blocked-certificate-not-available"
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.7_x64-setup.exe",
+      "name": "Orqestra_1.0.8_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "9d93fc31188afc1ada9c4313f47464c8d36eb47387ee8659f3fe1a94c28e6939",
-      "size_bytes": 4715533,
+      "sha256": "7e35c624161006bf05d13e27fc3e29141d08e37e2c79dfe9058495c1712df617",
+      "size_bytes": 4718413,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
@@ -49,31 +50,47 @@
   "platforms": {
     "windows-x64": {
       "status": "tested",
-      "artifact": "Orqestra_1.0.7_x64-setup.exe",
+      "release_blocking": true,
+      "artifact": "Orqestra_1.0.8_x64-setup.exe",
       "signed": false,
-      "smoke_evidence": "demo/v1.0.7-windows-smoke.md",
+      "smoke_evidence": "demo/v1.0.8-windows-smoke.md",
       "notes": "Unsigned tested public beta installer"
-    },
-    "macos-arm64": {
-      "status": "not-built",
-      "artifact": null,
-      "signed": false,
-      "notarized": false,
-      "notes": "Deferred"
-    },
-    "macos-x64": {
-      "status": "not-built",
-      "artifact": null,
-      "signed": false,
-      "notarized": false,
-      "notes": "Deferred"
     },
     "linux-x64": {
       "status": "built-but-unverified",
+      "release_blocking": false,
       "artifact": null,
-      "signed": false,
-      "notes": "Not promoted without smoke evidence"
+      "compile_status": "pass",
+      "bundle_status": "not-configured",
+      "public_artifact": false,
+      "smoke_tested": false,
+      "evidence": "demo/v1.0.8-linux-build-evidence.md",
+      "notes": "CI produced a desktop binary but no AppImage/DEB/RPM bundle",
+      "signed": false
+    },
+    "macos": {
+      "status": "build-feasibility-verified",
+      "release_blocking": false,
+      "artifact": null,
+      "compile_status": "pass",
+      "bundle_status": "not-configured",
+      "public_artifact": false,
+      "smoke_tested": false,
+      "notarized": false,
+      "runner": "macos-latest",
+      "target": "universal-apple-darwin",
+      "evidence": "demo/v1.0.8-macos-feasibility.md",
+      "notes": "CI compiles universal binary but no DMG/app bundle produced",
+      "signed": false
     }
+  },
+  "platform_verification": {
+    "ci_run_id": "26847116112",
+    "ci_run_branch": "v1.0.7",
+    "matrix_evidence": "demo/v1.0.8-platform-matrix.md",
+    "windows": "demo/v1.0.8-windows-smoke.md",
+    "linux": "demo/v1.0.8-linux-build-evidence.md",
+    "macos": "demo/v1.0.8-macos-feasibility.md"
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
@@ -97,8 +114,9 @@
   },
   "limitations": [
     "Unsigned Windows installer",
-    "macOS artifacts not built",
-    "Linux artifact not verified",
+    "Linux binary compiles in CI but no bundled artifact (AppImage/DEB) is produced",
+    "macOS binary compiles in CI but no bundled artifact (DMG/app) is produced",
+    "No platform is promoted without bundled artifact and smoke evidence",
     "Some agent paths remain review-only or scaffolded"
   ]
 }
