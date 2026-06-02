@@ -55,22 +55,22 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Install npm dependencies
-        run: npm ci
+      - name: Install desktop npm dependencies
+        run: cd apps/desktop && npm ci
 
-      - name: Run workspace tests
+      - name: Run workspace Rust tests
         run: cargo test --workspace
 
       - name: Build desktop frontend
-        run: npm run build -w apps/desktop
+        run: cd apps/desktop && npm run build
 
       - name: Build Tauri bundle (Windows/Linux)
         if: runner.os != 'macOS'
-        run: npm run tauri build -w apps/desktop
+        run: cd apps/desktop && npx tauri build
 
       - name: Build Tauri bundle (macOS universal)
         if: runner.os == 'macOS'
-        run: npm run tauri build -w apps/desktop -- --target universal-apple-darwin
+        run: cd apps/desktop && npx tauri build --target universal-apple-darwin
 
       - name: Smoke check — verify bundle directory exists
         shell: bash
@@ -88,7 +88,7 @@ jobs:
         shell: bash
         run: |
           BUNDLE_DIR="apps/desktop/src-tauri/target/release/bundle"
-          if find "$BUNDLE_DIR" -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.deb" -o -name "*.AppImage" | grep -q .; then
+          if find "$BUNDLE_DIR" \( -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.deb" -o -name "*.AppImage" \) -print -quit | grep -q .; then
             echo "✓ Installer artifact found"
           else
             echo "✗ No installer artifact found"
