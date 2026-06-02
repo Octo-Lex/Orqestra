@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.5] - 2026-06-02
+
+### Added
+- Release provenance manifest with full 40-char Git SHAs, CI workflow run ID, and verification block
+- Manifest validation script (`scripts/validate-release-manifest.ts`) with schema enforcement
+- Public beta platform status matrix (tested / built-but-unverified / not-built / deferred)
+- Windows installer smoke-test evidence (`demo/v1.0.5-windows-smoke.md`)
+- Full demo evidence with public claim review checklist (`demo/v1.0.5-demo-evidence.md`)
+- SHA256 verification instructions in README and release notes
+- Release signing and notarization plan (`docs/release-signing-plan.md`)
+- CI workflow hardened: SHA256 generation, manifest generation, checksum upload, provenance fields
+- Release notes template for CI-generated releases
+- `dist/checksums.txt` generated alongside artifacts
+
+### Changed
+- Version aligned: installer, app, Cargo, Tauri config all say 1.0.5
+- README restructured for public beta: status, download+verify, platform support, AI modes, provenance
+- Release manifest now uses canonical `release-manifest.json` at repo root (not `dist/`)
+- Platform labels use explicit tested/not-built/built-but-unverified/deferred statuses
+- Public claims classified: beta, local-only, unsigned, review-only, scaffolded, backlog
+- CI gates separated: required (must pass) vs maintainer release gates (real-AI, smoke)
+
+### Security
+- Unsigned installer warning made prominent in README, release notes, manifest
+- SHA256 verification path documented with PowerShell command
+- Real-AI mode setup documented separately from no-key beta mode
+- Manifest validator checks for secret patterns
+
+### Known Limitations
+- Windows installer remains unsigned
+- macOS artifacts are not built
+- Linux artifact remains unverified
+- Some advanced agent paths remain review-only or scaffolded
+- Code signing and notarization are planned but not implemented
+
 ## [1.0.4] - 2026-06-02
 
 ### Added

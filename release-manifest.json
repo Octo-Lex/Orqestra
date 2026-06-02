@@ -1,0 +1,82 @@
+{
+  "release": {
+    "name": "Orqestra v1.0.5",
+    "tag": "v1.0.5",
+    "channel": "public-beta",
+    "release_version": "1.0.5",
+    "app_version": "1.0.5",
+    "date": "2026-06-02"
+  },
+  "provenance": {
+    "tag_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
+    "source_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
+    "build_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
+    "release_upload_commit": null,
+    "workflow": ".github/workflows/desktop-release.yml",
+    "workflow_run_id": "",
+    "status": "local-build"
+  },
+  "artifacts": [
+    {
+      "name": "Orqestra_1.0.5_x64-setup.exe",
+      "platform": "windows-x64",
+      "type": "nsis-installer",
+      "sha256": "f414fe0487949cca7017c9f55e5ae69dc05089dbd75b67016ff7e63cb2ea333b",
+      "size_bytes": 4717445,
+      "signed": false,
+      "source": "local-build"
+    },
+    {
+      "name": "orqestra-desktop.exe",
+      "platform": "windows-x64",
+      "type": "portable-binary",
+      "sha256": "7ac97de5a1a95f5f829605688c3930c8c02894bf99a6fd9e7fa91ab30fc20700",
+      "size_bytes": 18022912,
+      "signed": false,
+      "source": "local-build"
+    }
+  ],
+  "platforms": {
+    "windows-x64": {
+      "status": "tested",
+      "artifact": "Orqestra_1.0.5_x64-setup.exe",
+      "signed": false,
+      "notes": "Unsigned public beta installer"
+    },
+    "macos-arm64": {
+      "status": "not-built",
+      "artifact": null,
+      "signed": false,
+      "notarized": false,
+      "notes": "Deferred"
+    },
+    "macos-x64": {
+      "status": "not-built",
+      "artifact": null,
+      "signed": false,
+      "notarized": false,
+      "notes": "Deferred"
+    },
+    "linux-x64": {
+      "status": "built-but-unverified",
+      "artifact": null,
+      "signed": false,
+      "notes": "Not recommended for public beta users"
+    }
+  },
+  "verification": {
+    "rust_tests": "pass",
+    "rust_tests_count": 141,
+    "desktop_ts_build": "pass",
+    "dashboard_ts_build": "pass",
+    "windows_smoke": "pass",
+    "dashboard_status": "200 OK",
+    "real_ai_demo": "pass"
+  },
+  "limitations": [
+    "Unsigned Windows installer",
+    "macOS artifacts not built",
+    "Linux artifact not verified",
+    "Some agent paths remain review-only or scaffolded"
+  ]
+}
