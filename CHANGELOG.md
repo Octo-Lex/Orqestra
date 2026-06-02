@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.6] - 2026-06-02
+
+### Added
+- Public beta quickstart guide (`docs/beta-quickstart.md`)
+- Troubleshooting guide for install, launch, dashboard, Git, and AI mode failures (`docs/troubleshooting.md`)
+- Four GitHub issue templates: install, AI mode, dashboard, bug report
+- Dashboard freshness metadata: release version, source commit, generation timestamp in exported JSON
+- Dashboard footer displays release version and full source commit
+- Release manifest now includes `distribution` and `dashboard` sections
+- Signing readiness status table in release signing plan
+- Release-link audit gate to verify all GitHub release links resolve
+
+### Changed
+- README restructured with reviewer quickstart as primary path
+- Platform decision: Windows-only beta remains (macOS/Linux deferred)
+- Release manifest validator checks `distribution` and `dashboard` sections
+- Roadmap export now includes `release` metadata object with full source commit SHA
+
+### Security
+- Unsigned installer warning remains prominent
+- Issue templates explicitly warn users not to paste API keys or secrets
+- Real-AI mode documentation separates key setup from no-key beta mode
+
+### Known Limitations
+- Windows remains the only tested public beta platform
+- macOS artifacts remain unavailable
+- Linux remains built-but-unverified
+- Some advanced agent paths remain review-only or scaffolded
+- Code signing remains pending (certificate not yet available)
+
 ## [1.0.5] - 2026-06-02
 
 ### Added

@@ -174,9 +174,17 @@ export function App() {
       )}
 
       {/* Footer */}
-      <div style={{ marginTop: 24, padding: '12px 0', borderTop: '1px solid #1e293b', display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#64748b' }}>
-        <span>Generated: {new Date(data.generated_at).toLocaleString()}</span>
-        <span>{data.source.repo}@{data.source.branch} ({data.source.commit})</span>
+      <div style={{ marginTop: 24, padding: '12px 0', borderTop: '1px solid #1e293b', fontSize: 12, color: '#64748b' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Generated: {new Date(data.generated_at).toLocaleString()}</span>
+          <span>{data.source.repo}@{data.source.branch} ({data.source.commit})</span>
+        </div>
+        {data.release && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+            <span>Release: v{data.release.version}</span>
+            <span title={data.release.source_commit}>Source: {data.release.source_commit.slice(0, 12)}...</span>
+          </div>
+        )}
       </div>
     </div>
   );

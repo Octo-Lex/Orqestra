@@ -65,10 +65,19 @@ enum ExportFormat {
 #[derive(Serialize)]
 struct RoadmapExport {
     generated_at: String,
+    release: ExportRelease,
     source: ExportSource,
     summary: ExportSummary,
     sprints: Vec<ExportSprint>,
     tasks: Vec<ExportTask>,
+}
+
+#[derive(Serialize)]
+struct ExportRelease {
+    version: String,
+    source_commit: String,
+    generated_at: String,
+    generated_by: String,
 }
 
 #[derive(Serialize)]
@@ -251,15 +260,21 @@ fn build_export(
         })
         .collect();
 
-    // Get git info
-    let commit = std::process::Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
+    // Get git info — full SHA for source_commit
+    let full_commit = std::process::Command::new("git")
+        .args(["rev-parse", "HEAD"])
         .current_dir(project_root)
         .output()
         .ok()
         .and_then(|o| String::from_utf8(o.stdout).ok())
         .map(|s| s.trim().to_string())
         .unwrap_or_else(|| "unknown".to_string());
+
+    let commit = if full_commit.len() > 12 {
+        full_commit[..12].to_string()
+    } else {
+        full_commit.clone()
+    };
 
     let branch = std::process::Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
@@ -276,8 +291,16 @@ fn build_export(
         .unwrap_or("orqestra")
         .to_string();
 
+    let generated_at = chrono::Utc::now().to_rfc3339();
+
     RoadmapExport {
-        generated_at: chrono::Utc::now().to_rfc3339(),
+        generated_at: generated_at.clone(),
+        release: ExportRelease {
+            version: env!("CARGO_PKG_VERSION").to_string(),
+            source_commit: full_commit,
+            generated_at: generated_at.clone(),
+            generated_by: "orqestra roadmap export".to_string(),
+        },
         source: ExportSource {
             repo: repo_name,
             branch,

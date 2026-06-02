@@ -120,6 +120,26 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
 const verification = manifest.verification;
 if (!verification) fail('Missing "verification" section');
 
+// Distribution section (optional but recommended)
+if (manifest.distribution) {
+  if (manifest.distribution.quickstart && typeof manifest.distribution.quickstart !== 'string') {
+    fail('distribution.quickstart must be a string path');
+  }
+  if (manifest.distribution.troubleshooting && typeof manifest.distribution.troubleshooting !== 'string') {
+    fail('distribution.troubleshooting must be a string path');
+  }
+}
+
+// Dashboard section (optional but recommended)
+if (manifest.dashboard) {
+  if (manifest.dashboard.url && typeof manifest.dashboard.url !== 'string') {
+    fail('dashboard.url must be a string');
+  }
+  if (manifest.dashboard.generated_from_commit) {
+    validateCommitSha(manifest.dashboard.generated_from_commit, 'dashboard.generated_from_commit');
+  }
+}
+
 // Limitations
 if (!Array.isArray(manifest.limitations)) fail('Missing "limitations" array');
 
