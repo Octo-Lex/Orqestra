@@ -2,6 +2,14 @@ from pydantic import BaseModel
 from typing import Optional
 
 
+class TaskContext(BaseModel):
+    """Task metadata for agent requests."""
+    id: str = ""
+    title: str = ""
+    body: str = ""
+    labels: list[str] = []
+
+
 class DiffRequest(BaseModel):
     diff: str  # raw git diff output
     commit_message_draft: str  # conventional commit message
