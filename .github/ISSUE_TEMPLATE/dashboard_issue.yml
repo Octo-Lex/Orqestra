@@ -1,0 +1,48 @@
+name: Dashboard Issue
+description: Report a problem with the public dashboard at orqestra.pages.dev
+labels: ["dashboard", "bug"]
+body:
+  - type: input
+    id: url
+    attributes:
+      label: Dashboard URL
+      placeholder: "https://orqestra.pages.dev"
+    validations:
+      required: true
+  - type: input
+    id: timestamp
+    attributes:
+      label: When did you check?
+      description: Date and time (with timezone)
+      placeholder: "e.g., 2026-06-02 10:00 PM GMT+3"
+    validations:
+      required: true
+  - type: input
+    id: expected_release
+    attributes:
+      label: Expected Release Shown
+      placeholder: "e.g., v1.0.6"
+    validations:
+      required: true
+  - type: input
+    id: actual_release
+    attributes:
+      label: Actual Release Shown
+      description: Check the footer for the release version and source commit
+      placeholder: "e.g., v1.0.5 or unknown"
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser
+      placeholder: "e.g., Chrome 126, Firefox 127, Edge 126"
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot
+      description: Drag a screenshot of the issue here.
+    validations:
+      required: false

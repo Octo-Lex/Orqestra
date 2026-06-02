@@ -1,0 +1,70 @@
+name: AI Mode Issue
+description: Report a problem with AI agent or AI service behavior
+labels: ["ai", "bug"]
+body:
+  - type: dropdown
+    id: mode
+    attributes:
+      label: AI Mode
+      description: Which mode were you using?
+      options:
+        - "no-key beta (no ZAI_API_KEY)"
+        - "real-AI maintainer (ZAI_API_KEY set)"
+    validations:
+      required: true
+  - type: dropdown
+    id: key_configured
+    attributes:
+      label: ZAI_API_KEY Configured
+      options:
+        - "yes — in services/ai/.env"
+        - "yes — as environment variable"
+        - "no"
+        - "not sure"
+    validations:
+      required: true
+  - type: dropdown
+    id: health_check
+    attributes:
+      label: AI Service Health Check
+      description: Does http://localhost:8000/health return {"status":"ok"}?
+      options:
+        - "yes"
+        - "no"
+        - "service not running"
+        - "did not check"
+    validations:
+      required: true
+  - type: dropdown
+    id: endpoint
+    attributes:
+      label: Endpoint Affected
+      options:
+        - "/agent/docs"
+        - "/agent/bugfix"
+        - "/extract-intent"
+        - "/embed"
+        - "/explore"
+        - "/query-history"
+        - "other"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant terminal output or error messages. **Do not paste your ZAI_API_KEY or any tokens.**
+    validations:
+      required: false

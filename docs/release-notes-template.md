@@ -1,81 +1,84 @@
-# Orqestra v1.0.5 — Public Beta Hardening
+# Orqestra v1.0.6 — Beta Distribution Hardening
 
 ## Summary
 
-Orqestra v1.0.5 is a **public beta** for technical reviewers and early adopters. It includes a tested Windows x64 installer, a live dashboard, roadmap indexing, semantic commit infrastructure, and real-AI review flows. It is not yet a production product. The installer is unsigned, macOS artifacts are not yet provided, Linux is not yet verified, and some advanced agent paths remain review-only or scaffolded.
+Orqestra v1.0.6 is a beta distribution hardening release. It improves the public beta install path, verification instructions, first-run guidance, troubleshooting documentation, issue templates, dashboard freshness, and signing readiness. It does not introduce major new product functionality.
 
-## Download
+## Who This Beta Is For
 
-Download `Orqestra_1.0.5_x64-setup.exe` from the assets below.
+Technical reviewers and early adopters evaluating Orqestra as a local-first, AI-native project management tool for Git repositories.
 
-## Verify the Installer
+## Download and Verify
+
+Download `Orqestra_1.0.6_x64-setup.exe` from the assets below.
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.5_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.6_x64-setup.exe -Algorithm SHA256
 ```
 
-Compare the output against the SHA256 in `release-manifest.json` or `checksums.txt`.
+Compare against `checksums.txt` or `release-manifest.json`.
 
-## Unsigned Installer Warning
+The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
-Orqestra v1.0.5 desktop artifacts are **unsigned beta builds**. Windows SmartScreen will show a warning. Click "More info" → "Run anyway" to proceed.
+## First-Run Quickstart
+
+1. Launch Orqestra → onboarding wizard appears
+2. Click **"Try sample project"** → demo with 4 tasks
+3. Explore Table, Gantt, and Kanban views
+4. Check **Setup** panel for environment status
+
+Full guide: [Beta Quickstart](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/beta-quickstart.md)
+
+## No-Key Beta Mode
+
+Works out of the box. AI features show as "degraded". All roadmap, PM views, dashboard, and diagnostic features work normally.
+
+## Real-AI Maintainer Mode
+
+Requires `ZAI_API_KEY` in `services/ai/.env`. Start AI service with `cd services/ai && uv run uvicorn orqestra_ai.main:app`. All agent outputs are **review-only**.
+
+## Dashboard Freshness
+
+Live at [orqestra.pages.dev](https://orqestra.pages.dev) — footer shows release version, source commit, and generation timestamp.
 
 ## Platform Status
 
-| Platform | Status | Notes |
-|----------|--------|-------|
-| Windows x64 | tested | NSIS installer, unsigned |
-| macOS | not-built | Deferred to future release |
-| Linux x64 | built-but-unverified | CI builds exist, not locally validated |
+| Platform | Status |
+|----------|--------|
+| Windows x64 | tested |
+| macOS | not-built |
+| Linux x64 | built-but-unverified |
 
-## What Works
+## Signing Status
 
-- Roadmap parsing and indexing (local)
-- Desktop PM views: Table, Gantt, Kanban
-- Dashboard: [orqestra.pages.dev](https://orqestra.pages.dev) (CI auto-deployed)
-- OS keychain credential storage (Windows Credential Manager)
-- Docs agent: review-only real-AI proposals when `ZAI_API_KEY` is set
-- Bugfix agent: review-only, user-selected file scope
-- First-run onboarding wizard
-- Environment readiness checks
-- Project validation
-- Diagnostics export with secret redaction
-- Release manifest with SHA256 checksums
+Unsigned beta. See [Signing Plan](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/release-signing-plan.md) for readiness status.
 
-## AI Modes
+## Troubleshooting
 
-### No-Key Beta Mode (default)
+See [Troubleshooting Guide](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/troubleshooting.md) for common issues.
 
-Works out of the box with no API keys. AI features show as "degraded" or "mock". All other features work normally.
+## Report an Issue
 
-### Real-AI Maintainer Mode
+- [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml)
+- [AI mode issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=ai_mode_issue.yml)
+- [Dashboard issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=dashboard_issue.yml)
+- [Bug report](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=bug_report.yml)
 
-Requires `ZAI_API_KEY` set in `services/ai/.env`. Start the AI service with:
-
-```bash
-cd services/ai
-uv run uvicorn orqestra_ai.main:app
-```
-
-Docs-agent and bugfix-agent will produce real AI proposals. **All agent outputs are review-only** — no autonomous commits.
+**Do not paste API keys or secrets in issues.**
 
 ## Known Limitations
 
-- Windows installer is **unsigned** — SmartScreen warnings are expected
-- macOS artifacts are **not built**
-- Linux artifacts are CI-built but **not locally verified**
-- Architect agent remains **mock-mode**
-- ML-Master exploration loop remains **stub**
-- Full native gix migration incomplete (8 shell-outs remain)
-- Code signing and notarization are **planned but not implemented**
+- Unsigned installer (SmartScreen warnings expected)
+- macOS artifacts not available
+- Linux not verified for public beta
+- Architect agent is mock-mode
+- ML-Master is stub
+- Edge relay / CRDT sync not available
+- Code signing pending
 
 ## Release Provenance
 
-See `release-manifest.json` for full provenance:
-- Tag commit, source commit, build commit
-- CI workflow run ID
-- Artifact SHA256 checksums
-- Platform status matrix
+See `release-manifest.json` for full provenance: tag commit, source commit, build commit, CI workflow run ID, artifact checksums, platform matrix, distribution metadata, dashboard freshness.
 
 ## Checksums
 
@@ -83,13 +86,5 @@ See `checksums.txt` in the release assets.
 
 ## Demo Evidence
 
-- [Demo script](docs/DEMO_SCRIPT_v1.0.4.md)
-- [Demo evidence](demo/v1.0.5-demo-evidence.md)
-- [Windows smoke test](demo/v1.0.5-windows-smoke.md)
-
-## Security Notes
-
-- Diagnostics export redacts all known secret patterns
-- Readiness DTOs never expose raw tokens or keys
-- Agent actions require human review before any commit
-- Test on non-sensitive repositories first
+- [Demo evidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.6-demo-evidence.md)
+- [Windows smoke test](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.6-windows-smoke.md)

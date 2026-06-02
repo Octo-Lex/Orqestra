@@ -1,0 +1,68 @@
+name: Install Issue
+description: Report a problem installing Orqestra
+labels: ["install", "bug"]
+body:
+  - type: input
+    id: os
+    attributes:
+      label: OS Version
+      placeholder: "e.g., Windows 11 23H2 x64"
+    validations:
+      required: true
+  - type: input
+    id: installer
+    attributes:
+      label: Installer Filename
+      placeholder: "e.g., Orqestra_1.0.6_x64-setup.exe"
+    validations:
+      required: true
+  - type: dropdown
+    id: sha_verified
+    attributes:
+      label: SHA256 Verified
+      description: Did you verify the installer SHA256 against checksums.txt?
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true
+  - type: dropdown
+    id: smartscreen
+    attributes:
+      label: SmartScreen Warning Appeared
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true
+  - type: dropdown
+    id: install_result
+    attributes:
+      label: Install Result
+      options:
+        - "Installer ran but app does not launch"
+        - "Installer failed to run"
+        - "Browser blocked the download"
+        - "Antivirus blocked the install"
+        - "Other"
+    validations:
+      required: true
+  - type: dropdown
+    id: launch_result
+    attributes:
+      label: Launch Result
+      options:
+        - "App launches successfully"
+        - "App crashes on launch"
+        - "App does not open (no error)"
+        - "Error message shown"
+        - "Did not reach this step"
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: Error messages, screenshots, or other context. **Do not paste API keys, tokens, or secrets.**
+    validations:
+      required: false

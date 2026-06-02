@@ -1,28 +1,34 @@
 {
   "release": {
-    "name": "Orqestra v1.0.5",
-    "tag": "v1.0.5",
+    "name": "Orqestra v1.0.6",
+    "tag": "v1.0.6",
     "channel": "public-beta",
-    "release_version": "1.0.5",
-    "app_version": "1.0.5",
+    "release_version": "1.0.6",
+    "app_version": "1.0.6",
     "date": "2026-06-02"
   },
   "provenance": {
-    "tag_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
-    "source_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
-    "build_commit": "75140841d13c2220bb199c1f46a3691a607621fb",
+    "tag_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
+    "source_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
+    "build_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
     "workflow_run_id": "",
     "status": "local-build"
   },
+  "distribution": {
+    "quickstart": "docs/beta-quickstart.md",
+    "troubleshooting": "docs/troubleshooting.md",
+    "issue_templates": true,
+    "signing_readiness": "ready-without-certificate"
+  },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.5_x64-setup.exe",
+      "name": "Orqestra_1.0.6_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "f414fe0487949cca7017c9f55e5ae69dc05089dbd75b67016ff7e63cb2ea333b",
-      "size_bytes": 4717445,
+      "sha256": "5cdf2ae0b1e1102b2e6015cac317e0fa68871c7cee2c129cece1e1a3b4c1ec80",
+      "size_bytes": 4715533,
       "signed": false,
       "source": "local-build"
     },
@@ -30,7 +36,7 @@
       "name": "orqestra-desktop.exe",
       "platform": "windows-x64",
       "type": "portable-binary",
-      "sha256": "7ac97de5a1a95f5f829605688c3930c8c02894bf99a6fd9e7fa91ab30fc20700",
+      "sha256": "2c8db28a2ceb94501351c5e6322259c8d629d05cba9cc79f8c5a3a703c2e5b99",
       "size_bytes": 18022912,
       "signed": false,
       "source": "local-build"
@@ -39,7 +45,7 @@
   "platforms": {
     "windows-x64": {
       "status": "tested",
-      "artifact": "Orqestra_1.0.5_x64-setup.exe",
+      "artifact": "Orqestra_1.0.6_x64-setup.exe",
       "signed": false,
       "notes": "Unsigned public beta installer"
     },
@@ -63,6 +69,12 @@
       "signed": false,
       "notes": "Not recommended for public beta users"
     }
+  },
+  "dashboard": {
+    "url": "https://orqestra.pages.dev",
+    "status": "200 OK",
+    "release": "v1.0.6",
+    "generated_from_commit": "ff7e10751cff9fc4ba39875b8abf65b33cd80e0c"
   },
   "verification": {
     "rust_tests": "pass",
