@@ -28,13 +28,20 @@ Windows x64 meets all five criteria.
 
 ## What "Built but Unverified" Means
 
-- The platform compiles successfully in CI
-- A raw binary is produced
-- **No standard installer artifact** (AppImage, DEB, etc.) is produced
-- No smoke test has been performed
-- The platform is **not recommended** for public beta users
 
-Compile success alone does not qualify a platform as tested.
+
+## What "Bundle Produced but Unverified" Means
+
+- The platform compiles successfully in CI
+- A bundled artifact (AppImage) **is produced**
+- SHA256 checksum is generated and published
+- **No smoke test** has been performed on a Linux desktop
+- The artifact is downloadable for early verification
+- The platform is **not a tested public beta platform**
+
+This status proves the bundler works, not just the compiler. It is a meaningful upgrade from  but still not .
+
+
 
 ---
 
@@ -85,26 +92,24 @@ See [Troubleshooting](troubleshooting.md) for detailed guidance.
 
 | Property | Value |
 |----------|-------|
-| Status | built-but-unverified |
+| Status | bundle-produced-unverified |
 | Compile status | pass (CI Run #26847116112) |
-| Bundle status | not-configured |
-| Artifact | None (raw binary only) |
+| Bundle status | pass (AppImage produced) |
+| Artifact | Orqestra_1.0.9_x64.AppImage (CI) |
 | Signed | No |
 | Smoke evidence | None |
 | Release blocking | no |
-| Evidence | `demo/v1.0.8-linux-build-evidence.md` |
+| Evidence | `demo/v1.0.9-linux-bundle-evidence.md` |
 
-Linux compiles successfully in CI (141 Rust tests pass, Tauri build completes), but **no AppImage, DEB, or RPM bundle is produced** because the Tauri bundler targets are not configured for Linux.
+Linux compiles successfully in CI and now produces an AppImage bundle (Tauri `appimage` target added in v1.0.9). The AppImage has a SHA256 checksum but has **not been smoke-tested** on a Linux desktop.
 
-The CI smoke check confirms: "Binary found (bundling may not be configured for this platform)."
-
-Linux is **not recommended** for public beta users.
+The Linux AppImage is provided for early verification only. It is not a tested public beta platform.
 
 ### To Promote Linux to "Tested"
 
-1. Configure Tauri bundler targets in `tauri.conf.json` (e.g., `"deb"`, `"appimage"`)
-2. Produce a standard installer artifact in CI
-3. Compute and publish SHA256 checksum
+1. ~~Configure Tauri bundler targets~~ (done in v1.0.9)
+2. ~~Produce a standard installer artifact in CI~~ (done in v1.0.9)
+3. ~~Compute and publish SHA256 checksum~~ (done in v1.0.9)
 4. Run smoke test on a Linux desktop environment
 5. Record smoke evidence in `demo/`
 6. Update manifest, README, and release notes
@@ -117,10 +122,10 @@ Linux is **not recommended** for public beta users.
 |----------|-------|
 | Status | build-feasibility-verified |
 | Compile status | pass (CI Run #26847116112) |
-| Bundle status | not-configured |
+| Bundle status | pass (AppImage produced) |
 | CI target | universal-apple-darwin |
 | CI runner | macos-latest |
-| Artifact | None (raw binary only) |
+| Artifact | Orqestra_1.0.9_x64.AppImage (CI) |
 | Signed | No |
 | Notarized | No |
 | Smoke evidence | None |
@@ -176,17 +181,17 @@ Additionally:
 ## Known Platform Limitations
 
 - Windows installer is unsigned -- SmartScreen warnings are expected
-- Linux binary compiles but no AppImage/DEB bundle is produced
+- Linux AppImage is produced by CI but not smoke-tested
 - macOS binary compiles but no DMG/app bundle is produced
 - No platform has code-signing or notarization configured
 - Platform support is beta-grade and evidence-limited
 
 ---
 
-## Current v1.0.8 Platform Matrix
+## Current v1.0.9 Platform Matrix
 
 | Platform | Status | Compile | Bundle | Artifact | Signed | Smoke | Blocking |
 |----------|--------|---------|--------|----------|--------|-------|----------|
 | Windows x64 | tested | pass | NSIS installer | Yes | No | Yes | yes |
-| Linux x64 | built-but-unverified | pass | not configured | No | N/A | No | no |
+| Linux x64 | bundle-produced-unverified | pass | AppImage | Yes (CI) | N/A | No | no |
 | macOS | build-feasibility-verified | pass | not configured | No | No | No | no |

@@ -1,19 +1,19 @@
 {
   "release": {
-    "name": "Orqestra v1.0.8",
-    "tag": "v1.0.8",
+    "name": "Orqestra v1.0.9",
+    "tag": "v1.0.9",
     "channel": "public-beta",
-    "release_version": "1.0.8",
-    "app_version": "1.0.8",
+    "release_version": "1.0.9",
+    "app_version": "1.0.9",
     "date": "2026-06-03"
   },
   "provenance": {
-    "tag_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
-    "source_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
-    "build_commit": "e762c489b73a135dd1c744d4747a6775c7990389",
+    "tag_commit": "821d6eaf098fe22c5b7c36b1f8b5483686845da9",
+    "source_commit": "821d6eaf098fe22c5b7c36b1f8b5483686845da9",
+    "build_commit": "821d6eaf098fe22c5b7c36b1f8b5483686845da9",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "26847116112",
+    "workflow_run_id": "PLACEHOLDER",
     "status": "local-build"
   },
   "signing": {
@@ -36,37 +36,50 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.8_x64-setup.exe",
+      "name": "Orqestra_1.0.9_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "7e35c624161006bf05d13e27fc3e29141d08e37e2c79dfe9058495c1712df617",
-      "size_bytes": 4718413,
+      "sha256": "2ca9d04d9b8e38bae3c7ff6025ff8623ea60192a5e16f8e02fdfa4951881f940",
+      "size_bytes": 4718277,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
+    },
+    {
+      "name": "Orqestra_1.0.9_x64.AppImage",
+      "platform": "linux-x64",
+      "type": "appimage",
+      "sha256": "PENDING_CI",
+      "size_bytes": 0,
+      "signed": false,
+      "signature_status": "not-applicable",
+      "final_artifact_state": "linux-appimage-final",
+      "verification_status": "checksummed-not-smoke-tested",
+      "source": "github-actions"
     }
   ],
   "platforms": {
     "windows-x64": {
       "status": "tested",
       "release_blocking": true,
-      "artifact": "Orqestra_1.0.8_x64-setup.exe",
+      "artifact": "Orqestra_1.0.9_x64-setup.exe",
       "signed": false,
-      "smoke_evidence": "demo/v1.0.8-windows-smoke.md",
+      "smoke_evidence": "demo/v1.0.9-windows-smoke.md",
       "notes": "Unsigned tested public beta installer"
     },
     "linux-x64": {
-      "status": "built-but-unverified",
+      "status": "bundle-produced-unverified",
       "release_blocking": false,
-      "artifact": null,
+      "artifact": "Orqestra_1.0.9_x64.AppImage",
       "compile_status": "pass",
-      "bundle_status": "not-configured",
-      "public_artifact": false,
+      "bundle_status": "pass",
+      "public_artifact": true,
       "smoke_tested": false,
-      "evidence": "demo/v1.0.8-linux-build-evidence.md",
-      "notes": "CI produced a desktop binary but no AppImage/DEB/RPM bundle",
-      "signed": false
+      "smoke_blocker": "no-linux-desktop-environment-available",
+      "signed": false,
+      "bundle_evidence": "demo/v1.0.9-linux-bundle-evidence.md",
+      "notes": "CI produced AppImage but no Linux desktop smoke test was performed"
     },
     "macos": {
       "status": "build-feasibility-verified",
@@ -85,11 +98,12 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "26847116112",
-    "ci_run_branch": "v1.0.7",
-    "matrix_evidence": "demo/v1.0.8-platform-matrix.md",
-    "windows": "demo/v1.0.8-windows-smoke.md",
-    "linux": "demo/v1.0.8-linux-build-evidence.md",
+    "ci_run_id": "PENDING_CI",
+    "ci_run_branch": "v1.0.9",
+    "matrix_evidence": "demo/v1.0.9-platform-matrix.md",
+    "windows": "demo/v1.0.9-windows-smoke.md",
+    "linux": "demo/v1.0.9-linux-bundle-evidence.md",
+    "linux_smoke_blocker": "demo/v1.0.9-linux-smoke-blocked.md",
     "macos": "demo/v1.0.8-macos-feasibility.md"
   },
   "dashboard": {
@@ -114,9 +128,9 @@
   },
   "limitations": [
     "Unsigned Windows installer",
-    "Linux binary compiles in CI but no bundled artifact (AppImage/DEB) is produced",
+    "Linux AppImage is checksummed but not smoke-tested",
     "macOS binary compiles in CI but no bundled artifact (DMG/app) is produced",
-    "No platform is promoted without bundled artifact and smoke evidence",
+    "Linux is not a tested public beta platform until a desktop smoke test passes",
     "Some agent paths remain review-only or scaffolded"
   ]
 }
