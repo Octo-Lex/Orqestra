@@ -3,6 +3,7 @@
 use std::sync::Mutex;
 
 mod commands;
+mod security;
 
 fn main() {
     tauri::Builder::default()
@@ -31,11 +32,16 @@ fn main() {
             commands::agents::run_agent_cmd,
             commands::agents::run_docs_agent_cmd,
             commands::agents::list_workspaces_cmd,
+            // v1.0.2: Bugfix agent commands
+            commands::agents::run_bugfix_agent_cmd,
+            commands::agents::read_project_file_cmd,
+            // Graph commands
             commands::graph::index_graph_cmd,
             commands::graph::query_graph_cmd,
             commands::graph::query_history_cmd,
             commands::graph::read_trace_cmd,
             commands::graph::read_commit_stub_cmd,
+            // Sync commands
             commands::sync::init_sync_cmd,
             commands::sync::open_crdt_doc_cmd,
             commands::sync::set_crdt_field_cmd,
@@ -49,11 +55,14 @@ fn main() {
             commands::sync::sync_status_cmd,
             commands::sync::generate_token_cmd,
             commands::sync::validate_token_cmd,
+            // v1.0.2: Secure credential commands (OS-keychain backed)
+            commands::credentials::bootstrap_credential_vault_cmd,
             commands::credentials::save_github_token_cmd,
-            commands::credentials::get_github_token_cmd,
             commands::credentials::get_github_token_status_cmd,
             commands::credentials::delete_github_token_cmd,
-            commands::credentials::migrate_github_token_cmd,
+            commands::credentials::test_github_connection_cmd,
+            commands::credentials::migrate_legacy_credential_cmd,
+            commands::credentials::rotate_vault_unlock_secret_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,0 +1,133 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-desktop:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            artifact-name: orqestra-windows-x64
+          - os: macos-latest
+            artifact-name: orqestra-macos-universal
+          - os: ubuntu-latest
+            artifact-name: orqestra-linux-x64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Add macOS universal Rust targets
+        if: runner.os == 'macOS'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
+
+      - name: Install Linux system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Run workspace tests
+        run: cargo test --workspace
+
+      - name: Build desktop frontend
+        run: npm run build -w apps/desktop
+
+      - name: Build Tauri bundle (Windows/Linux)
+        if: runner.os != 'macOS'
+        run: npm run tauri build -w apps/desktop
+
+      - name: Build Tauri bundle (macOS universal)
+        if: runner.os == 'macOS'
+        run: npm run tauri build -w apps/desktop -- --target universal-apple-darwin
+
+      - name: Smoke check — verify bundle directory exists
+        shell: bash
+        run: |
+          BUNDLE_DIR="apps/desktop/src-tauri/target/release/bundle"
+          if [ -d "$BUNDLE_DIR" ]; then
+            echo "✓ Bundle directory exists"
+            find "$BUNDLE_DIR" -type f | head -20
+          else
+            echo "✗ Bundle directory not found"
+            exit 1
+          fi
+
+      - name: Smoke check — verify installer artifact exists
+        shell: bash
+        run: |
+          BUNDLE_DIR="apps/desktop/src-tauri/target/release/bundle"
+          if find "$BUNDLE_DIR" -name "*.exe" -o -name "*.msi" -o -name "*.dmg" -o -name "*.app.tar.gz" -o -name "*.deb" -o -name "*.AppImage" | grep -q .; then
+            echo "✓ Installer artifact found"
+          else
+            echo "✗ No installer artifact found"
+            exit 1
+          fi
+
+      - name: Upload desktop artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: apps/desktop/src-tauri/target/release/bundle/**
+          retention-days: 30
+
+  create-release:
+    needs: build-desktop
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/*
+          draft: true
+          generate_release_notes: true
+          body: |
+            ## Orqestra Desktop Release
+
+            **Unsigned artifacts** — these artifacts are not code-signed or notarized.
+            On Windows, you may need to click "More info" → "Run anyway" to install.
+            On macOS, you may need to right-click → "Open" to bypass Gatekeeper.
+
+            ### Artifacts
+            - **Windows**: NSIS installer (`.exe`)
+            - **macOS**: Universal binary (Apple Silicon + Intel)
+            - **Linux**: AppImage / deb package

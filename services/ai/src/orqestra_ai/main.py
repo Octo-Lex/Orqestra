@@ -4,8 +4,10 @@ from .intent import extract_intent
 from .embed import embed
 from .explore import explore
 from .docs_agent import docs_agent, DocsAgentRequest, DocsAgentResponse
+from .bugfix_agent import router as bugfix_router
 
-app = FastAPI(title="Orqestra AI Service", version="0.1.0")
+app = FastAPI(title="Orqestra AI Service", version="0.2.0")
+app.include_router(bugfix_router)
 
 
 @app.get("/health")

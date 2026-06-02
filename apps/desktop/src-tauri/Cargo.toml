@@ -32,5 +32,9 @@ getrandom = "0.3"
 # Settings persistence (non-credential data only)
 tauri-plugin-store = "2"
 
+# v1.0.2: OS-keychain-backed credential storage
+keyring-core = "1"
+windows-native-keyring-store = "1"
+
 [build-dependencies]
 tauri-build = { version = "2", features = [] }

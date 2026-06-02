@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.2] - 2026-06-02
+
+### Added
+- OS-keychain-backed credential vault using `keyring-core` + `windows-native-keyring-store`
+- Session-only fallback vault when OS keychain is unavailable
+- Token masking for all errors crossing the Rust/TypeScript boundary
+- Legacy XOR credential migration with safe verify-then-delete pattern
+- CI-generated dashboard data and Cloudflare Pages deployment from master
+- Cross-platform desktop release workflow for Windows, macOS, and Linux
+- Native `gix` semantic commit path (commit object creation + HEAD update)
+- Real bugfix-agent execution path with user-selected file scope
+- `POST /agent/bugfix` endpoint in AI service
+- `run_bugfix_agent_cmd` with path validation against user-selected files
+- `read_project_file_cmd` with path-traversal protection
+- 5 roadmap tasks for v1.0.2 (TASK-071 through TASK-075)
+
+### Changed
+- Credential storage no longer relies on XOR-based persistence
+- Dashboard deployment now reflects CI-generated roadmap JSON
+- Bugfix-agent output is explicitly review-only and cannot auto-commit
+- Release artifacts are produced from tagged builds
+- gix upgraded from 0.66 to 0.84 for better commit creation API
+
+### Security
+- Raw GitHub PATs are never returned to TypeScript after save
+- Insecure credential persistence fallback is disallowed
+- Token masking added for logs and UI errors
+- OS-keychain failure is a blocking persistence error
+
+### Known Limitations
+- File staging and diff formatting still use shell-out git commands
+- Full edge worker remains backlog
+- Durable Object CRDT relay remains backlog
+- AST/tree-sitter analysis remains backlog
+- ML-Master exploration remains incomplete
+- Architect-agent execution remains mock-mode
+- Bugfix-agent cannot discover files automatically
+- Agent commits require human approval
+
 ## [1.0.1] - 2026-06-01
 
 ### Added

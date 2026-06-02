@@ -1,9 +1,10 @@
 //! Git sync commands for roadmap/ directory.
 //!
-//! Shells out to the system `git` binary via tauri-plugin-shell.
-//! This is intentionally NOT a Rust git implementation — git-bridge
-//! (Phase 1) will handle that.
+//! v1.0.2: Uses OS-keychain-backed credential store internally.
+//! The raw PAT is never returned to TypeScript — it's retrieved in Rust
+//! and passed directly to the git operation.
 
+use crate::commands::credentials;
 use serde::Serialize;
 use std::path::PathBuf;
 use tauri::command;
@@ -25,7 +26,6 @@ pub struct GitResult {
 // ---------------------------------------------------------------------------
 
 /// Build a credential helper batch script for Windows.
-/// Writes a .bat file that echoes the PAT when git asks for a password.
 fn write_askpass_script(pat: &str) -> Result<PathBuf, String> {
     let tmp_dir = std::env::temp_dir();
     let script_path = tmp_dir.join("orqestra-git-askpass.bat");
@@ -70,7 +70,7 @@ async fn run_git(
 }
 
 // ---------------------------------------------------------------------------
-// Commands — PAT is passed from TypeScript, never stored in Rust
+// Commands — PAT retrieved internally from OS keychain
 // ---------------------------------------------------------------------------
 
 /// Pull latest changes from origin.
@@ -78,8 +78,9 @@ async fn run_git(
 pub async fn git_pull_roadmap(
     app: tauri::AppHandle,
     project_root: String,
-    pat: String,
+    _pat: String, // Ignored — PAT comes from keychain now
 ) -> Result<GitResult, String> {
+    let pat = credentials::get_stored_pat(&app)?;
     run_git(&app, &project_root, &["pull", "origin", "HEAD"], &pat).await
 }
 
@@ -88,8 +89,10 @@ pub async fn git_pull_roadmap(
 pub async fn git_push_roadmap(
     app: tauri::AppHandle,
     project_root: String,
-    pat: String,
+    _pat: String, // Ignored — PAT comes from keychain now
 ) -> Result<GitResult, String> {
+    let pat = credentials::get_stored_pat(&app)?;
+
     let timestamp = chrono::Utc::now().format("%Y-%m-%d %H:%M:%S UTC");
     let message = format!("orqestra: sync roadmap [{}]", timestamp);
 
@@ -108,7 +111,7 @@ pub async fn git_push_roadmap(
     )
     .await?;
 
-    // "nothing to commit" is not an error — nothing new to push
+    // "nothing to commit" is not an error
     if !commit_result.success {
         let combined = format!("{}{}", commit_result.stdout, commit_result.stderr);
         if combined.contains("nothing to commit") {

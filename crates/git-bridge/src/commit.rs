@@ -2,6 +2,11 @@ use crate::error::GitBridgeError;
 use crate::semantic::{AuthorType, CommitAuthor, SemanticCommitObject, SemanticPayload};
 use chrono::Utc;
 use std::path::{Path, PathBuf};
+use std::time::Instant;
+
+// ---------------------------------------------------------------------------
+// Legacy shell-out commit (preserved for backward compat)
+// ---------------------------------------------------------------------------
 
 pub struct CommitRequest {
     pub project_root: PathBuf,
@@ -20,19 +25,14 @@ pub struct CommitResult {
 }
 
 /// Stage files, create a git commit, write a semantic stub object.
-/// Never blocks on AI inference — the stub has status "pending".
-/// The AI backfill is the caller's responsibility.
+/// Legacy shell-out path — preserved for backward compatibility.
 pub fn semantic_commit(request: CommitRequest) -> Result<CommitResult, GitBridgeError> {
     let _repo = gix::open(&request.project_root)
         .map_err(|e| GitBridgeError::GitOperation(e.to_string()))?;
 
-    // Stage the specified files (or all roadmap/ changes if none specified)
     stage_files(&request.project_root, &request.files_to_stage)?;
-
-    // Create the commit
     let hash = create_commit(&request.project_root, &request.message, &request.author_name)?;
 
-    // Write the semantic stub immediately — never block on AI
     let stub_path = write_semantic_stub(
         &request.project_root,
         &hash,
@@ -48,12 +48,107 @@ pub fn semantic_commit(request: CommitRequest) -> Result<CommitResult, GitBridge
     })
 }
 
+// ---------------------------------------------------------------------------
+// v1.0.2: Native gix semantic commit path
+// ---------------------------------------------------------------------------
+
+pub struct NativeCommitRequest {
+    pub project_root: PathBuf,
+    pub message: String,
+    pub author_name: String,
+    pub author_email: String,
+    pub author_type: AuthorType,
+    pub task_id: Option<String>,
+    pub paths: Vec<PathBuf>,
+}
+
+pub struct NativeCommitResult {
+    pub hash: String,
+    pub parent_hashes: Vec<String>,
+    pub semantic_stub_path: PathBuf,
+    pub elapsed_ms: u64,
+}
+
+/// Create a semantic commit through native gix for the commit operation.
+/// Staging still uses shell-out `git add` (documented as partial migration).
+/// The commit object is created natively through gix.
+pub fn semantic_commit_native(
+    request: NativeCommitRequest,
+) -> Result<NativeCommitResult, GitBridgeError> {
+    let start = Instant::now();
+
+    // Validate repo
+    let repo = gix::open(&request.project_root)
+        .map_err(|e| GitBridgeError::GitOperation(format!("GIT_REPO_NOT_FOUND: {e}")))?;
+
+    // Stage files (still shell-out — staging API in gix is not yet high-level)
+    crate::gix_ops::stage_files(&request.project_root, &request.paths)?;
+
+    // Check that something is staged
+    let index = repo.open_index()
+        .map_err(|e| GitBridgeError::GitOperation(format!("GIT_INDEX_ERROR: {e}")))?;
+
+    // Compare index tree to HEAD tree to detect changes
+    let head_tree = match repo.head_id() {
+        Ok(id) => {
+            let oid = id.detach();
+            repo.find_object(oid).ok()
+                .and_then(|obj| obj.try_into_commit().ok())
+                .and_then(|commit| commit.tree().ok())
+        },
+        Err(_) => None,
+    };
+
+    // Simple check: if index has entries, proceed
+    if index.entries().is_empty() {
+        return Err(GitBridgeError::GitOperation(
+            "GIT_NOTHING_TO_COMMIT: No staged changes".into(),
+        ));
+    }
+
+    // Get parent hashes before commit
+    let parent_hashes: Vec<String> = match repo.head_id() {
+        Ok(id) => vec![id.detach().to_hex().to_string()],
+        Err(_) => vec![],
+    };
+
+    // Create native commit
+    let hash = crate::gix_ops::create_commit_native(
+        &request.project_root,
+        &request.message,
+        &request.author_name,
+        &request.author_email,
+    ).map_err(|e| GitBridgeError::GitOperation(format!("GIT_COMMIT_ERROR: {e}")))?;
+
+    let elapsed = start.elapsed();
+
+    // Write semantic stub
+    let task_ids: Vec<String> = request.task_id.into_iter().collect();
+    let stub_path = write_semantic_stub(
+        &request.project_root,
+        &hash,
+        &request.message,
+        &request.author_name,
+        &request.author_type,
+        &task_ids,
+    ).map_err(|e| GitBridgeError::GitOperation(format!("SEMANTIC_STUB_ERROR: Commit succeeded but stub write failed: {e}")))?;
+
+    Ok(NativeCommitResult {
+        hash,
+        parent_hashes,
+        semantic_stub_path: stub_path,
+        elapsed_ms: elapsed.as_millis() as u64,
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
 fn stage_files(
     project_root: &Path,
     files: &[PathBuf],
 ) -> Result<(), GitBridgeError> {
-    // Phase 1: shell out to git add.
-    // Phase 2 will replace with native gix index ops.
     let mut cmd = std::process::Command::new("git");
     cmd.current_dir(project_root);
 
@@ -84,7 +179,6 @@ fn create_commit(
     message: &str,
     author_name: &str,
 ) -> Result<String, GitBridgeError> {
-    // Phase 1: shell out to git commit.
     let output = std::process::Command::new("git")
         .current_dir(project_root)
         .args([
@@ -103,7 +197,6 @@ fn create_commit(
         ));
     }
 
-    // Read the hash of HEAD
     let hash_output = std::process::Command::new("git")
         .current_dir(project_root)
         .args(["rev-parse", "HEAD"])
