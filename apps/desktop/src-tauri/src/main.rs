@@ -3,6 +3,7 @@
 use std::sync::Mutex;
 
 mod commands;
+mod diagnostics;
 mod security;
 
 fn main() {
@@ -19,6 +20,8 @@ fn main() {
                 loro_engine::sync::TokenManager::new("default-master-token")
             ),
         })
+        // v1.0.3: Onboarding state
+        .manage(commands::onboarding::OnboardingStateManager::default())
         .invoke_handler(tauri::generate_handler![
             commands::roadmap::index_roadmap_cmd,
             commands::roadmap::get_task,
@@ -63,6 +66,18 @@ fn main() {
             commands::credentials::test_github_connection_cmd,
             commands::credentials::migrate_legacy_credential_cmd,
             commands::credentials::rotate_vault_unlock_secret_cmd,
+            // v1.0.3: Onboarding commands
+            commands::onboarding::get_onboarding_state_cmd,
+            commands::onboarding::set_onboarding_state_cmd,
+            commands::onboarding::reset_onboarding_cmd,
+            // v1.0.3: Project validation and sample project
+            commands::project_validation::validate_project_cmd,
+            commands::project_validation::create_sample_project_cmd,
+            // v1.0.3: Environment readiness
+            commands::readiness::get_readiness_cmd,
+            // v1.0.3: Diagnostics and recovery
+            commands::diagnostics::export_diagnostics_cmd,
+            commands::diagnostics::get_recovery_advice_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,163 +1,166 @@
 # Orqestra
 
-**Local-first, AI-native development environment.**
+**Local-first, AI-native project management for Git repositories.**
 
-Orqestra manages your project through markdown files in `roadmap/` — tasks, sprints, and epics are all defined in YAML frontmatter. AI agents understand your codebase through semantic commits, knowledge graphs, and reasoning traces. Everything is stored locally in `.Orqestra/` and synced via CRDT.
+Orqestra turns a Git repository into a structured workspace with roadmap tracking, semantic history, AI-assisted code review, and an optional public dashboard — all running locally.
 
-## Architecture
+## Try It
 
-```
-┌─────────────────────────────────────────────────────┐
-│                  Orqestra Desktop                    │
-│            (Tauri 2.x + React 19)                   │
-│                                                      │
-│  ┌──────────┐ ┌──────────┐ ┌─────────────────────┐  │
-│  │Task Table│ │  Gantt   │ │     Kanban Board     │  │
-│  └──────────┘ └──────────┘ └─────────────────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌─────────────────────┐  │
-│  │  Commit  │ │  Query   │ │    Agent Panel       │  │
-│  │  Panel   │ │  History │ │    (3 workspaces)    │  │
-│  └──────────┘ └──────────┘ └─────────────────────┘  │
-│  ┌──────────┐ ┌──────────┐ ┌─────────────────────┐  │
-│  │ Semantic │ │Shockwave │ │    CRDT Sync         │  │
-│  │  Diff    │ │  Merge   │ │    Panel             │  │
-│  └──────────┘ └──────────┘ └─────────────────────┘  │
-├─────────────────────────────────────────────────────┤
-│              Rust Core (Workspace Crates)            │
-│  ┌────────────┐ ┌────────────┐ ┌────────────────┐   │
-│  │ md-indexer │ │ git-bridge │ │  graph-store   │   │
-│  │  (parser)  │ │ (semantic  │ │  (triples +    │   │
-│  │            │ │  commits)  │ │   vector)      │   │
-│  └────────────┘ └────────────┘ └────────────────┘   │
-│  ┌────────────┐                                     │
-│  │loro-engine │  CRDT sync with offline merge       │
-│  │  (Loro)    │  Token-based access control          │
-│  └────────────┘                                     │
-├─────────────────────────────────────────────────────┤
-│              Python AI Service (FastAPI)             │
-│  /extract-intent  /embed  /query-history  /explore  │
-│  sentence-transformers · Z.ai gateway · reasoning   │
-├─────────────────────────────────────────────────────┤
-│              Public Dashboard (Cloudflare Pages)     │
-│  Gantt · Kanban · Table · TokenGate                 │
-└─────────────────────────────────────────────────────┘
+### Install (Windows)
+
+Download `Orqestra_1.0.3_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+
+> The installer is unsigned. Windows SmartScreen may show a warning — click "More info" → "Run anyway".
+
+### First Launch
+
+1. Launch Orqestra — the onboarding wizard appears
+2. Click **"Try sample project"** — generates a demo with 4 tasks
+3. Explore Table, Gantt, and Kanban views
+4. Check **Setup** panel for environment status
+
+### Open Your Own Project
+
+1. Click **"Open existing project"**
+2. Select a folder with a `roadmap/` directory containing task `.md` files
+3. Each task needs YAML frontmatter with `pm-task: true`
+
+```yaml
+---
+pm-task: true
+id: TASK-001
+title: "My task"
+status: backlog
+priority: High
+created: "2026-06-01T00:00:00Z"
+updated: "2026-06-01T00:00:00Z"
+---
+Task description here.
 ```
 
-## Quick Start
+## What Works in v1.0.3
+
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Roadmap parsing | Implemented and verified | Local |
+| Desktop PM views | Implemented and verified | Table, Gantt, Kanban |
+| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | Token-gated |
+| OS keychain credentials | Implemented and verified | Windows Credential Manager |
+| Docs agent | Implemented, review-only | Proposes edits for approval |
+| Bugfix agent | Implemented, review-only | User-selected files only |
+| First-run onboarding | Implemented | Guided wizard with sample project |
+| Environment readiness | Implemented | Setup checks for all integrations |
+| Project validation | Implemented | Validates folder before loading |
+| Diagnostics export | Implemented | Redacted bundle, no raw secrets |
+
+## What Requires Setup
+
+| Integration | Setup | Enables |
+|-------------|-------|---------|
+| `ZAI_API_KEY` env var | Set before launch | Real AI output (agents work in mock mode without it) |
+| Python AI service | `cd services/ai && uv run uvicorn orqestra_ai.main:app` | Docs/bugfix agent real calls |
+| GitHub PAT | Settings → Save token | Push/pull for roadmap sync |
+| Cloudflare secrets | GitHub repo → Actions secrets | Dashboard CI auto-deploy |
+
+## What Is NOT Done
+
+These features remain backlog or mock-mode:
+
+- **Architect agent** — Mock-mode, not production
+- **ML-Master exploration** — Stub, not implemented
+- **Edge relay / CRDT sync** — Not available
+- **Full native Git** — 9 shell-outs remain (commit creation is native gix)
+- **AST code analysis** — Not started
+- **Code signing** — Artifacts are unsigned beta builds
+
+## Diagnostics
+
+Open the **Diagnostics** panel to export a redacted support bundle. All secrets are automatically stripped before the bundle leaves the app. See [docs/DIAGNOSTICS.md](docs/DIAGNOSTICS.md).
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [User Guide](docs/USER_GUIDE.md) | Complete usage guide |
+| [First Run](docs/FIRST_RUN.md) | Quick start for new users |
+| [Setup Checks](docs/SETUP_CHECKS.md) | Environment readiness reference |
+| [Diagnostics](docs/DIAGNOSTICS.md) | Troubleshooting and export |
+| [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
+| [Demo Script](docs/DEMO_SCRIPT_v1.0.3.md) | Deterministic demo walkthrough |
+
+## Developer Setup
+
+<details>
+<summary>Build from source</summary>
 
 ### Prerequisites
 
-- **Rust** 1.80+ (`rustup`)
-- **Node.js** 22+ (`nvm install 22`)
-- **Python** 3.12+ (`uv` recommended)
+- Rust 1.80+ (`rustup`)
+- Node.js 20+ and npm
+- Python 3.11+ and `uv` (for AI service)
+- Git
 
 ### Build
 
 ```bash
-# Clone
 git clone https://github.com/Elephant-Rock-Lab/Orqestra.git
 cd Orqestra
 
-# Rust workspace (core crates + Tauri backend)
+# Build Rust workspace (4 crates + Tauri app)
 cargo build --workspace
 
-# Desktop frontend
-cd apps/desktop
-npm install
-npm run tauri dev
+# Build desktop frontend
+cd apps/desktop && npm ci && npm run build
 
-# AI service
-cd services/ai
-uv sync
-uv run uvicorn orqestra_ai.main:app --reload
-
-# Public dashboard
-cd apps/dashboard
-npm install
-npm run dev     # development
-npm run build   # production → dist/
+# Build dashboard
+cd apps/dashboard && npm ci && npm run build
 ```
 
-### Run Tests
+### Test
 
 ```bash
-# All Rust tests (66 tests)
+# Rust tests (141 total)
 cargo test --workspace
 
-# Individual crates
-cargo test -p md-indexer    # 37 tests
-cargo test -p git-bridge    # 10 tests
-cargo test -p graph-store   # 7 tests
-cargo test -p loro-engine   # 12 tests
+# TypeScript builds
+npm run build -w apps/desktop
+npm run build -w apps/dashboard
 ```
 
-## Project Structure
+### Run AI Service
+
+```bash
+cd services/ai
+uv run uvicorn orqestra_ai.main:app --port 8000
+```
+
+### Run Desktop (dev mode)
+
+```bash
+cd apps/desktop
+npm run tauri dev
+```
+
+### Architecture
 
 ```
 Orqestra/
 ├── crates/
-│   ├── md-indexer/       # YAML frontmatter parser + dependency graph
-│   ├── git-bridge/       # Semantic commit pipeline + backfill
-│   ├── graph-store/      # Triple store + commit indexer
-│   └── loro-engine/      # Loro CRDT sync + token auth
+│   ├── md-indexer/       # Markdown roadmap parser
+│   ├── git-bridge/       # Semantic commits, backfill
+│   ├── graph-store/      # Triple store for history
+│   └── loro-engine/      # CRDT per-file sync
 ├── apps/
-│   ├── desktop/          # Tauri 2.x desktop app (React 19 + TypeScript)
-│   └── dashboard/        # Public read-only dashboard (Cloudflare Pages)
+│   ├── desktop/          # Tauri 2.x + React app
+│   └── dashboard/        # Cloudflare Pages dashboard
 ├── services/
-│   └── ai/               # FastAPI AI service (intent extraction + embeddings)
-├── agents/
-│   ├── workspaces/       # Agent persona configs (architect, bugfix, docs)
-│   └── skills/           # SKILL.md definitions (debugging, docs, testing)
-├── roadmap/              # Project tracker — single source of truth
-│   ├── _index.md         # Coordinator: sprints, epics, team
-│   └── TASK-*.md         # Individual task files
-├── .Orqestra/            # Generated data (gitignored)
-│   └── graph/            # Commit stubs, triples, reasoning traces
-├── .github/
-│   └── workflows/
-│       └── orqestra-agents.yml  # Agent fleet triggered on issues
-└── CHANGELOG.md
+│   └── ai/               # FastAPI AI service
+├── agents/               # Agent workspaces and skills
+└── roadmap/              # Project roadmap tasks
 ```
 
-## Key Concepts
-
-### Roadmap as Source of Truth
-Every task lives in `roadmap/TASK-YYYY-NNN.md` with structured YAML frontmatter. The `_index.md` coordinator defines sprints, epics, and team membership. No database, no API — just files in your repo.
-
-### Semantic Commits
-Every commit carries structured metadata: intent summary, affected concepts, confidence score, and a reasoning trace. Stored in `.Orqestra/graph/commits/{hash}.json`. The ConfidenceGate auto-commits at ≥0.90 confidence and flags below 0.50.
-
-### Knowledge Graph
-Commit metadata is decomposed into subject-predicate-object triples. Vector search (via `all-MiniLM-L6-v2` embeddings) enables natural-language queries like "When did we introduce rate limiting?"
-
-### Agent Fleet
-Three agent personas — architect, bugfix, docs — each with their own workspace config, skill set, and confidence thresholds. Tasks are routed by label matching. The GitHub Action in `.github/workflows/orqestra-agents.yml` triggers the fleet when issues are created.
-
-### CRDT Sync
-Loro CRDT enables real-time collaborative editing of task files. Each file is an independent `LoroDoc` with offline delta export/import. Two peers can diverge offline and merge cleanly with zero data loss. Token-based access control gates write operations.
-
-## Configuration
-
-| File | Purpose |
-|------|---------|
-| `roadmap/_index.md` | Sprint definitions, epics, team |
-| `agents/workspaces/*/workspace.yml` | Agent persona configs |
-| `agents/skills/*/SKILL.md` | Skill definitions |
-| `services/ai/.env` | `ZAI_API_KEY` for AI gateway |
-| `.Orqestra/` | Generated graph data (gitignored) |
-
-## Dashboard Deployment
-
-**Live:** [orqestra.pages.dev](https://orqestra.pages.dev)
-
-```bash
-cd apps/dashboard
-npm run build
-npx wrangler pages deploy dist --project-name=orqestra
-```
-
-The dashboard is a static React site deployable to Cloudflare Pages, Netlify, or any static host. It renders read-only Gantt, Kanban, and Table views from roadmap data.
+</details>
 
 ## License
 
-Private repository — © 2026 Elephant Rock Lab
+Proprietary — Elephant Rock Lab.
