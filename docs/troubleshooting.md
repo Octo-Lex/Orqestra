@@ -6,6 +6,8 @@ This guide covers the most common issues encountered during Orqestra beta instal
 
 ## Windows SmartScreen Warning
 
+### If the installer is unsigned
+
 **What happened:** Windows shows "Windows protected your PC" when you run the installer.
 
 **Why:** Orqestra installers are currently unsigned beta builds. Windows SmartScreen flags unknown/unsigned executables.
@@ -14,7 +16,39 @@ This guide covers the most common issues encountered during Orqestra beta instal
 1. Click **"More info"**
 2. Click **"Run anyway"**
 
+**How to verify the download is legitimate:** Check the SHA256 against `checksums.txt` in the release assets:
+```powershell
+Get-FileHash .\Orqestra_1.0.7_x64-setup.exe -Algorithm SHA256
+```
+
+**How to verify Authenticode signature:**
+```powershell
+Get-AuthenticodeSignature .\Orqestra_1.0.7_x64-setup.exe
+```
+Expected: `Status: NotSigned`
+
 **Where to report it:** This is expected behavior. No report needed. See [Signing Plan](release-signing-plan.md) for the path to signed releases.
+
+### If the installer is signed but still warned
+
+**What happened:** A future signed installer still shows a SmartScreen warning.
+
+**Why:** SmartScreen uses reputation-based detection. New or low-reputation signed applications may still be flagged until sufficient download history is established.
+
+**What to try:**
+1. Verify the signature is valid: `Get-AuthenticodeSignature .\Orqestra_*.exe`
+2. If the signature is valid and from the expected publisher, click **"More info"** → **"Run anyway"**
+3. Reputation builds over time as more users install the signed version
+
+**Where to report it:** [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml) — include the signature status and publisher name.
+
+### What to include in an install issue
+
+- Whether SmartScreen appeared (yes/no)
+- Whether you verified SHA256 (yes/no)
+- Whether you verified the signature (yes/no/unsigned)
+- Your Windows version
+- A screenshot of the warning if possible
 
 ---
 
