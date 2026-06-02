@@ -6,20 +6,20 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ## Public Beta Status
 
-Orqestra v1.0.7 is a **public beta** for technical reviewers and early adopters. v1.0.7 does not yet include a signed Windows installer. It adds explicit signing-blocker evidence, signature verification documentation, installer diagnostics, and platform confidence criteria so reviewers can understand and verify the current Windows beta distribution state.
+Orqestra v1.0.8 is a **public beta** for technical reviewers and early adopters. v1.0.8 does not yet include a signed Windows installer. It adds cross-platform CI evidence: Linux and macOS compile successfully in CI but neither has a bundled artifact or smoke test. Windows remains the only tested public beta platform.
 
 ## Quick Start for Public Beta Reviewers
 
 ### 1. Download
 
-Download `Orqestra_1.0.7_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download `Orqestra_1.0.8_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
 
 The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
 ### 2. Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.7_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.8_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` attached to the release.
@@ -27,7 +27,7 @@ Compare against `checksums.txt` or `release-manifest.json` attached to the relea
 ### 3. Verify Signature
 
 ```powershell
-Get-AuthenticodeSignature .\Orqestra_1.0.7_x64-setup.exe
+Get-AuthenticodeSignature .\Orqestra_1.0.8_x64-setup.exe
 ```
 
 Expected: `Status: NotSigned` — the installer is unsigned because no code-signing certificate has been configured.
@@ -48,7 +48,7 @@ If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)**
 
 ## Windows SmartScreen
 
-The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.7 records the signing blocker status and the next action toward signed distribution.
+The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.8 records the signing blocker status and the next action toward signed distribution.
 
 Even when signing is implemented, SmartScreen may still warn for new or low-reputation downloads until reputation is established.
 
@@ -59,8 +59,8 @@ See [Signing Plan](docs/release-signing-plan.md) for the full path.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Windows x64 | tested | NSIS installer, unsigned beta |
-| macOS | not-built | Deferred to future release |
-| Linux x64 | built-but-unverified | CI builds exist, not locally validated |
+| Linux x64 | built-but-unverified | CI compiles binary, no AppImage/DEB bundle |
+| macOS | build-feasibility-verified | CI compiles universal binary, no DMG/app bundle |
 
 See [Platform Confidence](docs/platform-confidence.md) for what each status means and promotion criteria.
 

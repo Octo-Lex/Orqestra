@@ -1,84 +1,78 @@
-# Orqestra v1.0.7 — Signed Windows Beta / Platform Confidence
+# Orqestra v1.0.8 -- Platform Verification Beta
 
 ## Summary
 
-v1.0.7 does not yet include a signed Windows installer. It adds explicit signing-blocker evidence, signature verification documentation, installer diagnostics, and platform confidence criteria so reviewers can understand and verify the current Windows beta distribution state.
+v1.0.8 adds cross-platform CI evidence. Linux x64 and macOS now have documented compile evidence from CI, but neither is promoted because no standard bundle and no smoke evidence exist. Windows remains the only tested public beta platform.
 
 ## Download
 
-Download `Orqestra_1.0.7_x64-setup.exe` from the assets below.
+| Platform | File | SHA256 |
+|----------|------|--------|
+| Windows x64 | `Orqestra_1.0.8_x64-setup.exe` | See `checksums.txt` or `release-manifest.json` |
+
+## Platform Status
+
+| Platform | Status | Compile | Bundle | Smoke | Release Blocking |
+|----------|--------|---------|--------|-------|-----------------|
+| Windows x64 | tested | pass | NSIS installer | pass | yes |
+| Linux x64 | built-but-unverified | pass | not configured | no | no |
+| macOS | build-feasibility-verified | pass | not configured | no | no |
+
+**Compile success is not platform support.** No platform is promoted unless it has a bundled artifact, checksum, smoke evidence, and matching manifest entry.
+
+## Windows x64
+
+- Primary tested public beta platform
+- NSIS installer: `Orqestra_1.0.8_x64-setup.exe`
+- Unsigned -- SmartScreen warnings expected
+- 15/15 smoke steps pass
+
+## Linux x64
+
+- CI compiles the binary successfully (141 tests pass)
+- No AppImage, DEB, or RPM bundle produced (bundler targets not configured)
+- Not smoke-tested
+- Not promoted
+
+## macOS
+
+- CI compiles universal binary for `universal-apple-darwin` (141 tests pass)
+- No DMG or app bundle produced (bundler targets not configured)
+- Not signed, not notarized, not smoke-tested
+- Not promoted
 
 ## Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.7_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.8_x64-setup.exe -Algorithm SHA256
 ```
 
-Compare against `checksums.txt` or `release-manifest.json`.
+Compare against `checksums.txt` or `release-manifest.json` in release assets.
 
-## Verify Signature
+## Platform Evidence
 
-```powershell
-Get-AuthenticodeSignature .\Orqestra_1.0.7_x64-setup.exe
-```
-
-Expected: `Status: NotSigned` — the installer is unsigned. See `demo/v1.0.7-signature-verification.md` for full verification evidence.
-
-## Windows SmartScreen
-
-The installer is unsigned. Windows SmartScreen warnings are expected. Even when signing is implemented, SmartScreen may still warn until reputation is established.
-
-## Platform Status
-
-| Platform | Status |
-|----------|--------|
-| Windows x64 | tested (unsigned) |
-| macOS | not-built |
-| Linux x64 | built-but-unverified |
-
-See [Platform Confidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/platform-confidence.md) for what each status means.
+- Platform matrix: `demo/v1.0.8-platform-matrix.md`
+- Windows smoke: `demo/v1.0.8-windows-smoke.md`
+- Linux build evidence: `demo/v1.0.8-linux-build-evidence.md`
+- macOS feasibility: `demo/v1.0.8-macos-feasibility.md`
+- Demo evidence: `demo/v1.0.8-demo-evidence.md`
 
 ## Signing Status
 
-**Unsigned.** Blocker: certificate not available. Next action: purchase or configure Windows code-signing. See [Signing Plan](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/release-signing-plan.md).
-
-## Installer Diagnostics
-
-See [Installer Diagnostics](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/installer-diagnostics.md) for SHA256, signature, WebView, log, and AI service diagnostic steps.
-
-## Troubleshooting
-
-See [Troubleshooting Guide](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/troubleshooting.md) — now includes unsigned and signed-but-low-reputation SmartScreen guidance.
-
-## Report an Issue
-
-- [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml)
-- [AI mode issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=ai_mode_issue.yml)
-- [Dashboard issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=dashboard_issue.yml)
-- [Bug report](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=bug_report.yml)
-
-**Do not paste API keys or secrets in issues.**
+Windows signing is **blocked** (certificate-not-available). The installer is unsigned. SmartScreen will warn. See [Signing Plan](docs/release-signing-plan.md).
 
 ## Known Limitations
 
-- Unsigned installer (SmartScreen warnings expected)
-- macOS artifacts not available
-- Linux not verified for public beta
-- Architect agent is mock-mode
-- ML-Master is stub
-- Edge relay / CRDT sync not available
-- Code signing blocked (certificate not available)
+- Windows installer is unsigned
+- Linux has no bundled artifact (AppImage/DEB)
+- macOS has no bundled artifact (DMG)
+- Compile success is not platform support
+- Some agent paths remain review-only or scaffolded
 
 ## Release Provenance
 
-See `release-manifest.json` for full provenance including signing blocker, diagnostics, platform evidence, and dashboard freshness.
+See `release-manifest.json` in release assets for: full Git SHAs, CI workflow run ID, artifact checksums, signing status, platform matrix, compile/bundle status, and diagnostics links.
 
 ## Checksums
 
-See `checksums.txt` in the release assets.
-
-## Demo Evidence
-
-- [Demo evidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-demo-evidence.md)
-- [Windows smoke test](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-windows-smoke.md)
-- [Signature verification](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-signature-verification.md)
+See `checksums.txt` in release assets.

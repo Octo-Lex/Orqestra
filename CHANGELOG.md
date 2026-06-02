@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.8] - 2026-06-03
+
+### Added
+- Cross-platform CI evidence: Linux x64 and macOS compile successfully in CI (Run #26847116112)
+- Platform matrix evidence document (`demo/v1.0.8-platform-matrix.md`)
+- Linux build evidence (`demo/v1.0.8-linux-build-evidence.md`) -- CI compiles binary, no AppImage/DEB
+- macOS feasibility evidence (`demo/v1.0.8-macos-feasibility.md`) -- CI compiles universal binary, no DMG
+- Manifest platform fields: `compile_status`, `bundle_status`, `public_artifact`, `smoke_tested`, `release_blocking`
+- Platform verification section in manifest with CI run reference
+- Validator enforces: compile success alone cannot promote a platform
+- Validator enforces: `final_artifact_state` on all artifacts
+- Validator enforces: no platform marked tested without smoke evidence
+- macOS promoted to `build-feasibility-verified` based on CI evidence
+
+### Changed
+- macOS status: `not-built` -> `build-feasibility-verified` (CI compilation proven)
+- Platform confidence documentation updated for v1.0.8 evidence
+- Manifest validator updated with platform-specific promotion rules
+
+### Security
+- Windows signing blocker remains explicit (certificate-not-available)
+- SHA256 verification required for every published artifact
+- No platform promoted without checksum and smoke evidence
+
+### Known Limitations
+- Windows installer remains unsigned unless signing credentials become available
+- Linux binary compiles but no AppImage/DEB bundle is produced
+- macOS binary compiles but no DMG/app bundle is produced
+- Compile success is not platform support
+
 ## [1.0.7] - 2026-06-02
 
 ### Added

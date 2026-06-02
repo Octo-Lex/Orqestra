@@ -1,5 +1,5 @@
 /**
- * Validates release-manifest.json against the v1.0.5 schema.
+ * Validates release-manifest.json against the v1.0.8 schema.
  *
  * Usage: npx tsx scripts/validate-release-manifest.ts [path]
  *   Default path: release-manifest.json
@@ -10,12 +10,22 @@
  *   - All artifact SHA256 values are full 64-char hex strings (or empty for templates)
  *   - Platform statuses use only allowed values
  *   - signed fields are boolean
+ *   - final_artifact_state present on all artifacts
+ *   - compile_status/bundle_status present on non-tested platforms
+ *   - No platform marked tested without smoke_evidence
+ *   - macOS not marked tested/notarized-tested without artifact+smoke
  *   - No raw secrets appear in the manifest
  */
 
 import { readFileSync } from 'fs';
 
-const ALLOWED_STATUSES = ['tested', 'signed-tested', 'built-but-unverified', 'build-feasibility-verified', 'not-built', 'deferred', 'failed', 'unsupported'];
+const ALLOWED_STATUSES = [
+  'tested', 'signed-tested',
+  'built-but-unverified', 'build-attempted-failed',
+  'build-feasibility-verified', 'artifact-built-unnotarized', 'tested-unnotarized',
+  'notarized-tested',
+  'not-built', 'deferred', 'failed', 'unsupported',
+];
 
 const SHA256_RE = /^[a-f0-9]{64}$/;
 const GIT_SHA_RE = /^[a-f0-9]{40}$/;
@@ -103,6 +113,7 @@ for (const [i, art] of manifest.artifacts.entries()) {
   if (!art.name) fail(`artifacts[${i}].name missing`);
   if (!art.platform) fail(`artifacts[${i}].platform missing`);
   if (typeof art.signed !== 'boolean') fail(`artifacts[${i}].signed must be boolean`);
+  if (!art.final_artifact_state) fail(`artifacts[${i}].final_artifact_state missing`);
   validateSha256(art.sha256, `artifacts[${i}].sha256`);
 }
 
@@ -114,6 +125,33 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
     fail(`platforms.${key}.status "${plat.status}" is not an allowed value: ${ALLOWED_STATUSES.join(', ')}`);
   }
   if (typeof plat.signed !== 'boolean') fail(`platforms.${key}.signed must be boolean`);
+
+  // Tested platforms must have smoke_evidence
+  if (plat.status === 'tested' || plat.status === 'signed-tested' || plat.status === 'tested-unnotarized') {
+    if (!plat.smoke_evidence) {
+      fail(`platforms.${key} is "${plat.status}" but has no smoke_evidence`);
+    }
+  }
+
+  // macOS cannot be tested or notarized-tested without artifact+smoke
+  if (key.startsWith('macos') && (plat.status === 'tested' || plat.status === 'notarized-tested')) {
+    if (!plat.artifact || !plat.smoke_evidence) {
+      fail(`platforms.${key} is "${plat.status}" but lacks artifact or smoke_evidence`);
+    }
+  }
+
+  // Non-tested platforms should have compile_status and bundle_status
+  if (plat.status === 'built-but-unverified' || plat.status === 'build-feasibility-verified') {
+    if (!plat.compile_status) {
+      fail(`platforms.${key} with status "${plat.status}" must have compile_status`);
+    }
+    if (!plat.bundle_status) {
+      fail(`platforms.${key} with status "${plat.status}" must have bundle_status`);
+    }
+    if (plat.smoke_tested === undefined) {
+      fail(`platforms.${key} with status "${plat.status}" must have smoke_tested field`);
+    }
+  }
 }
 
 // Verification
@@ -144,6 +182,13 @@ if (manifest.distribution) {
   }
   if (manifest.distribution.issue_triage && typeof manifest.distribution.issue_triage !== 'string') {
     fail('distribution.issue_triage must be a string path');
+  }
+}
+
+// Platform verification section (optional)
+if (manifest.platform_verification) {
+  if (manifest.platform_verification.ci_run_id && typeof manifest.platform_verification.ci_run_id !== 'string') {
+    fail('platform_verification.ci_run_id must be a string');
   }
 }
 
