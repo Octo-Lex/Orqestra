@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicegui/tauri/feat/dynamic-json-schema/core/tauri-config-schema/schema.json",
   "productName": "Orqestra",
-  "version": "0.1.0",
+  "version": "1.0.4",
   "identifier": "com.orqestra.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",

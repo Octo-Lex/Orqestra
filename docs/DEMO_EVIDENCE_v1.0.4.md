@@ -1,9 +1,11 @@
 # v1.0.4 Demo Evidence
 
 - **Tag:** v1.0.4
-- **Commit:** b1a37f3d445cd27d11d84cc4af378a9d9cbae526
-- **Artifact:** Orqestra_0.1.0_x64-setup.exe (NSIS installer)
-- **Artifact SHA256:** `780f04c7f2154d2d442eab8dcdb45926a33d6b01344b55488117c9257be57e15`
+- **Commit:** ef0c0e8e4d97459d5378e90470222d2e576d6b0d (v1.0.4 tag points here)
+- **Merge commit:** 022b703 (master HEAD after merge)
+- **Pre-release base:** b1a37f3 (artifact build base — not the tagged commit)
+- **Artifact:** Orqestra_1.0.4_x64-setup.exe (NSIS installer)
+- **Artifact SHA256:** `a55ba906db85f2f3650501211de32abcf691d0df2d622997bb367d7158542a80`
 - **Dashboard URL:** https://orqestra.pages.dev
 - **Dashboard status:** 200 OK
 - **Demo mode:** real-AI maintainer
@@ -45,8 +47,8 @@
 
 | Platform | Status | SHA256 |
 |----------|--------|--------|
-| Windows x64 NSIS | tested | `780f04c7...` |
-| Windows x64 binary | tested | `efb2bb76...` |
+| Windows x64 NSIS | tested | `a55ba906...` |
+| Windows x64 binary | tested | `2fdd2780...` |
 | macOS | not-built | — |
 | Linux x64 | built-but-unverified (CI) | — |
 
