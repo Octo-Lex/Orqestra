@@ -33,6 +33,12 @@ export type Sprint = {
 
 export type RoadmapData = {
   generated_at: string;
+  release?: {
+    version: string;
+    source_commit: string;
+    generated_at: string;
+    generated_by: string;
+  };
   source: {
     repo: string;
     branch: string;
