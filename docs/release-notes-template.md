@@ -1,61 +1,54 @@
-# Orqestra v1.0.6 — Beta Distribution Hardening
+# Orqestra v1.0.7 — Signed Windows Beta / Platform Confidence
 
 ## Summary
 
-Orqestra v1.0.6 is a beta distribution hardening release. It improves the public beta install path, verification instructions, first-run guidance, troubleshooting documentation, issue templates, dashboard freshness, and signing readiness. It does not introduce major new product functionality.
+v1.0.7 does not yet include a signed Windows installer. It adds explicit signing-blocker evidence, signature verification documentation, installer diagnostics, and platform confidence criteria so reviewers can understand and verify the current Windows beta distribution state.
 
-## Who This Beta Is For
+## Download
 
-Technical reviewers and early adopters evaluating Orqestra as a local-first, AI-native project management tool for Git repositories.
+Download `Orqestra_1.0.7_x64-setup.exe` from the assets below.
 
-## Download and Verify
-
-Download `Orqestra_1.0.6_x64-setup.exe` from the assets below.
+## Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.6_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.7_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json`.
 
-The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
+## Verify Signature
 
-## First-Run Quickstart
+```powershell
+Get-AuthenticodeSignature .\Orqestra_1.0.7_x64-setup.exe
+```
 
-1. Launch Orqestra → onboarding wizard appears
-2. Click **"Try sample project"** → demo with 4 tasks
-3. Explore Table, Gantt, and Kanban views
-4. Check **Setup** panel for environment status
+Expected: `Status: NotSigned` — the installer is unsigned. See `demo/v1.0.7-signature-verification.md` for full verification evidence.
 
-Full guide: [Beta Quickstart](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/beta-quickstart.md)
+## Windows SmartScreen
 
-## No-Key Beta Mode
-
-Works out of the box. AI features show as "degraded". All roadmap, PM views, dashboard, and diagnostic features work normally.
-
-## Real-AI Maintainer Mode
-
-Requires `ZAI_API_KEY` in `services/ai/.env`. Start AI service with `cd services/ai && uv run uvicorn orqestra_ai.main:app`. All agent outputs are **review-only**.
-
-## Dashboard Freshness
-
-Live at [orqestra.pages.dev](https://orqestra.pages.dev) — footer shows release version, source commit, and generation timestamp.
+The installer is unsigned. Windows SmartScreen warnings are expected. Even when signing is implemented, SmartScreen may still warn until reputation is established.
 
 ## Platform Status
 
 | Platform | Status |
 |----------|--------|
-| Windows x64 | tested |
+| Windows x64 | tested (unsigned) |
 | macOS | not-built |
 | Linux x64 | built-but-unverified |
 
+See [Platform Confidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/platform-confidence.md) for what each status means.
+
 ## Signing Status
 
-Unsigned beta. See [Signing Plan](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/release-signing-plan.md) for readiness status.
+**Unsigned.** Blocker: certificate not available. Next action: purchase or configure Windows code-signing. See [Signing Plan](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/release-signing-plan.md).
+
+## Installer Diagnostics
+
+See [Installer Diagnostics](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/installer-diagnostics.md) for SHA256, signature, WebView, log, and AI service diagnostic steps.
 
 ## Troubleshooting
 
-See [Troubleshooting Guide](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/troubleshooting.md) for common issues.
+See [Troubleshooting Guide](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/troubleshooting.md) — now includes unsigned and signed-but-low-reputation SmartScreen guidance.
 
 ## Report an Issue
 
@@ -74,11 +67,11 @@ See [Troubleshooting Guide](https://github.com/Elephant-Rock-Lab/Orqestra/blob/m
 - Architect agent is mock-mode
 - ML-Master is stub
 - Edge relay / CRDT sync not available
-- Code signing pending
+- Code signing blocked (certificate not available)
 
 ## Release Provenance
 
-See `release-manifest.json` for full provenance: tag commit, source commit, build commit, CI workflow run ID, artifact checksums, platform matrix, distribution metadata, dashboard freshness.
+See `release-manifest.json` for full provenance including signing blocker, diagnostics, platform evidence, and dashboard freshness.
 
 ## Checksums
 
@@ -86,5 +79,6 @@ See `checksums.txt` in the release assets.
 
 ## Demo Evidence
 
-- [Demo evidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.6-demo-evidence.md)
-- [Windows smoke test](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.6-windows-smoke.md)
+- [Demo evidence](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-demo-evidence.md)
+- [Windows smoke test](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-windows-smoke.md)
+- [Signature verification](https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/demo/v1.0.7-signature-verification.md)
