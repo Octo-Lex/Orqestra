@@ -32,6 +32,43 @@ export interface ToolReadiness {
   required_for: string[];
 }
 
+/** Spec-aligned AI readiness status (v1.0.4 WS-B). */
+export interface AiReadinessStatus {
+  available: boolean;
+  mode: 'real-ai' | 'degraded' | 'mock' | 'unavailable';
+  provider: 'zai' | 'none';
+  model: string | null;
+  requires_env: 'ZAI_API_KEY' | null;
+  message: string;
+}
+
+/** Map raw AI readiness from Rust command into spec-aligned DTO. */
+export function mapAiReadiness(ai: AiReadiness): AiReadinessStatus {
+  const isReal = ai.mode === 'real' && ai.service_status === 'reachable';
+  const isDegraded = ai.mode === 'degraded_mock' && ai.service_status === 'reachable';
+
+  const mode: AiReadinessStatus['mode'] = isReal
+    ? 'real-ai'
+    : isDegraded
+      ? 'degraded'
+      : ai.service_status === 'unreachable'
+        ? 'unavailable'
+        : 'mock';
+
+  return {
+    available: isReal,
+    mode,
+    provider: isReal || isDegraded ? 'zai' : 'none',
+    model: isReal ? 'glm-5.1' : null,
+    requires_env: !isReal ? 'ZAI_API_KEY' : null,
+    message: isReal
+      ? 'AI service running with real model'
+      : isDegraded
+        ? 'AI service running in degraded mode (no API key)'
+        : 'AI service unavailable',
+  };
+}
+
 export interface AiReadiness {
   service_status: string;
   health_url: string;
