@@ -21,7 +21,7 @@ import { readFileSync } from 'fs';
 
 const ALLOWED_STATUSES = [
   'tested', 'signed-tested',
-  'built-but-unverified', 'build-attempted-failed',
+  'built-but-unverified', 'bundle-produced-unverified', 'build-attempted-failed',
   'build-feasibility-verified', 'artifact-built-unnotarized', 'tested-unnotarized',
   'notarized-tested',
   'not-built', 'deferred', 'failed', 'unsupported',
@@ -47,7 +47,7 @@ function validateCommitSha(value: unknown, field: string): void {
 }
 
 function validateSha256(value: unknown, field: string): void {
-  if (value === null || value === undefined || value === '') return;
+  if (value === null || value === undefined || value === '' || value === 'PENDING_CI') return;
   if (typeof value !== 'string') fail(`${field} must be a string`);
   if (!SHA256_RE.test(value)) fail(`${field} must be a full 64-char hex SHA256, got: "${value.slice(0, 16)}..."`);
 }
@@ -141,7 +141,7 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
   }
 
   // Non-tested platforms should have compile_status and bundle_status
-  if (plat.status === 'built-but-unverified' || plat.status === 'build-feasibility-verified') {
+  if (plat.status === 'built-but-unverified' || plat.status === 'build-feasibility-verified' || plat.status === 'bundle-produced-unverified') {
     if (!plat.compile_status) {
       fail(`platforms.${key} with status "${plat.status}" must have compile_status`);
     }
@@ -150,6 +150,16 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
     }
     if (plat.smoke_tested === undefined) {
       fail(`platforms.${key} with status "${plat.status}" must have smoke_tested field`);
+    }
+  }
+
+  // bundle-produced-unverified must have public_artifact true
+  if (plat.status === 'bundle-produced-unverified') {
+    if (plat.public_artifact !== true) {
+      fail(`platforms.${key} with status "bundle-produced-unverified" must have public_artifact: true`);
+    }
+    if (plat.smoke_tested !== false) {
+      fail(`platforms.${key} with status "bundle-produced-unverified" must have smoke_tested: false`);
     }
   }
 }

@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.9] - 2026-06-03
+
+### Added
+- Linux AppImage bundle target configured in Tauri (`appimage` added to targets)
+- CI rename step canonicalizes Linux AppImage filename
+- CI manifest generation now includes Linux artifact with SHA256
+- Linux bundle evidence (`demo/v1.0.9-linux-bundle-evidence.md`)
+- Linux smoke blocker evidence (`demo/v1.0.9-linux-smoke-blocked.md`)
+- Platform matrix evidence for v1.0.9
+- `bundle-produced-unverified` status in manifest validator
+- Linux troubleshooting sections in troubleshooting docs
+- Linux AppImage warning in README and release notes
+- `verification_status: checksummed-not-smoke-tested` on Linux artifact
+
+### Changed
+- Linux status: `built-but-unverified` -> `bundle-produced-unverified`
+- CI workflow updated to discover, rename, and checksum Linux artifacts
+- Manifest validator allows `PENDING_CI` placeholder for CI-built artifacts
+
+### Security
+- Windows signing blocker remains explicit (certificate-not-available)
+- SHA256 verification required for every published artifact
+- Linux artifact is not described as tested or supported
+
+### Known Limitations
+- Linux AppImage is checksummed but not smoke-tested
+- Linux is not a tested public beta platform
+- macOS remains feasibility-only
+- Windows installer remains unsigned
+
 ## [1.0.8] - 2026-06-03
 
 ### Added
