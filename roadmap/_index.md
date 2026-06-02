@@ -55,6 +55,18 @@ sprints:
     start_date: "2026-06-01"
     end_date: "2026-06-14"
     status: "done"
+  - id: "Sprint 18"
+    title: "User-Ready Beta"
+    tasks:
+      - "TASK-2026-076"
+      - "TASK-2026-077"
+      - "TASK-2026-078"
+      - "TASK-2026-079"
+      - "TASK-2026-080"
+      - "TASK-2026-081"
+    start_date: "2026-06-02"
+    end_date: "2026-06-15"
+    status: "done"
 epics:
   - id: "epic-core"
     title: "Core Engine"
