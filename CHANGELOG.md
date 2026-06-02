@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.4] - 2026-06-02
+
+### Added
+- Fresh release manifest with artifact checksums, platform labels, and signing status
+- Demo evidence file for packaged-artifact verification
+- Real-AI demo path documentation for docs-agent and bugfix-agent
+- AI demo fixtures (`demo/ai-fixtures/`) with deterministic test inputs
+- `AiReadinessStatus` TypeScript interface mapping raw readiness to spec-aligned modes
+- Unsigned beta warning in all release-facing documentation
+- Platform classification table (tested / built-but-unverified / not-built / blocked)
+
+### Changed
+- Dashboard deployment workflow now uses explicit Cloudflare `accountId`
+- Release notes now distinguish tested, built-but-unverified, not-built, and unsigned artifacts
+- Demo script now includes no-key beta and real-AI maintainer modes
+- AI service loads `ZAI_API_KEY` from `.env` via `python-dotenv` (no manual env export needed)
+- `docs/RELEASE_ARTIFACTS.md` restructured with v1.0.4 platform statuses and dashboard deployment note
+
+### Fixed
+- Dashboard CI deployment no longer relies on Cloudflare account discovery through memberships lookup
+- v1.0.4 release artifacts are rebuilt from current source instead of reusing v1.0.2 binaries
+- AI service correctly detects and uses `ZAI_API_KEY` when present in `.env`
+
+### Security
+- Diagnostics redaction remains enforced for exported bundles
+- Release documentation states that desktop binaries are unsigned beta artifacts
+- `AiReadinessStatus` DTO never exposes raw API keys or token values
+
+### Known Limitations
+- Code signing and notarization are not yet done
+- Full native gix migration remains incomplete (8 shell-outs remain)
+- Architect agent remains mock-mode
+- ML-Master exploration remains stub
+- Edge relay is still backlog
+- macOS artifacts require bundler target configuration
+- Linux artifacts are CI-built but not locally validated
+
 ## [1.0.3] - 2026-06-02
 
 ### Added

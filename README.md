@@ -8,9 +8,9 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ### Install (Windows)
 
-Download `Orqestra_1.0.3_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download `Orqestra_1.0.4_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
 
-> The installer is unsigned. Windows SmartScreen may show a warning — click "More info" → "Run anyway".
+> **Unsigned beta build.** Your operating system may show a warning before launch. On Windows, click "More info" -> "Run anyway".
 
 ### First Launch
 
@@ -38,20 +38,30 @@ updated: "2026-06-01T00:00:00Z"
 Task description here.
 ```
 
-## What Works in v1.0.3
+## What Works in v1.0.4
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Roadmap parsing | Implemented and verified | Local |
 | Desktop PM views | Implemented and verified | Table, Gantt, Kanban |
-| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | Token-gated |
+| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed, token-gated |
 | OS keychain credentials | Implemented and verified | Windows Credential Manager |
-| Docs agent | Implemented, review-only | Proposes edits for approval |
+| Docs agent | Implemented, review-only | Real AI when ZAI_API_KEY set; degraded without it |
 | Bugfix agent | Implemented, review-only | User-selected files only |
 | First-run onboarding | Implemented | Guided wizard with sample project |
 | Environment readiness | Implemented | Setup checks for all integrations |
 | Project validation | Implemented | Validates folder before loading |
-| Diagnostics export | Implemented | Redacted bundle, no raw secrets |
+| Diagnostics export | Implemented and verified | Redacted bundle, no raw secrets |
+| Release manifest | Implemented | SHA256 checksums, platform labels, signing status |
+| AI demo fixtures | Implemented | Deterministic inputs for docs/bugfix agent demos |
+
+### Platform Artifacts
+
+| Platform | Status | Notes |
+|----------|--------|-------|
+| Windows x64 | tested | NSIS installer |
+| macOS | not-built | Requires bundler target configuration |
+| Linux x64 | built-but-unverified | CI builds, no local validation |
 
 ## What Requires Setup
 
@@ -69,9 +79,13 @@ These features remain backlog or mock-mode:
 - **Architect agent** — Mock-mode, not production
 - **ML-Master exploration** — Stub, not implemented
 - **Edge relay / CRDT sync** — Not available
-- **Full native Git** — 9 shell-outs remain (commit creation is native gix)
+- **Full native Git** — 8 shell-outs remain (commit creation is native gix)
 - **AST code analysis** — Not started
 - **Code signing** — Artifacts are unsigned beta builds
+
+## Unsigned Beta Notice
+
+Orqestra v1.0.4 desktop artifacts are **unsigned beta builds**. Your operating system may show a warning before launch. Code signing and notarization are planned for a future production release.
 
 ## Diagnostics
 
@@ -86,7 +100,8 @@ Open the **Diagnostics** panel to export a redacted support bundle. All secrets 
 | [Setup Checks](docs/SETUP_CHECKS.md) | Environment readiness reference |
 | [Diagnostics](docs/DIAGNOSTICS.md) | Troubleshooting and export |
 | [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
-| [Demo Script](docs/DEMO_SCRIPT_v1.0.3.md) | Deterministic demo walkthrough |
+| [Demo Script](docs/DEMO_SCRIPT_v1.0.4.md) | Deterministic demo walkthrough (no-key + real-AI modes) |
+| [Demo Evidence](docs/DEMO_EVIDENCE_v1.0.4.md) | Packaged artifact verification record |
 
 ## Developer Setup
 
@@ -119,7 +134,7 @@ cd apps/dashboard && npm ci && npm run build
 ### Test
 
 ```bash
-# Rust tests (141 total)
+# Rust tests (141 total -- 39 md-indexer + 14 git-bridge + 7 graph-store + 12 loro-engine + 10 security + 12 agents + 8 roadmap + 5 graph + 8 credentials + 3 onboarding + 5 project_validation + 5 readiness + 6 diagnostics + 7 redaction)
 cargo test --workspace
 
 # TypeScript builds
