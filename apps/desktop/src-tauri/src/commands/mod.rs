@@ -1,7 +1,11 @@
 pub mod agents;
 pub mod commit;
 pub mod credentials;
+pub mod diagnostics;
 pub mod git;
 pub mod graph;
+pub mod onboarding;
+pub mod project_validation;
+pub mod readiness;
 pub mod roadmap;
 pub mod sync;
