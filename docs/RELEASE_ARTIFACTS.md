@@ -5,18 +5,21 @@
 Orqestra desktop artifacts are **unsigned beta builds**. Your operating system may show a warning before launch.
 
 - **Windows:** SmartScreen may block the installer. Click "More info" -> "Run anyway".
-- **Linux:** No bundled artifact is available for this release.
-- **macOS:** No bundled artifact is available for this release.
+- **Linux:** The AppImage is checksummed but not smoke-tested. See Linux AppImage Warning below.
 
 Code signing and notarization are planned for a future production release.
 
-## v1.0.8 Artifacts
+## v1.0.9 Artifacts
 
 | Platform | Artifact | Status | Signed | Notes |
 |----------|----------|--------|--------|-------|
-| Windows x64 | `Orqestra_1.0.8_x64-setup.exe` | tested | No | Unsigned public beta, signing blocked |
-| Linux x64 | none | built-but-unverified | N/A | CI compiles binary, no AppImage/DEB bundle |
-| macOS | none | build-feasibility-verified | No | CI compiles universal binary, no DMG/app bundle |
+| Windows x64 | `Orqestra_1.0.9_x64-setup.exe` | tested | No | Unsigned public beta, signing blocked |
+| Linux x64 | `Orqestra_1.0.9_x64.AppImage` | bundle-produced-unverified | N/A | CI-produced AppImage, not smoke-tested |
+| macOS | none | build-feasibility-verified | No | CI compiles universal binary, no DMG |
+
+## Linux AppImage Warning
+
+The Linux AppImage is provided for early verification only. It has a checksum and was produced by CI, but it has not been smoke-tested on a Linux desktop. Linux is not yet a tested public beta platform.
 
 ## Downloading
 
@@ -25,7 +28,7 @@ Download from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/re
 ## Installing
 
 ### Windows
-1. Download `Orqestra_1.0.8_x64-setup.exe`
+1. Download `Orqestra_1.0.9_x64-setup.exe`
 2. Verify SHA256 against `checksums.txt` or `release-manifest.json`
 3. Run the installer
 4. Launch Orqestra from Start Menu
@@ -33,12 +36,16 @@ Download from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/re
 **Note:** The installer is unsigned. Windows SmartScreen may show a warning. Click "More info" -> "Run anyway" to proceed.
 
 ### Linux
+1. Download `Orqestra_1.0.9_x64.AppImage`
+2. Verify SHA256: `sha256sum Orqestra_1.0.9_x64.AppImage`
+3. Mark executable: `chmod a+x Orqestra_1.0.9_x64.AppImage`
+4. Launch: `./Orqestra_1.0.9_x64.AppImage`
 
-Not available. CI compiles a binary but no AppImage or DEB bundle is produced. The Tauri bundler targets for Linux are not configured.
+If the AppImage does not launch, see [Troubleshooting](troubleshooting.md).
 
 ### macOS
 
-Not available. CI compiles a universal binary but no DMG or app bundle is produced. The Tauri bundler targets for macOS are not configured.
+Not available. CI compiles a universal binary but no DMG or app bundle is produced.
 
 ## Building from Source
 
@@ -51,9 +58,10 @@ Each release includes `release-manifest.json` with per-platform entries includin
 - Full 40-char Git commit SHAs
 - Full 64-char SHA256 checksums
 - Signing status and blocker details
-- Platform status (tested, built-but-unverified, build-feasibility-verified)
+- Platform status (tested, bundle-produced-unverified, build-feasibility-verified)
 - `compile_status` and `bundle_status` for non-tested platforms
 - `final_artifact_state` for all artifacts
+- `verification_status` on Linux artifact (`checksummed-not-smoke-tested`)
 - CI workflow run ID
 
 ## Dashboard Deployment
@@ -69,6 +77,7 @@ Each platform is classified as one of:
 | Status | Meaning |
 |--------|---------|
 | `tested` | Bundled artifact exists, smoke-tested, checksum verified, manifest agrees |
+| `bundle-produced-unverified` | CI produces bundled artifact, checksum exists, no smoke test |
 | `built-but-unverified` | CI compiles binary, no bundled artifact, no smoke test |
 | `build-feasibility-verified` | CI compiles binary, no bundled artifact, no smoke test, compilation proven only |
 | `not-built` | Not produced in this release |
@@ -79,8 +88,7 @@ Each platform is classified as one of:
 ## Known Limitations
 
 - All artifacts are **unsigned beta builds**
-- Code signing and notarization are planned for a future release
-- Linux binary compiles in CI but no AppImage/DEB bundle is produced
+- Linux AppImage is checksummed but not smoke-tested
 - macOS binary compiles in CI but no DMG/app bundle is produced
 - Full native gix migration remains incomplete
 - Architect agent remains mock-mode

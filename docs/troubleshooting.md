@@ -267,7 +267,60 @@ Diagnostics bundles can be exported from the **Diagnostics** panel inside the ap
    - Any error messages or screenshots
 4. **Do not paste API keys, tokens, or secrets** in the issue
 
-Quick links:
+## Linux AppImage Does Not Launch
+
+**What happened:** The `.AppImage` file does not open when double-clicked or run from terminal.
+
+**Why it may have happened:**
+- The file is not marked executable
+- Missing runtime dependencies (webkit2gtk, GTK3)
+- AppImage FUSE support is not available
+
+**What to try:**
+1. Mark as executable: `chmod a+x Orqestra_1.0.9_x64.AppImage`
+2. Run from terminal: `./Orqestra_1.0.9_x64.AppImage`
+3. If FUSE errors appear, try extracting first: `./Orqestra_1.0.9_x64.AppImage --appimage-extract`
+4. Install dependencies: `sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev`
+
+**Where to report it:** [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml)
+
+---
+
+## Linux Permission Denied
+
+**What happened:** `bash: ./Orqestra_1.0.9_x64.AppImage: Permission denied`
+
+**What to try:**
+1. `chmod a+x Orqestra_1.0.9_x64.AppImage`
+2. If downloaded from browser, browsers may strip the execute bit
+
+---
+
+## Linux Missing Runtime Dependencies
+
+**What happened:** AppImage fails with library errors (webkit2gtk, GTK, etc.).
+
+**What to try:**
+```bash
+sudo apt update
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libappindicator3-dev
+```
+
+---
+
+## Linux Running from Terminal for Logs
+
+Run the AppImage from a terminal to capture error output:
+
+```bash
+./Orqestra_1.0.9_x64.AppImage 2>&1 | tee orqestra-launch.log
+```
+
+Include the terminal output when filing an issue.
+
+---
+
+## Quick links:
 - [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml)
 - [AI mode issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=ai_mode_issue.yml)
 - [Dashboard issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=dashboard_issue.yml)

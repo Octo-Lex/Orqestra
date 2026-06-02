@@ -1,61 +1,67 @@
-# Orqestra v1.0.8 -- Platform Verification Beta
+# Orqestra v1.0.9 -- Linux Bundle Verification
 
 ## Summary
 
-v1.0.8 adds cross-platform CI evidence. Linux x64 and macOS now have documented compile evidence from CI, but neither is promoted because no standard bundle and no smoke evidence exist. Windows remains the only tested public beta platform.
+v1.0.9 introduces a CI-produced Linux AppImage with SHA256 verification, but Linux is not yet a tested public beta platform because no desktop smoke test has been performed.
 
 ## Download
 
-| Platform | File | SHA256 |
-|----------|------|--------|
-| Windows x64 | `Orqestra_1.0.8_x64-setup.exe` | See `checksums.txt` or `release-manifest.json` |
+| Platform | File | SHA256 | Verification |
+|----------|------|--------|-------------|
+| Windows x64 | `Orqestra_1.0.9_x64-setup.exe` | See `checksums.txt` | Smoke-tested |
+| Linux x64 | `Orqestra_1.0.9_x64.AppImage` | See `checksums.txt` | Checksummed, not smoke-tested |
 
 ## Platform Status
 
 | Platform | Status | Compile | Bundle | Smoke | Release Blocking |
 |----------|--------|---------|--------|-------|-----------------|
 | Windows x64 | tested | pass | NSIS installer | pass | yes |
-| Linux x64 | built-but-unverified | pass | not configured | no | no |
-| macOS | build-feasibility-verified | pass | not configured | no | no |
-
-**Compile success is not platform support.** No platform is promoted unless it has a bundled artifact, checksum, smoke evidence, and matching manifest entry.
+| Linux x64 | bundle-produced-unverified | pass | AppImage | not run | no |
+| macOS | build-feasibility-verified | pass | not configured | not run | no |
 
 ## Windows x64
 
 - Primary tested public beta platform
-- NSIS installer: `Orqestra_1.0.8_x64-setup.exe`
+- NSIS installer: `Orqestra_1.0.9_x64-setup.exe`
 - Unsigned -- SmartScreen warnings expected
 - 15/15 smoke steps pass
 
 ## Linux x64
 
-- CI compiles the binary successfully (141 tests pass)
-- No AppImage, DEB, or RPM bundle produced (bundler targets not configured)
-- Not smoke-tested
-- Not promoted
+**The Linux AppImage is provided for early verification only. It has a checksum and was produced by CI, but it has not been smoke-tested on a Linux desktop. Linux is not yet a tested public beta platform.**
+
+- CI produces AppImage (Tauri `appimage` target added)
+- SHA256 checksum is published
+- No smoke test was performed (no Linux desktop available)
+- To verify: `sha256sum Orqestra_1.0.9_x64.AppImage && chmod a+x Orqestra_1.0.9_x64.AppImage && ./Orqestra_1.0.9_x64.AppImage`
 
 ## macOS
 
-- CI compiles universal binary for `universal-apple-darwin` (141 tests pass)
-- No DMG or app bundle produced (bundler targets not configured)
-- Not signed, not notarized, not smoke-tested
-- Not promoted
+- Unchanged from v1.0.8
+- CI compiles universal binary for `universal-apple-darwin`
+- No DMG or app bundle produced
 
 ## Verify SHA256
 
+Windows:
 ```powershell
-Get-FileHash .\Orqestra_1.0.8_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.9_x64-setup.exe -Algorithm SHA256
+```
+
+Linux:
+```bash
+sha256sum Orqestra_1.0.9_x64.AppImage
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` in release assets.
 
 ## Platform Evidence
 
-- Platform matrix: `demo/v1.0.8-platform-matrix.md`
-- Windows smoke: `demo/v1.0.8-windows-smoke.md`
-- Linux build evidence: `demo/v1.0.8-linux-build-evidence.md`
-- macOS feasibility: `demo/v1.0.8-macos-feasibility.md`
-- Demo evidence: `demo/v1.0.8-demo-evidence.md`
+- Platform matrix: `demo/v1.0.9-platform-matrix.md`
+- Windows smoke: `demo/v1.0.9-windows-smoke.md`
+- Linux bundle evidence: `demo/v1.0.9-linux-bundle-evidence.md`
+- Linux smoke blocker: `demo/v1.0.9-linux-smoke-blocked.md`
+- Demo evidence: `demo/v1.0.9-demo-evidence.md`
 
 ## Signing Status
 
@@ -64,9 +70,9 @@ Windows signing is **blocked** (certificate-not-available). The installer is uns
 ## Known Limitations
 
 - Windows installer is unsigned
-- Linux has no bundled artifact (AppImage/DEB)
-- macOS has no bundled artifact (DMG)
-- Compile success is not platform support
+- Linux AppImage is checksummed but not smoke-tested
+- Linux is not a tested public beta platform
+- macOS has no bundled artifact
 - Some agent paths remain review-only or scaffolded
 
 ## Release Provenance
