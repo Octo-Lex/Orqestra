@@ -1,3 +1,10 @@
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env from the service directory (gitignored, never committed)
+_env_path = Path(__file__).resolve().parent.parent.parent / ".env"
+load_dotenv(_env_path)
+
 from fastapi import FastAPI, HTTPException
 from .models import *
 from .intent import extract_intent
