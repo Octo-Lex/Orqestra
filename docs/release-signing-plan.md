@@ -125,6 +125,19 @@ v1.1.0 for verified Linux artifact.
 | 4 | macOS notarization | v1.1.0 |
 | 5 | Linux GPG signing (optional) | v1.1.0 |
 
+## v1.0.6 Signing Readiness Status
+
+| Item | Status |
+|------|--------|
+| Windows certificate selected | no |
+| Certificate purchased | no |
+| CI secret names defined | yes — `WINDOWS_SIGNING_CERT`, `WINDOWS_SIGNING_PASSWORD` |
+| Signing command documented | yes — `signtool sign /fd SHA256` |
+| Verification command documented | yes — `signtool verify /pa` |
+| macOS Apple Developer requirement documented | yes |
+| Notarization workflow drafted | yes — `codesign` + `notarytool` |
+| Blocker | Certificate procurement pending |
+
 ## Status
 
 - [x] SHA256 checksums generated for all artifacts
