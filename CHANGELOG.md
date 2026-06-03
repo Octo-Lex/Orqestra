@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.11] - 2026-06-03
+
+### Added
+- Linux AppImage runtime verification under WSLg (Windows Subsystem for Linux GUI)
+- Linux runtime environment recording: Ubuntu 24.04 + WSLg (XWayland + Wayland)
+- Linux WSLg smoke evidence: main window 1280x720, WebKit processes running, 384MB stable
+- Screenshot of Orqestra running under WSLg
+- `runtime-evidence-wslg` status in manifest validator
+- `native-runtime-blocked`, `native-smoke-failed`, `native-smoke-blocked` statuses in validator
+- `runtime_result`, `native_desktop_smoke` manifest fields
+- Validator rules: WSLg status requires `smoke_tested: false`, `native_desktop_smoke: false`, `promotion_blocker`
+
+### Changed
+- Linux status: `runtime-blocked` -> `runtime-evidence-wslg` (WSLg runtime pass, not promoted)
+- Platform confidence documentation updated with WSLg runtime evidence
+- Linux troubleshooting updated with WSLg/GTK guidance
+
+### Security
+- SHA256 verification required for Linux AppImage
+- Issue templates continue warning users not to share API keys, tokens, `.env` files, or secrets
+
+### Known Limitations
+- Linux AppImage runtime-evidence-wslg: passes under WSLg, not promoted
+- Linux not promoted without native desktop smoke
+- Windows installer remains unsigned
+- macOS remains build-feasibility-only
+
 ## [1.0.10] - 2026-06-03
 
 ### Added
