@@ -6,20 +6,20 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ## Public Beta Status
 
-Orqestra v1.0.11 is a **public beta** for technical reviewers and early adopters. v1.0.11 does not yet include a signed Windows installer. v1.0.11 verifies that the Linux AppImage launches successfully under WSLg with GTK/WebKit initialized, but Linux is not promoted to a tested beta platform because native Linux desktop smoke has not yet been run.
+Orqestra v1.0.12 is a **public beta** for technical reviewers and early adopters. v1.0.12 does not promote Linux to a tested beta platform. It publishes a native Linux smoke guide, evidence template, and GitHub report form so contributors with a real Linux desktop can run the promotion-grade AppImage smoke test. Prior WSLg runtime evidence remains recorded.
 
 ## Quick Start for Public Beta Reviewers
 
 ### 1. Download
 
-Download `Orqestra_1.0.11_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download `Orqestra_1.0.12_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
 
 The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
 ### 2. Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.11_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.12_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` attached to the release.
@@ -27,7 +27,7 @@ Compare against `checksums.txt` or `release-manifest.json` attached to the relea
 ### 3. Verify Signature
 
 ```powershell
-Get-AuthenticodeSignature .\Orqestra_1.0.11_x64-setup.exe
+Get-AuthenticodeSignature .\Orqestra_1.0.12_x64-setup.exe
 ```
 
 Expected: `Status: NotSigned` — the installer is unsigned because no code-signing certificate has been configured.
@@ -48,7 +48,7 @@ If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)**
 
 ## Windows SmartScreen
 
-The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.11 records the signing blocker status and the next action toward signed distribution.
+The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.12 records the signing blocker status and the next action toward signed distribution.
 
 Even when signing is implemented, SmartScreen may still warn for new or low-reputation downloads until reputation is established.
 
@@ -59,21 +59,21 @@ See [Signing Plan](docs/release-signing-plan.md) for the full path.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Windows x64 | tested | NSIS installer, unsigned beta |
-| Linux x64 | runtime-evidence-wslg | AppImage launches under WSLg; native desktop smoke pending |
+| Linux x64 | native-smoke-blocked | Contributor smoke kit published; native desktop smoke pending |
 | macOS | build-feasibility-verified | CI compiles universal binary, no DMG/app bundle |
 
 See [Platform Confidence](docs/platform-confidence.md) for what each status means and promotion criteria.
 
 ### Linux AppImage Warning
 
-v1.0.11 verifies that the Linux AppImage launches successfully under WSLg with GTK/WebKit initialized, but Linux is not promoted to a tested beta platform because native Linux desktop smoke has not yet been run.
+v1.0.12 does not promote Linux to a tested beta platform. It publishes a native Linux smoke guide, evidence template, and GitHub report form so contributors with a real Linux desktop can run the promotion-grade AppImage smoke test. Prior WSLg runtime evidence remains recorded.
 
 To verify the Linux AppImage:
 
 ```bash
-sha256sum Orqestra_1.0.11_x64.AppImage
-chmod a+x Orqestra_1.0.11_x64.AppImage
-./Orqestra_1.0.11_x64.AppImage
+sha256sum Orqestra_1.0.12_x64.AppImage
+chmod a+x Orqestra_1.0.12_x64.AppImage
+./Orqestra_1.0.12_x64.AppImage
 ```
 
 If you encounter issues, see [Troubleshooting](docs/troubleshooting.md) or [file an issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml).
