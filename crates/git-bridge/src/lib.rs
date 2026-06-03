@@ -10,3 +10,4 @@ pub use commit::{semantic_commit, semantic_commit_native, CommitRequest, CommitR
 pub use error::GitBridgeError;
 pub use semantic::{AuthorType, SemanticCommitObject, SemanticPayload};
 pub use status::update_task_status;
+pub use gix_ops::{NativeGitStatus, native_git_status};

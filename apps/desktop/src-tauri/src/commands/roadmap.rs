@@ -12,6 +12,20 @@ pub struct CommandError {
     pub message: String,
 }
 
+/// v1.1.0 structured error with recovery actions.
+/// All major user-facing errors should use this shape.
+#[derive(Debug, Serialize)]
+pub struct StructuredError {
+    pub code: &'static str,
+    pub title: &'static str,
+    pub message: String,
+    pub likely_causes: Vec<String>,
+    pub suggested_actions: Vec<String>,
+    pub reporting_hint: String,
+    pub technical_details: Option<serde_json::Value>,
+    pub secret_safe: bool,
+}
+
 impl From<IndexerError> for CommandError {
     fn from(e: IndexerError) -> Self {
         match e {
@@ -28,6 +42,28 @@ impl From<IndexerError> for CommandError {
                 message: e.to_string(),
             },
         }
+    }
+}
+
+/// Build a structured error for common failure modes.
+/// v1.1.0 product-readiness: all 6+ major error paths should use this.
+pub fn structured_error(
+    code: &'static str,
+    title: &'static str,
+    message: impl Into<String>,
+    likely_causes: Vec<&str>,
+    suggested_actions: Vec<&str>,
+    technical_details: Option<serde_json::Value>,
+) -> StructuredError {
+    StructuredError {
+        code,
+        title,
+        message: message.into(),
+        likely_causes: likely_causes.into_iter().map(String::from).collect(),
+        suggested_actions: suggested_actions.into_iter().map(String::from).collect(),
+        reporting_hint: format!("Include error code {} in a bug report.", code),
+        technical_details,
+        secret_safe: true,
     }
 }
 

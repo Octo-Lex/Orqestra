@@ -127,3 +127,19 @@ pub async fn git_push_roadmap(
     // Push
     run_git(&app, &project_root, &["push", "origin", "HEAD"], &pat).await
 }
+
+// ---------------------------------------------------------------------------
+// Native Git Status (v1.1.0 pilot)
+// ---------------------------------------------------------------------------
+
+/// Get git status using native gix with CLI fallback.
+/// Read-only — never modifies the repository.
+#[command]
+pub fn git_status_cmd(project_root: String) -> Result<String, String> {
+    use git_bridge::NativeGitStatus;
+    let path = std::path::PathBuf::from(&project_root);
+    let status = git_bridge::native_git_status(&path)
+        .map_err(|e| format!("Git status failed: {e}"))?;
+    serde_json::to_string(&status)
+        .map_err(|e| format!("Failed to serialize status: {e}"))
+}
