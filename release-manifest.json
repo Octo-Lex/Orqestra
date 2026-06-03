@@ -13,7 +13,7 @@
     "build_commit": "5e8956ccc65115ab77b74c349f150aa1b0cfc593",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "PENDING_CI",
+    "workflow_run_id": "26866013211",
     "status": "local-build"
   },
   "signing": {
@@ -50,8 +50,8 @@
       "name": "Orqestra_1.0.10_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "PENDING_CI",
-      "size_bytes": 0,
+      "sha256": "6adf2440fed78f33e1a84611c0bfe77a749e4d465e5ec52376c1c0cdce98e7a1",
+      "size_bytes": 82745848,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
@@ -69,19 +69,26 @@
       "notes": "Unsigned tested public beta installer"
     },
     "linux-x64": {
-      "status": "PENDING_SMOKE",
+      "status": "runtime-blocked",
       "release_blocking": false,
       "artifact": "Orqestra_1.0.10_x64.AppImage",
       "compile_status": "pass",
       "bundle_status": "pass",
       "public_artifact": true,
-      "smoke_tested": false,
-      "runtime_attempted": false,
+      "smoke_tested": true,
+      "runtime_attempted": true,
       "native_desktop_smoke": false,
       "signed": false,
       "bundle_evidence": "demo/v1.0.10-linux-wsl2-smoke-attempt.md",
       "promotion_blocker": "no-native-linux-desktop-smoke",
-      "notes": "Pending WSL2/Xvfb runtime attempt"
+      "notes": "AppImage runtime attempted under WSL2/Xvfb. GTK init fails without display server. Not promoted.",
+      "smoke_result": "blocked",
+      "runtime_environment": "WSL2 Ubuntu 24.04 + Xvfb (Xvfb failed to start)",
+      "runtime_blocker": {
+        "classification": "webview-runtime-failure",
+        "evidence": "demo/v1.0.10-linux-runtime-blocker.md",
+        "error": "Failed to initialize gtk backend (tao-0.35.3 event_loop.rs:217)"
+      }
     },
     "macos": {
       "status": "build-feasibility-verified",
@@ -98,7 +105,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "PENDING_CI",
+    "ci_run_id": "26866013211",
     "ci_run_branch": "v1.0.10",
     "matrix_evidence": "demo/v1.0.10-platform-matrix.md",
     "windows": "demo/v1.0.10-windows-smoke.md",
@@ -127,9 +134,9 @@
   },
   "limitations": [
     "Unsigned Windows installer",
-    "Linux AppImage runtime verification pending WSL2/Xvfb attempt",
-    "macOS binary compiles but no bundled artifact",
+    "Linux AppImage runtime-blocked: GTK init fails without display server (WSL2 evidence)",
     "Linux not promoted without native desktop smoke",
+    "macOS binary compiles but no bundled artifact",
     "Some agent paths remain review-only or scaffolded"
   ]
 }
