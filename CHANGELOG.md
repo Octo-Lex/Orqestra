@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.10] - 2026-06-03
+
+### Added
+- Linux AppImage runtime smoke attempt under WSL2/Xvfb
+- Linux runtime environment recording (Ubuntu 24.04 WSL2, GTK 3.24, WebKit2GTK 2.52)
+- Linux runtime blocker evidence: GTK init fails without display server (`tao-0.35.3`)
+- `runtime-blocked` and `runtime-evidence-wsl2` statuses in manifest validator
+- `runtime_attempted`, `smoke_result`, `runtime_environment`, `runtime_blocker` manifest fields
+
+### Changed
+- Linux status: `bundle-produced-unverified` -> `runtime-blocked` (WSL2 GTK init failure recorded)
+- Platform confidence documentation updated with WSL2 runtime evidence
+- Linux troubleshooting updated with GTK/display server failure guidance
+
+### Security
+- SHA256 verification required for Linux AppImage
+- Issue templates continue warning users not to share API keys, tokens, or secrets
+
+### Known Limitations
+- Linux AppImage runtime-blocked: GTK cannot init without display server
+- Linux not promoted without native desktop smoke test
+- Windows installer remains unsigned
+- macOS remains build-feasibility-only
+
 ## [1.0.9] - 2026-06-03
 
 ### Added
