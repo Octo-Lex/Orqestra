@@ -93,6 +93,24 @@ export function GitStatusPanel({ projectRoot }: GitStatusPanelProps) {
         </div>
       </div>
 
+      {/* Risk summary */}
+      {snapshot.changed_files.length > 0 && (
+        <div style={{ display: 'flex', gap: '12px', marginBottom: '8px', fontSize: '12px' }}>
+          <span>Changed: <strong>{snapshot.changed_files.length}</strong></span>
+          <span style={{ color: '#dc2626' }}>
+            Secret-risk: <strong>{snapshot.changed_files.filter((f: any) => f.risk === 'secret').length}</strong>
+          </span>
+          <span style={{ color: '#d97706' }}>
+            Workflow-risk: <strong>{snapshot.changed_files.filter((f: any) => f.risk === 'workflow').length}</strong>
+          </span>
+        </div>
+      )}
+
+      {/* Last refresh */}
+      <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '8px' }}>
+        Last refreshed: {new Date().toLocaleTimeString()}
+      </div>
+
       {/* HEAD metadata */}
       {snapshot.head && (
         <div style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#f8fafc', borderRadius: '4px' }}>

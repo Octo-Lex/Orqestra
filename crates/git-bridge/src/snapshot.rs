@@ -33,6 +33,7 @@ pub struct GitHeadMetadata {
 #[derive(Debug, Clone, Serialize)]
 pub struct GitChangedFile {
     pub path: String,
+    pub original_path: Option<String>,  // Set for renames (old name)
     pub status: String,       // modified/added/deleted/renamed/untracked
     pub staged: bool,
     pub file_kind: String,    // text/binary/large/unknown
@@ -62,6 +63,9 @@ pub struct GitRepositorySnapshot {
 // Risk classification
 // ---------------------------------------------------------------------------
 
+/// Secret environment file patterns.
+/// Checked via `.env` and `.env.` prefix matching below.
+#[allow(dead_code)]
 const SECRET_PATTERNS: &[&str] = &[
     ".env",
     ".env.local",
@@ -73,10 +77,20 @@ const SECRET_PATTERNS: &[&str] = &[
 
 const SECRET_EXTENSIONS: &[&str] = &[
     ".pem", ".key", ".p12", ".pfx", ".p8",
+    ".crt", ".cer",           // certificates — often public, classified conservatively
 ];
 
 const SECRET_FILENAMES: &[&str] = &[
     "id_rsa", "id_ed25519", "id_ecdsa", "id_dsa",
+];
+
+const SECRET_SUFFIXES: &[&str] = &[
+    "_rsa", "_ed25519",        // SSH key patterns (e.g., deploy_rsa)
+];
+
+const SECRET_PREFIXES: &[&str] = &[
+    "secrets.",                // secrets.yml, secrets.json
+    "credentials.",            // credentials.yaml
 ];
 
 /// Classify a file's risk based on path alone.
@@ -90,23 +104,38 @@ pub fn classify_risk_by_path(path: &str) -> (&'static str, Option<String>) {
         return ("secret", Some("secret-like filename".into()));
     }
 
-    // .env and variants
-    if SECRET_PATTERNS.iter().any(|p| lower.starts_with(&format!("{}.", p.trim_start_matches('.')))) {
-        return ("secret", Some("env-like path".into()));
+    // Secret suffix patterns (e.g., deploy_rsa, backup_ed25519)
+    if SECRET_SUFFIXES.iter().any(|s| lower.ends_with(s)) {
+        return ("secret", Some("secret-like filename suffix".into()));
     }
-    // Exact .env match (no extension)
+
+    // Secret prefix patterns (e.g., secrets.yml, credentials.yaml)
+    if SECRET_PREFIXES.iter().any(|p| lower.starts_with(p)) {
+        return ("secret", Some("credential or secrets file".into()));
+    }
+
+    // .env and variants
     if lower == ".env" || lower.starts_with(".env.") {
         return ("secret", Some("env-like path".into()));
     }
 
     // Secret extensions
     if SECRET_EXTENSIONS.iter().any(|ext| lower.ends_with(ext)) {
+        // Distinguish certificates from private keys
+        if lower.ends_with(".crt") || lower.ends_with(".cer") {
+            return ("secret", Some("certificate or credential material path".into()));
+        }
         return ("secret", Some("secret-like extension".into()));
     }
 
     // Workflow risk
     if path.contains(".github/workflows/") {
         return ("workflow", Some("workflow definition path".into()));
+    }
+
+    // GitHub Actions risk
+    if path.contains(".github/actions/") {
+        return ("workflow", Some("reusable action definition path".into()));
     }
 
     ("normal", None)
@@ -122,32 +151,32 @@ pub fn classify_risk_by_path(path: &str) -> (&'static str, Option<String>) {
 const BINARY_SAMPLE_SIZE: usize = 8192;
 const LARGE_FILE_THRESHOLD: u64 = 10 * 1024 * 1024; // 10 MiB
 
-fn detect_file_kind(repo_root: &Path, relative_path: &str, risk: &str) -> String {
+fn detect_file_kind(repo_root: &Path, relative_path: &str, risk: &str) -> (String, Option<String>) {
     // Never open secret-risk files
     if risk == "secret" {
-        return "unknown".into();
+        return ("unknown".into(), None);
     }
 
     let file_path = repo_root.join(relative_path);
 
-    // Never follow symlinks
+    // Never follow symlinks — classify as unknown with explicit reason
     if file_path.symlink_metadata().map(|m| m.file_type().is_symlink()).unwrap_or(false) {
-        return "unknown".into();
+        return ("unknown".into(), Some("symlink not followed".into()));
     }
 
     // Check size via metadata
     let metadata = match std::fs::metadata(&file_path) {
         Ok(m) => m,
-        Err(_) => return "unknown".into(),
+        Err(_) => return ("unknown".into(), None),
     };
 
     if metadata.len() > LARGE_FILE_THRESHOLD {
-        return "large".into();
+        return ("large".into(), None);
     }
 
     // For deleted/untracked files that may not exist at this path, return unknown
     if !file_path.exists() {
-        return "unknown".into();
+        return ("unknown".into(), None);
     }
 
     // Sample first 8 KiB for null byte detection
@@ -158,14 +187,14 @@ fn detect_file_kind(repo_root: &Path, relative_path: &str, risk: &str) -> String
             match f.read(&mut buf) {
                 Ok(n) => {
                     if buf[..n].contains(&0) {
-                        return "binary".into();
+                        return ("binary".into(), None);
                     }
-                    "text".into()
+                    ("text".into(), None)
                 }
-                Err(_) => "unknown".into(),
+                Err(_) => ("unknown".into(), None),
             }
         }
-        Err(_) => "unknown".into(),
+        Err(_) => ("unknown".into(), None),
     }
 }
 
@@ -204,15 +233,51 @@ pub fn parse_changed_files(
             };
 
             let (risk, risk_reason) = classify_risk_by_path(path);
-            let file_kind = detect_file_kind(repo_root, path, risk);
+            let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
 
             files.push(GitChangedFile {
                 path: path.into(),
+                original_path: None,
                 status: status.into(),
                 staged,
                 file_kind,
                 risk: risk.into(),
-                risk_reason,
+                risk_reason: risk_reason.or(kind_reason),
+            });
+        } else if line.starts_with("2 ") {
+            // Renamed/copied entry: 2 XY sub perm hm hm score path\torig_path
+            let parts: Vec<&str> = line.splitn(10, ' ').collect();
+            if parts.len() < 10 {
+                continue;
+            }
+            let xy = parts[1];
+
+            // parts[9] contains "new_path\told_path"
+            let last_field = parts[9];
+            let (path, orig_path) = if last_field.contains('\t') {
+                let mut tab_parts = last_field.splitn(2, '\t');
+                (tab_parts.next().unwrap_or(""), tab_parts.next().unwrap_or(""))
+            } else {
+                (last_field, "")
+            };
+
+            let (staged, status) = match xy.chars().next() {
+                Some('R') => (true, "renamed"),
+                Some('C') => (true, "copied"),
+                _ => (true, "renamed"),
+            };
+
+            let (risk, risk_reason) = classify_risk_by_path(path);
+            let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
+
+            files.push(GitChangedFile {
+                path: path.into(),
+                original_path: if orig_path.is_empty() { None } else { Some(orig_path.into()) },
+                status: status.into(),
+                staged,
+                file_kind,
+                risk: risk.into(),
+                risk_reason: risk_reason.or(kind_reason),
             });
         } else if line.starts_with("u ") {
             // Unmerged entry — mark as unknown risk
@@ -220,6 +285,7 @@ pub fn parse_changed_files(
             let path = parts.last().unwrap_or(&"");
             files.push(GitChangedFile {
                 path: path.to_string(),
+                original_path: None,
                 status: "unmerged".into(),
                 staged: false,
                 file_kind: "unknown".into(),
@@ -230,17 +296,19 @@ pub fn parse_changed_files(
             // Untracked
             let path = &line[2..];
             let (risk, risk_reason) = classify_risk_by_path(path);
-            let file_kind = detect_file_kind(repo_root, path, risk);
+            let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
 
             files.push(GitChangedFile {
                 path: path.into(),
+                original_path: None,
                 status: "untracked".into(),
                 staged: false,
                 file_kind,
                 risk: risk.into(),
-                risk_reason,
+                risk_reason: risk_reason.or(kind_reason),
             });
         }
+
     }
 
     files

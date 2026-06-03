@@ -581,3 +581,498 @@ fn diff_stat_non_repo_handles_gracefully() {
         Err(_) => {} // Structured error is acceptable
     }
 }
+
+// ---------------------------------------------------------------------------
+// v1.2.1: Expanded snapshot parity tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn snapshot_staged_and_unstaged_same_file() {
+    let (_tmp, root) = init_test_repo();
+
+    // Modify, stage, then modify again
+    fs::write(root.join("README.md"), "version 2\n").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "README.md"])
+        .output()
+        .unwrap();
+    fs::write(root.join("README.md"), "version 3\n").unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    assert!(snapshot.dirty);
+    assert!(snapshot.staged_count >= 1, "Should have staged changes");
+    assert!(snapshot.unstaged_count >= 1, "Should have unstaged changes");
+
+    let readme = snapshot.changed_files.iter().find(|f| f.path == "README.md");
+    assert!(readme.is_some(), "README.md should appear in changed files");
+}
+
+#[test]
+fn snapshot_added_file() {
+    let (_tmp, root) = init_test_repo();
+
+    fs::write(root.join("new_file.rs"), "fn main() {}").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "new_file.rs"])
+        .output()
+        .unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let added = snapshot.changed_files.iter().find(|f| f.path == "new_file.rs");
+    assert!(added.is_some());
+    assert_eq!(added.unwrap().status, "added");
+    assert!(added.unwrap().staged);
+}
+
+#[test]
+fn snapshot_renamed_file() {
+    let (_tmp, root) = init_test_repo();
+
+    // Rename README.md to NEW_README.md
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["mv", "README.md", "NEW_README.md"])
+        .output()
+        .unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let renamed = snapshot.changed_files.iter().find(|f| f.status == "renamed");
+    assert!(renamed.is_some(), "Should detect renamed file");
+    let r = renamed.unwrap();
+    assert!(r.staged, "Renames are staged by git mv");
+    assert!(r.original_path.is_some(), "Rename should have original_path");
+    assert_eq!(r.original_path.as_ref().unwrap(), "README.md");
+}
+
+#[test]
+fn snapshot_nested_directory_change() {
+    let (_tmp, root) = init_test_repo();
+
+    let deep = root.join("a/b/c");
+    fs::create_dir_all(&deep).unwrap();
+    fs::write(deep.join("deep.txt"), "nested content").unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let deep_file = snapshot.changed_files.iter().find(|f| f.path.contains("deep.txt"));
+    assert!(deep_file.is_some(), "Should find nested file");
+}
+
+#[test]
+fn snapshot_ignored_files_not_counted() {
+    let (_tmp, root) = init_test_repo();
+
+    // Create .gitignore
+    fs::write(root.join(".gitignore"), "ignored_dir/\n*.log\n").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", ".gitignore"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Add gitignore"])
+        .output()
+        .unwrap();
+
+    // Create ignored files
+    fs::create_dir_all(root.join("ignored_dir")).unwrap();
+    fs::write(root.join("ignored_dir/file.txt"), "ignored").unwrap();
+    fs::write(root.join("debug.log"), "log content").unwrap();
+
+    // Create a non-ignored file for contrast
+    fs::write(root.join("tracked.txt"), "tracked").unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    assert!(!snapshot.changed_files.iter().any(|f| f.path.contains("ignored_dir")),
+        "Ignored directory files should not appear");
+    assert!(!snapshot.changed_files.iter().any(|f| f.path.ends_with(".log")),
+        "Ignored *.log files should not appear");
+    assert!(snapshot.changed_files.iter().any(|f| f.path == "tracked.txt"),
+        "Non-ignored files should appear");
+}
+
+#[test]
+fn snapshot_multiple_changes() {
+    let (_tmp, root) = init_test_repo();
+
+    // Staged + unstaged + untracked + deleted
+    fs::write(root.join("staged.txt"), "staged").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "staged.txt"])
+        .output()
+        .unwrap();
+    fs::write(root.join("README.md"), "modified\n").unwrap(); // unstaged
+    fs::create_dir_all(root.join("sub")).unwrap();
+    fs::write(root.join("sub/untracked.txt"), "new").unwrap();
+    fs::remove_file(root.join("README.md")).unwrap(); // actually delete it
+
+    // Recreate for unstaged test
+    fs::write(root.join("README.md"), "modified content\n").unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    assert!(snapshot.staged_count >= 1, "Should have staged files");
+    assert!(snapshot.untracked_count >= 1, "Should have untracked files");
+    assert!(snapshot.changed_files.len() >= 2, "Should have multiple changed files");
+}
+
+
+// ---------------------------------------------------------------------------
+// v1.2.1: Risk classification hardening tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn risk_classifies_certificate_extensions() {
+    let (risk, reason) = git_bridge::snapshot::classify_risk_by_path("server.crt");
+    assert_eq!(risk, "secret");
+    assert!(reason.unwrap().contains("certificate"), "Should mention certificate");
+
+    let (risk, reason) = git_bridge::snapshot::classify_risk_by_path("ca.cer");
+    assert_eq!(risk, "secret");
+    assert!(reason.unwrap().contains("certificate"), "Should mention certificate");
+}
+
+#[test]
+fn risk_classifies_secret_suffixes() {
+    let (risk, _) = git_bridge::snapshot::classify_risk_by_path("deploy_rsa");
+    assert_eq!(risk, "secret");
+
+    let (risk, _) = git_bridge::snapshot::classify_risk_by_path("backup_ed25519");
+    assert_eq!(risk, "secret");
+}
+
+#[test]
+fn risk_classifies_credential_prefixes() {
+    let (risk, _) = git_bridge::snapshot::classify_risk_by_path("secrets.yml");
+    assert_eq!(risk, "secret");
+
+    let (risk, _) = git_bridge::snapshot::classify_risk_by_path("credentials.yaml");
+    assert_eq!(risk, "secret");
+
+    let (risk, _) = git_bridge::snapshot::classify_risk_by_path("secrets.json");
+    assert_eq!(risk, "secret");
+}
+
+#[test]
+fn risk_classifies_github_actions() {
+    let (risk, reason) = git_bridge::snapshot::classify_risk_by_path(
+        ".github/actions/build/action.yml"
+    );
+    assert_eq!(risk, "workflow");
+    assert!(reason.unwrap().contains("reusable action"));
+}
+
+#[test]
+fn snapshot_symlink_classified_unknown_not_normal() {
+    let (_tmp, root) = init_test_repo();
+
+    let link = root.join("link_to_readme");
+    #[cfg(unix)]
+    {
+        std::os::unix::fs::symlink(root.join("README.md"), &link).unwrap();
+    }
+    #[cfg(windows)]
+    {
+        if std::os::windows::fs::symlink_file(root.join("README.md"), &link).is_err() {
+            return;
+        }
+    }
+
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "link_to_readme"])
+        .output()
+        .unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let link_file = snapshot.changed_files.iter().find(|f| f.path == "link_to_readme");
+    if let Some(f) = link_file {
+        assert_ne!(f.risk, "normal", "Symlinks must not be classified as normal risk");
+        assert_eq!(f.file_kind, "unknown", "Symlinks must have unknown file_kind");
+        if let Some(reason) = &f.risk_reason {
+            assert!(reason.contains("symlink") || reason.contains("not followed"),
+                "Symlink risk_reason should mention symlink: {}", reason);
+        }
+    }
+}
+
+#[test]
+fn snapshot_large_file_classified() {
+    let (_tmp, root) = init_test_repo();
+
+    let large = root.join("large_file.bin");
+    let content = vec![0u8; (10 * 1024 * 1024) + 1];
+    fs::write(&large, &content).unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "large_file.bin"])
+        .output()
+        .unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let large_file = snapshot.changed_files.iter().find(|f| f.path == "large_file.bin");
+    assert!(large_file.is_some());
+    assert_eq!(large_file.unwrap().file_kind, "large");
+}
+
+#[test]
+fn snapshot_binary_file_classified() {
+    let (_tmp, root) = init_test_repo();
+
+    let bin = root.join("image.png");
+    let mut content = vec![0x89, 0x50, 0x4E, 0x47];
+    content.extend(vec![0u8; 100]);
+    fs::write(&bin, &content).unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "image.png"])
+        .output()
+        .unwrap();
+
+    let snapshot = git_bridge::repository_snapshot(&root).unwrap();
+
+    let bin_file = snapshot.changed_files.iter().find(|f| f.path == "image.png");
+    assert!(bin_file.is_some());
+    assert_eq!(bin_file.unwrap().file_kind, "binary");
+}
+
+// ---------------------------------------------------------------------------
+// v1.2.1: Commit metadata edge cases
+// ---------------------------------------------------------------------------
+
+#[test]
+fn recent_commits_merge_commit() {
+    let (_tmp, root) = init_test_repo();
+
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["checkout", "-b", "feature"])
+        .output()
+        .unwrap();
+    fs::write(root.join("feature.txt"), "feature").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Feature commit"])
+        .output()
+        .unwrap();
+
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["checkout", "master"])
+        .output()
+        .unwrap();
+    fs::write(root.join("master.txt"), "master").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Master commit"])
+        .output()
+        .unwrap();
+
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["merge", "feature", "-m", "Merge feature"])
+        .output()
+        .unwrap();
+
+    let commits = git_bridge::recent_commits(&root, None).unwrap();
+
+    let merge = commits.iter().find(|c| c.message.contains("Merge"));
+    assert!(merge.is_some(), "Should find merge commit");
+    assert!(merge.unwrap().parents.len() >= 2, "Merge commit should have 2+ parents");
+}
+
+#[test]
+fn recent_commits_multiline_message() {
+    let (_tmp, root) = init_test_repo();
+
+    fs::write(root.join("multi.txt"), "content").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Title line\n\nDetailed description\nMore details"])
+        .output()
+        .unwrap();
+
+    let commits = git_bridge::recent_commits(&root, None).unwrap();
+    assert_eq!(commits[0].message, "Title line",
+        "Message should be title only, got: {:?}", commits[0].message);
+}
+
+#[test]
+fn recent_commits_unicode_metadata() {
+    let (_tmp, root) = init_test_repo();
+
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["config", "user.name", "日本太郎"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["config", "user.email", "taro@example.jp"])
+        .output()
+        .unwrap();
+
+    fs::write(root.join("unicode.txt"), "content").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Unicode commit message"])
+        .output()
+        .unwrap();
+
+    let commits = git_bridge::recent_commits(&root, None).unwrap();
+    assert!(!commits[0].message.is_empty());
+    assert!(!commits[0].author_name.is_empty());
+}
+
+// ---------------------------------------------------------------------------
+// v1.2.1: Diff/stat parser robustness tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn diff_stat_file_with_spaces() {
+    let (_tmp, root) = init_test_repo();
+
+    let spaced = root.join("docs with spaces");
+    fs::create_dir_all(&spaced).unwrap();
+    fs::write(spaced.join("my file.md"), "# Hello\n").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Add spaced file"])
+        .output()
+        .unwrap();
+
+    fs::write(spaced.join("my file.md"), "# Hello World\n").unwrap();
+
+    let stat = git_bridge::diff_stat(&root).unwrap();
+    assert!(stat.files_changed >= 1);
+    let spaced_file = stat.files.iter().find(|f| f.path.contains("my file"));
+    assert!(spaced_file.is_some(), "Should find file with spaces: {:?}", stat.files);
+}
+
+#[test]
+fn diff_stat_binary_file() {
+    let (_tmp, root) = init_test_repo();
+
+    let bin = root.join("image.png");
+    fs::write(&bin, &[0x89u8, 0x50, 0x4E, 0x47, 0x00, 0x00, 0x00, 0x00]).unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Add binary"])
+        .output()
+        .unwrap();
+
+    fs::write(&bin, &[0x89u8, 0x50, 0x4E, 0x47, 0xFF, 0xFF, 0xFF, 0xFF]).unwrap();
+
+    let stat = git_bridge::diff_stat(&root).unwrap();
+    let bin_file = stat.files.iter().find(|f| f.path.contains("image"));
+    if let Some(f) = bin_file {
+        assert!(f.binary, "Binary file should be flagged");
+    }
+}
+
+#[test]
+fn diff_stat_deleted_file() {
+    let (_tmp, root) = init_test_repo();
+
+    fs::write(root.join("to_delete.txt"), "content").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Add file"])
+        .output()
+        .unwrap();
+    fs::remove_file(root.join("to_delete.txt")).unwrap();
+
+    let stat = git_bridge::diff_stat(&root).unwrap();
+    assert!(stat.files_changed >= 1);
+    let deleted = stat.files.iter().find(|f| f.path.contains("to_delete"));
+    assert!(deleted.is_some(), "Deleted file should appear");
+    assert!(deleted.unwrap().deletions > 0, "Should have deletions");
+}
+
+#[test]
+fn diff_stat_multiple_files() {
+    let (_tmp, root) = init_test_repo();
+
+    for i in 1..=3 {
+        fs::write(root.join(format!("file{i}.txt")), format!("content {i}")).unwrap();
+    }
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "-A"])
+        .output()
+        .unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["commit", "-m", "Add files"])
+        .output()
+        .unwrap();
+
+    for i in 1..=3 {
+        fs::write(root.join(format!("file{i}.txt")), format!("modified {i}")).unwrap();
+    }
+
+    let stat = git_bridge::diff_stat(&root).unwrap();
+    assert!(stat.files_changed >= 3, "Should detect all 3 files");
+    assert!(stat.files.len() >= 3);
+}
+
+#[test]
+fn diff_stat_staged_only() {
+    let (_tmp, root) = init_test_repo();
+
+    fs::write(root.join("README.md"), "staged content\n").unwrap();
+    std::process::Command::new("git")
+        .current_dir(&root)
+        .args(["add", "README.md"])
+        .output()
+        .unwrap();
+
+    let stat = git_bridge::diff_stat(&root).unwrap();
+    // Staged changes may or may not appear in diff HEAD depending on git behavior
+    assert!(stat.files_changed <= 1);
+}

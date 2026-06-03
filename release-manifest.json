@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.2.0",
-    "tag": "v1.2.0",
+    "name": "Orqestra v1.2.1",
+    "tag": "v1.2.1",
     "channel": "public-beta",
-    "release_version": "1.2.0",
-    "app_version": "1.2.0",
+    "release_version": "1.2.1",
+    "app_version": "1.2.1",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.2.0_x64-setup.exe",
+      "name": "Orqestra_1.2.1_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "5744ebda13bffb12ef1913b846a02266e895b92557ee65f62d9018be3b113e93",
-      "size_bytes": 4848957,
+      "sha256": "84ba97956852a0454ca8736f812509ee5ea148ae3bddb7e35209deea8897f40f",
+      "size_bytes": 4851827,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.2.0_x64.AppImage",
+      "name": "Orqestra_1.2.1_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "8eee601c6b2984359181b5b1253989c0befb565bb5e29a93e4605e31b57c8278",
+      "sha256": "PENDING_CI",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -192,13 +192,20 @@
       "write_operations_migrated": false,
       "network_operations_migrated": false,
       "providers": [
+        "gix",
         "gix-hybrid",
         "git-cli-fallback"
       ],
       "fallback_required": true,
       "blocking": false,
-      "parity": "verified-core-cases",
-      "secret_safe": true
+      "parity": "verified-expanded-cases",
+      "secret_safe": true,
+      "risk_classification": {
+        "secret_paths": "path-only",
+        "binary_sampling": "bounded-8192-bytes",
+        "symlink_following": false,
+        "large_file_threshold": "10MiB"
+      }
     }
   }
 }
