@@ -268,7 +268,7 @@ fn git_status_cli(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError
 pub fn git_status_porcelain_output(project_root: &Path) -> Result<String, GitBridgeError> {
     let output = std::process::Command::new("git")
         .current_dir(project_root)
-        .args(["status", "--porcelain=v2"])
+        .args(["status", "--porcelain=v2", "-u"]) // -u: show individual untracked files
         .output()
         .map_err(|e| GitBridgeError::Io(project_root.to_owned(), e))?;
 

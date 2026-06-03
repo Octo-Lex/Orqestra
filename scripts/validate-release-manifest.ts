@@ -331,6 +331,19 @@ if (manifest.product_readiness) {
     if (!ng.parity) {
       fail('product_readiness.native_git.parity is required');
     }
+    // v1.2.1: risk_classification constraints
+    if (ng.risk_classification) {
+      const rc = ng.risk_classification;
+      if (rc.secret_paths !== 'path-only') {
+        fail('product_readiness.native_git.risk_classification.secret_paths must be "path-only"');
+      }
+      if (rc.symlink_following !== false) {
+        fail('product_readiness.native_git.risk_classification.symlink_following must be false');
+      }
+      if (!rc.binary_sampling) {
+        fail('product_readiness.native_git.risk_classification.binary_sampling is required');
+      }
+    }
   }
 
   // Legacy pilot compatibility

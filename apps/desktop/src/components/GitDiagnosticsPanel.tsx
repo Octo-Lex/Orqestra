@@ -29,6 +29,7 @@ export function GitDiagnosticsPanel({ snapshot }: GitDiagnosticsPanelProps) {
     const colors: Record<string, string> = {
       'match': '#22c55e',
       'verified-core-cases': '#3b82f6',
+      'verified-expanded-cases': '#3b82f6',
       'mismatch': '#dc2626',
       'fallback': '#d97706',
       'not-tested': '#9ca3af',
@@ -60,10 +61,17 @@ export function GitDiagnosticsPanel({ snapshot }: GitDiagnosticsPanelProps) {
       {snapshot.diagnostics.length > 0 && (
         <div style={{ marginTop: '8px', padding: '4px', backgroundColor: '#fffbeb', borderRadius: '4px' }}>
           {snapshot.diagnostics.map((d: string, i: number) => (
-            <div key={i} style={{ color: '#92400e' }}>⚠ {d}</div>
+            <div key={i} style={{ color: '#92400e' }}>{"\u26a0"} {d}</div>
           ))}
         </div>
       )}
+
+      <div style={{ marginTop: '8px', color: '#6b7280', fontSize: '10px' }}>
+        Known limitations: push, pull, commit, and merge remain CLI-backed.{' '}
+        <a href="https://github.com/Elephant-Rock-Lab/Orqestra/blob/master/docs/native-git.md" style={{ color: '#3b82f6' }}>
+          Native Git docs
+        </a>
+      </div>
     </div>
   );
 }

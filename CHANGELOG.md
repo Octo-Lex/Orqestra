@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.2.1] - 2026-06-04
+
+### Added
+- Expanded native Git snapshot parity: staged+unstaged same file, added file, renamed file (with original_path), nested directories, ignored files, multiple simultaneous changes
+- Hardened risk classification: `*.crt`, `*.cer`, `*_rsa`, `*_ed25519`, `secrets.*`, `credentials.*`, `.github/actions/**`
+- Symlink detection: symlinks classified as `unknown` risk with explicit reason, never `normal`
+- Large file detection: files > 10 MiB classified as `large` by metadata without content sampling
+- Binary file detection: null-byte sampling verified for PNG files
+- Merge commit support: commit metadata reads show all parents (not just first)
+- Rename entry support: porcelain v2 `2 ` prefix parsed with `original_path` in DTO
+- Untracked file listing: `-u` flag ensures individual files shown (not just directories)
+- Commit metadata edge cases: multiline messages (title only), unicode authors
+- Diff/stat robustness: files with spaces, binary files, deleted files, multiple files
+- Manifest `risk_classification` sub-object with validator enforcement
+- Diagnostics UI: risk counts, last refresh time, known limitations link
+
+### Changed
+- `GitChangedFile` DTO gains optional `original_path` field for renames
+- `detect_file_kind` returns tuple `(file_kind, kind_reason)` for symlink reason propagation
+- Manifest validator enforces `risk_classification.secret_paths === "path-only"`, `symlink_following === false`
+- Native Git parity upgraded to `verified-expanded-cases`
+
+### Security
+- Certificate-like paths (`.crt`, `.cer`) classified conservatively with explicit risk_reason
+- Symlinks never followed during classification; never classified as `normal` risk
+- Secret-risk file contents never sampled
+- Binary detection remains bounded to 8 KiB
+
+### Known Limitations
+- Push, pull, commit, and merge remain CLI/human-flow operations
+- Diff/stat remains CLI-backed and labeled
+- Native Git coverage remains limited to read-only verified cases
+
 ## [1.2.0] - 2026-06-04
 
 ### Added
