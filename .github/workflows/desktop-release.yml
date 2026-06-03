@@ -151,134 +151,114 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME}"
           TAG_COMMIT="${GITHUB_SHA}"
-          SOURCE_COMMIT="${GITHUB_SHA}"
           DATE=$(date -u +"%Y-%m-%d")
           RUN_ID="${{ github.run_id }}"
 
-          # Find Windows installer
+          # Find artifacts
           WIN_INSTALLER=$(find artifacts -name "*.exe" -path "*nsis*" 2>/dev/null | head -1)
-          WIN_SHA256=""
-          WIN_SIZE=""
-          WIN_NAME=""
-
-          if [ -n "$WIN_INSTALLER" ]; then
-            WIN_SHA256=$(sha256sum "$WIN_INSTALLER" | cut -d' ' -f1)
-            WIN_SIZE=$(stat -c%s "$WIN_INSTALLER" 2>/dev/null || echo "0")
-            WIN_NAME=$(basename "$WIN_INSTALLER")
-          fi
-
-          # Find Linux AppImage
           LINUX_APPIMAGE=$(find artifacts -name "*.AppImage" 2>/dev/null | head -1)
-          LINUX_SHA256=""
-          LINUX_SIZE=""
-          LINUX_NAME=""
-          LINUX_STATUS="built-but-unverified"
-          LINUX_BUNDLE_STATUS="not-configured"
 
-          if [ -n "$LINUX_APPIMAGE" ]; then
-            LINUX_SHA256=$(sha256sum "$LINUX_APPIMAGE" | cut -d' ' -f1)
-            LINUX_SIZE=$(stat -c%s "$LINUX_APPIMAGE" 2>/dev/null || echo "0")
-            LINUX_NAME=$(basename "$LINUX_APPIMAGE")
-            LINUX_STATUS="bundle-produced-unverified"
-            LINUX_BUNDLE_STATUS="pass"
-          fi
+          # Write a Python script to generate the manifest
+          cat > /tmp/gen_manifest.py << 'PYSCRIPT'
+          import json, os, subprocess, sys
 
-          cat > dist/release-manifest.json << EOF
-          {
-            "release": {
-              "name": "Orqestra ${VERSION}",
-              "tag": "${VERSION}",
-              "channel": "public-beta",
-              "release_version": "${VERSION#v}",
-              "app_version": "${VERSION#v}",
-              "date": "${DATE}"
-            },
-            "provenance": {
-              "tag_commit": "${TAG_COMMIT}",
-              "source_commit": "${SOURCE_COMMIT}",
-              "build_commit": "${SOURCE_COMMIT}",
-              "release_upload_commit": "${SOURCE_COMMIT}",
-              "workflow": ".github/workflows/desktop-release.yml",
-              "workflow_run_id": "${RUN_ID}",
-              "status": "ci-built"
-            },
-            "artifacts": [
-              {
-                "name": "${WIN_NAME}",
-                "platform": "windows-x64",
-                "type": "nsis-installer",
-                "sha256": "${WIN_SHA256}",
-                "size_bytes": ${WIN_SIZE:-0},
-                "signed": false,
-                "signature_status": "not-signed",
-                "final_artifact_state": "unsigned-final",
-                "source": "github-actions"
-              }$([ -n "$LINUX_APPIMAGE" ] && echo ",")$([ -n "$LINUX_APPIMAGE" ] && cat <<EOFINNER
-              {
-                "name": "${LINUX_NAME}",
-                "platform": "linux-x64",
-                "type": "appimage",
-                "sha256": "${LINUX_SHA256}",
-                "size_bytes": ${LINUX_SIZE:-0},
-                "signed": false,
-                "signature_status": "not-applicable",
-                "final_artifact_state": "linux-appimage-final",
-                "verification_status": "checksummed-not-smoke-tested",
-                "source": "github-actions"
+          def sha256(path):
+              r = subprocess.run(["sha256sum", path], capture_output=True, text=True)
+              return r.stdout.split()[0] if r.returncode == 0 else ""
+
+          def fsize(path):
+              try: return os.path.getsize(path)
+              except: return 0
+
+          version = os.environ["VERSION"]
+          tag_commit = os.environ["TAG_COMMIT"]
+          date = os.environ["DATE"]
+          run_id = os.environ["RUN_ID"]
+
+          win = os.environ.get("WIN_INSTALLER", "")
+          linux = os.environ.get("LINUX_APPIMAGE", "")
+
+          artifacts = []
+          platforms = {}
+
+          # Windows
+          if win:
+              artifacts.append({
+                  "name": os.path.basename(win),
+                  "platform": "windows-x64",
+                  "type": "nsis-installer",
+                  "sha256": sha256(win),
+                  "size_bytes": fsize(win),
+                  "signed": False,
+                  "signature_status": "not-signed",
+                  "final_artifact_state": "unsigned-final",
+                  "source": "github-actions"
+              })
+              platforms["windows-x64"] = {
+                  "status": "tested", "release_blocking": True,
+                  "artifact": os.path.basename(win), "signed": False,
+                  "notes": "Unsigned public beta installer"
               }
-EOFINNER
-              )
-            ],
-            "platforms": {
-              "windows-x64": {
-                "status": "tested",
-                "release_blocking": true,
-                "artifact": "${WIN_NAME}",
-                "signed": false,
-                "notes": "Unsigned public beta installer"
-              },
-              "linux-x64": {
-                "status": "${LINUX_STATUS}",
-                "release_blocking": false,
-                "compile_status": "pass",
-                "bundle_status": "${LINUX_BUNDLE_STATUS}",
-                "public_artifact": $([ -n "$LINUX_APPIMAGE" ] && echo "true" || echo "false"),
-                "smoke_tested": false,
-                "artifact": $([ -n "$LINUX_APPIMAGE" ] && echo "\"${LINUX_NAME}\"" || echo "null"),
-                "signed": false,
-                "notes": $([ -n "$LINUX_APPIMAGE" ] && echo "\"CI produced AppImage, not smoke-tested\"" || echo "\"No bundle produced\"")
-              },
-              "macos": {
-                "status": "build-feasibility-verified",
-                "release_blocking": false,
-                "compile_status": "pass",
-                "bundle_status": "not-configured",
-                "public_artifact": false,
-                "smoke_tested": false,
-                "artifact": null,
-                "signed": false,
-                "notarized": false,
-                "notes": "CI compiles universal binary, no DMG"
-              }
-            },
-            "verification": {
-              "rust_tests": "pass",
-              "desktop_ts_build": "pass",
-              "dashboard_ts_build": "pending",
-              "windows_smoke": "ci-smoke-pass",
-              "dashboard_status": "pending",
-              "real_ai_demo": "pending"
-            },
-            "limitations": [
-              "Unsigned Windows installer",
-              "Linux AppImage not smoke-tested",
-              "macOS no bundled artifact",
-              "Some agent paths remain review-only or scaffolded"
-            ]
+
+          # Linux
+          linux_status = "built-but-unverified"
+          linux_bundle = "not-configured"
+          linux_pub = False
+          linux_art = None
+          if linux:
+              linux_status = "bundle-produced-unverified"
+              linux_bundle = "pass"
+              linux_pub = True
+              linux_art = os.path.basename(linux)
+              artifacts.append({
+                  "name": linux_art, "platform": "linux-x64", "type": "appimage",
+                  "sha256": sha256(linux), "size_bytes": fsize(linux),
+                  "signed": False, "signature_status": "not-applicable",
+                  "final_artifact_state": "linux-appimage-final",
+                  "verification_status": "checksummed-not-smoke-tested",
+                  "source": "github-actions"
+              })
+          platforms["linux-x64"] = {
+              "status": linux_status, "release_blocking": False,
+              "compile_status": "pass", "bundle_status": linux_bundle,
+              "public_artifact": linux_pub, "smoke_tested": False,
+              "artifact": linux_art, "signed": False,
+              "notes": "CI produced AppImage, not smoke-tested" if linux else "No bundle produced"
           }
-          EOF
 
-          # Merge checksums from all platforms
+          # macOS
+          platforms["macos"] = {
+              "status": "build-feasibility-verified", "release_blocking": False,
+              "compile_status": "pass", "bundle_status": "not-configured",
+              "public_artifact": False, "smoke_tested": False,
+              "artifact": None, "signed": False, "notarized": False,
+              "notes": "CI compiles universal binary, no DMG"
+          }
+
+          manifest = {
+              "release": {"name": f"Orqestra {version}", "tag": version, "channel": "public-beta",
+                  "release_version": version.lstrip("v"), "app_version": version.lstrip("v"), "date": date},
+              "provenance": {"tag_commit": tag_commit, "source_commit": tag_commit,
+                  "build_commit": tag_commit, "release_upload_commit": tag_commit,
+                  "workflow": ".github/workflows/desktop-release.yml", "workflow_run_id": run_id, "status": "ci-built"},
+              "artifacts": artifacts, "platforms": platforms,
+              "verification": {"rust_tests": "pass", "desktop_ts_build": "pass",
+                  "dashboard_ts_build": "pending", "windows_smoke": "ci-smoke-pass",
+                  "dashboard_status": "pending", "real_ai_demo": "pending"},
+              "limitations": ["Unsigned Windows installer", "Linux AppImage not smoke-tested",
+                  "macOS no bundled artifact", "Some agent paths remain review-only or scaffolded"]
+          }
+
+          os.makedirs("dist", exist_ok=True)
+          with open("dist/release-manifest.json", "w") as f:
+              json.dump(manifest, f, indent=2)
+          PYSCRIPT
+
+          export VERSION TAG_COMMIT DATE RUN_ID
+          export WIN_INSTALLER LINUX_APPIMAGE
+          python3 /tmp/gen_manifest.py
+
+          # Merge checksums
           cat artifacts/orqestra-windows-x64/dist/checksums.txt 2>/dev/null > dist/checksums.txt || true
           cat artifacts/orqestra-linux-x64/dist/checksums.txt 2>/dev/null >> dist/checksums.txt || true
 
