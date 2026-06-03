@@ -1,0 +1,134 @@
+name: Linux Native Smoke Report
+description: Report Linux AppImage smoke test results
+labels: ["linux", "smoke", "platform-verification"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing the Orqestra Linux AppImage!
+
+        **Before submitting:** Remove or redact any API keys, tokens, `.env` contents, passwords, or private repository paths from your report.
+
+        See the [Native Linux Smoke Guide](../docs/linux-native-smoke-guide.md) for step-by-step instructions.
+
+  - type: input
+    id: appimage-filename
+    attributes:
+      label: AppImage filename
+      placeholder: "Orqestra_1.0.12_x64.AppImage"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: sha256-verified
+    attributes:
+      label: SHA256 verified
+      description: Did the SHA256 match checksums.txt?
+      options:
+        - "yes"
+        - "no"
+    validations:
+      required: true
+
+  - type: input
+    id: distribution
+    attributes:
+      label: Linux distribution and version
+      placeholder: "Ubuntu 24.04.1 LTS"
+    validations:
+      required: true
+
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel version
+      placeholder: "6.8.0-45-generic"
+    validations:
+      required: true
+
+  - type: input
+    id: desktop
+    attributes:
+      label: Desktop environment
+      placeholder: "GNOME 46"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: display-server
+    attributes:
+      label: Display server
+      options:
+        - "Wayland"
+        - "X11"
+        - "XWayland"
+    validations:
+      required: true
+
+  - type: input
+    id: webkit-version
+    attributes:
+      label: WebKitGTK version
+      placeholder: "2.44.0"
+    validations:
+      required: false
+
+  - type: input
+    id: gtk-version
+    attributes:
+      label: GTK version
+      placeholder: "3.24.41"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: smoke-result
+    attributes:
+      label: Smoke test result
+      options:
+        - "pass (all steps completed)"
+        - "fail (one or more steps failed)"
+        - "blocked (could not complete due to environment)"
+    validations:
+      required: true
+
+  - type: textarea
+    id: failed-step
+    attributes:
+      label: Step that failed (if any)
+      description: Which smoke step failed? What was the error?
+    validations:
+      required: false
+
+  - type: textarea
+    id: terminal-output
+    attributes:
+      label: Terminal output
+      description: Paste terminal output from launching the AppImage. Remove any secrets first.
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag and drop screenshots of the main window, dashboard, or any error dialogs.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: secrets-removed
+    attributes:
+      label: Secrets confirmation
+      options:
+        - label: "I have removed all API keys, tokens, passwords, `.env` contents, and private repository paths from this report"
+          required: true
+
+  - type: input
+    id: machine-type
+    attributes:
+      label: Machine type
+      placeholder: "physical / VM / cloud desktop"
+    validations:
+      required: false

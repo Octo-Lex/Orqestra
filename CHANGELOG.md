@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.0.12] - 2026-06-03
+
+### Added
+- Native Linux contributor smoke guide (`docs/linux-native-smoke-guide.md`)
+- Linux smoke evidence template (`docs/linux-smoke-evidence-template.md`)
+- Linux smoke report GitHub issue template (`.github/ISSUE_TEMPLATE/linux_smoke_report.yml`)
+- `native-smoke-blocked` status in manifest validator
+- `contributor_smoke_kit` manifest field linking guide, template, and issue form
+- `previous_runtime_evidence` field preserving WSLg evidence
+
+### Changed
+- Linux status: `runtime-evidence-wslg` -> `native-smoke-blocked` (contributor kit published)
+- Platform confidence documentation updated with contributor smoke path
+- README links to Linux smoke guide for contributors
+
+### Security
+- SHA256 verification required for Linux AppImage
+- Issue templates warn users not to share API keys, tokens, `.env` files, or secrets
+
+### Known Limitations
+- Linux AppImage native-smoke-blocked: contributor kit published, native desktop smoke pending
+- Linux not promoted without native desktop smoke
+- Windows installer remains unsigned
+- macOS remains build-feasibility-only
+
 ## [1.0.11] - 2026-06-03
 
 ### Added

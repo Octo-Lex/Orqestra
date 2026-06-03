@@ -1,20 +1,20 @@
 {
   "release": {
-    "name": "Orqestra v1.0.11",
-    "tag": "v1.0.11",
+    "name": "Orqestra v1.0.12",
+    "tag": "v1.0.12",
     "channel": "public-beta",
-    "release_version": "1.0.11",
-    "app_version": "1.0.11",
+    "release_version": "1.0.12",
+    "app_version": "1.0.12",
     "date": "2026-06-03"
   },
   "provenance": {
-    "tag_commit": "6834a32c2471537c46a52ab1506c6f1c9c81e4c4",
-    "source_commit": "6834a32c2471537c46a52ab1506c6f1c9c81e4c4",
-    "build_commit": "6834a32c2471537c46a52ab1506c6f1c9c81e4c4",
+    "tag_commit": "0000000000000000000000000000000000000000",
+    "source_commit": "0000000000000000000000000000000000000000",
+    "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "26874737101",
-    "status": "released"
+    "workflow_run_id": "26878403707",
+    "status": "local-build"
   },
   "signing": {
     "windows": {
@@ -31,31 +31,34 @@
     "installer_diagnostics": "docs/installer-diagnostics.md",
     "issue_triage": "docs/beta-issue-triage.md",
     "platform_confidence": "docs/platform-confidence.md",
+    "linux_smoke_guide": "docs/linux-native-smoke-guide.md",
+    "linux_evidence_template": "docs/linux-smoke-evidence-template.md",
+    "linux_issue_template": ".github/ISSUE_TEMPLATE/linux_smoke_report.yml",
     "issue_templates": true,
     "signing_readiness": "blocked-certificate-not-available"
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.11_x64-setup.exe",
+      "name": "Orqestra_1.0.12_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "fc4d6560e62fa11a2dff349e5ceb12a3d8e557d7049ece464118520d9f3a0107",
-      "size_bytes": 4713200,
+      "sha256": "9fdf24a9829e8838364c1de87f5bc1b0711b3ffe015cca5f28d1246f88752a09",
+      "size_bytes": 4716823,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_1.0.11_x64.AppImage",
+      "name": "Orqestra_1.0.12_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "55a5e5b1575be574eb2e56b9a68d2e3b9bff64ec5237a63beb4e00a94791b6c1",
-      "size_bytes": 82749944,
+      "sha256": "839ee8a629b33c82ea39a35dbd6d69e92e2363ae988c2fda0343cc5860900b05",
+      "size_bytes": 82741752,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
-      "verification_status": "checksummed-wslg-runtime-pass",
+      "verification_status": "checksummed-contributor-smoke-pending",
       "source": "github-actions"
     }
   ],
@@ -63,68 +66,52 @@
     "windows-x64": {
       "status": "tested",
       "release_blocking": true,
-      "artifact": "Orqestra_1.0.11_x64-setup.exe",
+      "artifact": "Orqestra_1.0.12_x64-setup.exe",
       "signed": false,
-      "smoke_evidence": "demo/v1.0.11-windows-smoke.md",
+      "smoke_evidence": "demo/v1.0.12-windows-smoke.md",
       "notes": "Unsigned tested public beta installer"
     },
     "linux-x64": {
-      "status": "runtime-evidence-wslg",
+      "status": "native-smoke-blocked",
       "release_blocking": false,
-      "artifact": "Orqestra_1.0.11_x64.AppImage",
+      "artifact": "Orqestra_1.0.12_x64.AppImage",
       "signed": false,
       "compile_status": "pass",
       "bundle_status": "pass",
       "public_artifact": true,
       "smoke_tested": false,
+      "smoke_result": "blocked",
       "native_desktop_smoke": false,
-      "runtime_attempted": true,
-      "runtime_result": "pass-wslg",
+      "previous_runtime_evidence": "runtime-evidence-wslg",
       "promotion_blocker": "no-native-linux-desktop-smoke",
-      "runtime_environment": {
-        "distribution": "Ubuntu",
-        "version": "24.04.1 LTS",
-        "kernel": "5.15.167.4-microsoft-standard-WSL2",
-        "desktop": "none (WSLg)",
-        "display_server": "WSLg (XWayland + Wayland)",
-        "wayland": "wayland-0",
-        "x11_display": ":0",
-        "gtk": "3.24.41-4ubuntu1.3",
-        "webkit2gtk": "2.52.3-0ubuntu0.24.04.1",
-        "fuse": "3.14.0-5build1",
-        "gpu": "software (DRI3 unavailable)",
-        "machine_type": "WSL2 + WSLg"
+      "contributor_smoke_kit": {
+        "guide": "docs/linux-native-smoke-guide.md",
+        "evidence_template": "docs/linux-smoke-evidence-template.md",
+        "issue_template": ".github/ISSUE_TEMPLATE/linux_smoke_report.yml"
       },
-      "runtime_evidence": {
-        "main_window": "1280x720 'Orqestra'",
-        "webkit_processes": "NetworkProcess + WebProcess running",
-        "memory_stable_mb": 384,
-        "uptime_stable": "6+ minutes",
-        "screenshot": "demo/v1.0.11-wslg-screenshot.png",
-        "smoke_evidence": "demo/v1.0.11-linux-wslg-smoke.md"
-      },
-      "notes": "AppImage launches under WSLg with GTK/WebKit initialized. Linux is not promoted because native Linux desktop smoke has not been run."
+      "notes": "Linux AppImage has WSLg runtime evidence, but native desktop smoke has not been completed. Contributor smoke kit published."
     },
     "macos": {
       "status": "build-feasibility-verified",
       "release_blocking": false,
       "artifact": null,
+      "signed": false,
       "compile_status": "pass",
       "bundle_status": "not-configured",
       "public_artifact": false,
       "smoke_tested": false,
       "notarized": false,
-      "signed": false,
       "evidence": "demo/v1.0.8-macos-feasibility.md",
       "notes": "CI compiles universal binary, no DMG/app bundle"
     }
   },
   "platform_verification": {
-    "ci_run_id": "26874737101",
-    "ci_run_branch": "v1.0.11",
-    "matrix_evidence": "demo/v1.0.11-platform-matrix.md",
-    "windows": "demo/v1.0.11-windows-smoke.md",
-    "linux": "demo/v1.0.11-linux-wslg-smoke.md",
+    "ci_run_id": "26878403707",
+    "ci_run_branch": "v1.0.12",
+    "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
+    "windows": "demo/v1.0.12-windows-smoke.md",
+    "linux": "demo/v1.0.12-linux-native-smoke.md",
+    "linux_wslg_evidence": "demo/v1.0.11-linux-wslg-smoke.md",
     "macos": "demo/v1.0.8-macos-feasibility.md"
   },
   "dashboard": {
@@ -143,14 +130,15 @@
     "desktop_ts_build": "pass",
     "dashboard_ts_build": "pass",
     "windows_smoke": "pass",
-    "linux_wslg_smoke": "pass-wslg",
+    "linux_wslg_smoke": "pass-wslg (prior release)",
+    "linux_native_smoke": "not-run",
     "dashboard_status": "200 OK",
     "real_ai_demo": "pass",
     "rust_tests_count": 141
   },
   "limitations": [
     "Unsigned Windows installer",
-    "Linux AppImage verified under WSLg only -- native desktop smoke not run",
+    "Linux AppImage: native smoke not completed; contributor smoke kit published",
     "Linux not promoted without native desktop smoke",
     "macOS binary compiles but no bundled artifact",
     "Some agent paths remain review-only or scaffolded"
