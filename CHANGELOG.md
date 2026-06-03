@@ -4,6 +4,35 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.2.0] - 2026-06-04
+
+### Added
+- Repository snapshot command (`git_repository_snapshot_cmd`) — composite branch/HEAD/status/changed-files DTO
+- Branch and HEAD metadata reads via gix (SHA, message, author, timestamp, detached detection)
+- Changed-file summary with `file_kind` (text/binary/large/unknown) and `risk` (normal/secret/workflow/binary/large/unknown) classification
+- Recent commit metadata reads with bounded limits (default 10, max 100) via gix traversal with CLI fallback
+- Diff/stat read pilot (`git_diff_stat_cmd`) — CLI-backed, labeled, secret-safe
+- Native Git diagnostics UI: `GitStatusPanel`, `GitDiagnosticsPanel`, `CommitSummaryPanel` components
+- 29 new tests: snapshot, HEAD metadata, risk classification, commits, diff/stat, parity
+- `docs/native-git.md` documentation
+- Manifest `native_git` section with scope, operations, providers, fallback, parity, and secret safety
+
+### Changed
+- `git-bridge` crate gains `snapshot`, `commits`, and `diff` modules
+- Manifest validator enforces `write_operations_migrated=false`, `network_operations_migrated=false`, `fallback_required=true`, `blocking=false`, `secret_safe=true`
+- Provider renamed from `gix+cli` to `gix-hybrid` (v1.1.1 carry-forward)
+
+### Security
+- Secret-risk paths (.env, *.pem, *.key, id_rsa, id_ed25519) are flagged without reading contents
+- Binary detection reads at most 8 KiB and never opens secret-risk files
+- Symlinks are not followed during risk classification
+- Diff/stat output never includes file contents
+
+### Known Limitations
+- Push, pull, commit, and merge operations remain CLI-backed
+- Diff/stat is CLI-backed in v1.2.0 as a labeled read-only fallback
+- Native Git coverage is limited to verified read-only cases
+
 ## [1.1.1] - 2026-06-04
 
 ### Added

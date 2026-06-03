@@ -263,6 +263,24 @@ fn git_status_cli(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError
     })
 }
 
+/// Get raw `git status --porcelain=v2` output for per-file parsing.
+/// Used by the snapshot module to build changed-file lists.
+pub fn git_status_porcelain_output(project_root: &Path) -> Result<String, GitBridgeError> {
+    let output = std::process::Command::new("git")
+        .current_dir(project_root)
+        .args(["status", "--porcelain=v2"])
+        .output()
+        .map_err(|e| GitBridgeError::Io(project_root.to_owned(), e))?;
+
+    if !output.status.success() {
+        return Err(GitBridgeError::GitOperation(
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ));
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 /// Recursively walk files in a directory (non-.git entries only).
 fn walkdir_files(root: &Path) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
     let mut files = Vec::new();
