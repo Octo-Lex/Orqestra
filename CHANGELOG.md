@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.1.1] - 2026-06-04
+
+### Added
+- Bugfix-agent hardening: 7 new tests for disallowed paths, .env rejection, workflow rejection, empty response, auto-commit=false invariant, reject-no-change
+- Native Git parity: `fallback_used` and `parity_status` fields in `NativeGitStatus` DTO
+- Native Git parity: 4 new tests (branch/dirty parity, dirty repo, non-repo fallback, provider)
+- Structured error coverage: 3 new tests (9 code check, .env redaction, auth header redaction)
+- `credential_validation` manifest section with per-platform status and refined Linux wording
+- `structured_errors` manifest section with code count and redaction status
+- `native_git_pilot.parity` manifest field set to `verified-core-cases`
+
+### Changed
+- Native Git provider renamed from `gix+cli` to `gix-hybrid` (explicit about hybrid nature)
+- Linux credential status uses `os-keychain-or-session-fallback` with environment notes
+- Manifest validator enforces product-readiness values match evidence
+
+### Fixed
+- Native Git status DTO now includes `fallback_used` and `parity_status` for diagnostics
+
+### Security
+- Redaction tests verify .env content, Authorization headers, and long hex strings
+- Token masking tests verify no raw PATs in DTO serialization
+
 ## [1.1.0] - 2026-06-03
 
 ### Added

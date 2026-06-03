@@ -1,11 +1,11 @@
 {
   "release": {
-    "name": "Orqestra v1.1.0",
-    "tag": "v1.1.0",
+    "name": "Orqestra v1.1.1",
+    "tag": "v1.1.1",
     "channel": "public-beta",
-    "release_version": "1.1.0",
-    "app_version": "1.1.0",
-    "date": "2026-06-03"
+    "release_version": "1.1.1",
+    "app_version": "1.1.1",
+    "date": "2026-06-04"
   },
   "provenance": {
     "tag_commit": "0000000000000000000000000000000000000000",
@@ -39,21 +39,21 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.1.0_x64-setup.exe",
+      "name": "Orqestra_1.1.1_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "eff035e9375507686af993ae0b893e3a976b2e225cb26b7dd472896aad46940f",
-      "size_bytes": 4732924,
+      "sha256": "6e9f3dd4a48a4cf05bee540ef760c6d0d9eac9e534392ec8a832827a1122d6b8",
+      "size_bytes": 4730384,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_1.0.12_x64.AppImage",
+      "name": "Orqestra_1.1.1_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "4906e0c5b513019a71d9a5f222fb40f7da90a7d17a673853b361b5c04bc2fd3c",
+      "sha256": "PENDING_CI",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
@@ -156,12 +156,36 @@
     ],
     "agent_mode": "review-only",
     "first_run_guide": true,
-    "structured_errors": true,
+    "structured_errors": {
+      "enabled": true,
+      "error_codes": 9,
+      "secret_redaction": "verified"
+    },
     "native_git_pilot": {
       "operation": "status-read-only",
-      "provider": "gix",
+      "provider": "gix-hybrid",
       "fallback": "git-cli",
-      "blocking": false
+      "blocking": false,
+      "parity": "verified-core-cases"
+    },
+    "credential_validation": {
+      "windows": {
+        "provider": "os-keychain",
+        "status": "verified"
+      },
+      "linux": {
+        "provider": "os-keychain-or-session-fallback",
+        "validated_environment": "Ubuntu 24.04 Proxmox VM",
+        "observed_provider": "session-only-fallback",
+        "status": "fallback-documented",
+        "notes": "Secret Service daemon unavailable in smoke VM; desktop Linux with GNOME Keyring/KDE Wallet remains supported by implementation but not verified in this environment."
+      },
+      "macos": {
+        "provider": "keychain",
+        "status": "implemented-not-smoke-tested"
+      },
+      "token_masking": "verified",
+      "legacy_migration": "verified"
     }
   }
 }

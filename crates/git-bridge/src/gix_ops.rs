@@ -137,7 +137,9 @@ pub struct NativeGitStatus {
     pub unstaged_count: u32,
     pub untracked_count: u32,
     pub provider: String,
+    pub fallback_used: bool,
     pub latency_ms: u64,
+    pub parity_status: String,
 }
 
 /// Get git status using native gix (preferred) with git CLI fallback.
@@ -168,7 +170,12 @@ pub fn native_git_status(project_root: &Path) -> Result<NativeGitStatus, GitBrid
     // If gix gave us the branch, prefer it and mark provider as hybrid
     if let Some(branch) = gix_branch {
         status.branch = branch;
-        status.provider = "gix+cli".to_string();
+        status.provider = "gix-hybrid".to_string();
+        status.fallback_used = false;
+        status.parity_status = "not-tested".to_string();
+    } else {
+        status.fallback_used = true;
+        status.parity_status = "fallback".to_string();
     }
 
     status.latency_ms = start.elapsed().as_millis() as u64;
@@ -250,7 +257,9 @@ fn git_status_cli(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError
         unstaged_count,
         untracked_count,
         provider: "git-cli".to_string(),
+        fallback_used: true,
         latency_ms: 0,
+        parity_status: "not-tested".to_string(),
     })
 }
 
@@ -342,7 +351,7 @@ mod tests {
         assert!(result.is_ok(), "Should get git status: {:?}", result);
         let status = result.unwrap();
         assert!(!status.branch.is_empty());
-        assert!(status.provider == "gix" || status.provider == "git-cli" || status.provider == "gix+cli");
+        assert!(status.provider == "gix" || status.provider == "git-cli" || status.provider == "gix-hybrid");
         assert!(status.latency_ms < 5000, "Latency should be reasonable: {}ms", status.latency_ms);
     }
 
@@ -379,7 +388,74 @@ mod tests {
             }
         }
         let status = native_git_status(&dir).unwrap();
-        // Provider must be either gix or git-cli, never empty
+        // Provider must be either gix-hybrid or git-cli, never empty
         assert!(!status.provider.is_empty());
+        // New DTO fields must be present
+        assert!(!status.parity_status.is_empty());
+    }
+
+    #[test]
+    fn native_git_status_parity_against_cli() {
+        // Compare native_git_status against pure CLI output
+        let project_root = std::env::current_dir().unwrap();
+        let mut dir = project_root.clone();
+        while !dir.join(".git").exists() {
+            if !dir.pop() {
+                return;
+            }
+        }
+        let native = native_git_status(&dir).unwrap();
+        let cli = git_status_cli(&dir).unwrap();
+
+        // Branch must match
+        assert_eq!(native.branch, cli.branch,
+            "Branch mismatch: native={}, cli={}", native.branch, cli.branch);
+
+        // Dirty flag must match
+        assert_eq!(native.dirty, cli.dirty,
+            "Dirty mismatch: native={}, cli={}", native.dirty, cli.dirty);
+    }
+
+    #[test]
+    fn native_git_status_dirty_repo() {
+        use std::io::Write;
+        // Create a temp repo with an untracked file
+        let tmp = std::env::temp_dir().join("gix-dirty-test");
+        std::fs::create_dir_all(&tmp).ok();
+
+        // Init repo
+        let init = std::process::Command::new("git")
+            .current_dir(&tmp)
+            .args(["init"])
+            .output().unwrap();
+        if !init.status.success() {
+            return; // git not available
+        }
+
+        // Create untracked file
+        std::fs::write(tmp.join("untracked.txt"), "test").unwrap();
+
+        let status = native_git_status(&tmp).unwrap();
+        assert!(status.dirty, "Repo with untracked file should be dirty");
+        assert!(status.untracked_count >= 1, "Should have at least 1 untracked file");
+
+        // Clean up
+        std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    #[test]
+    fn native_git_status_non_repo_returns_error_or_fallback() {
+        let tmp = std::env::temp_dir().join("gix-nonrepo-test");
+        std::fs::create_dir_all(&tmp).ok();
+
+        // Non-repo should fail or use fallback
+        let result = native_git_status(&tmp);
+        if let Ok(status) = result {
+            // If it succeeds, it must be via CLI fallback
+            assert!(status.fallback_used || status.provider == "git-cli");
+        }
+        // If it fails, that's also acceptable
+
+        std::fs::remove_dir_all(&tmp).ok();
     }
 }

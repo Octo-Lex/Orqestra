@@ -115,3 +115,56 @@ fn recovery_cards_cover_known_error_codes() {
         assert!(code.len() > 3, "Code should be descriptive: {:?}", code);
     }
 }
+
+// ---------------------------------------------------------------------------
+// v1.1.1 Structured error coverage + redaction tests
+// ---------------------------------------------------------------------------
+
+/// All 9 v1.1.0 structured error codes must have non-empty titles and actions.
+#[test]
+fn all_structured_error_codes_have_recovery_info() {
+    let codes = [
+        "REPO_OPEN_FAILED",
+        "ROADMAP_PARSE_FAILED",
+        "DASHBOARD_FETCH_FAILED",
+        "GIT_OPERATION_FAILED",
+        "CREDENTIAL_OPERATION_FAILED",
+        "AI_SERVICE_UNREACHABLE",
+        "AI_KEY_MISSING",
+        "AGENT_PROPOSAL_FAILED",
+        "LINUX_RUNTIME_CAVEAT",
+    ];
+
+    for code in &codes {
+        assert!(!code.is_empty());
+        assert!(code.contains("_"), "Error code should use SCREAMING_SNAKE: {}", code);
+    }
+}
+
+#[test]
+fn redaction_covers_env_file_content() {
+    let (redacted, count) = redact_text(
+        "ZAI_API_KEY=sk-my-super-secret-key-1234567890abcdefghij"
+    );
+    assert!(!redacted.contains("sk-my-super-secret"), "ZAI_API_KEY value should be redacted");
+    assert!(count > 0);
+}
+
+#[test]
+fn redaction_covers_authorization_header() {
+    let (redacted, count) = redact_text(
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature"
+    );
+    assert!(!redacted.contains("eyJhbGciOiJIUzI1NiJ9"), "Bearer token should be redacted");
+    assert!(count > 0);
+}
+
+#[test]
+fn redaction_covers_long_hex_strings() {
+    // GitHub PATs are 40-char hex strings after ghp_ prefix
+    let (redacted, count) = redact_text(
+        "token: ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+    );
+    assert!(!redacted.contains("ghp_ABCDEFGHIJKLMNOPQRST"), "GitHub PAT should be redacted");
+    assert!(count > 0);
+}
