@@ -1,34 +1,35 @@
-# Orqestra v1.0.10 -- Linux Smoke Verification
+# Orqestra v1.0.11 -- Linux WSLg Runtime Evidence
 
 ## Summary
 
-v1.0.10 records the Linux AppImage runtime blocker found under WSL2/Xvfb testing. The AppImage binary is valid and all shared dependencies resolve, but GTK initialization fails without a display server. Linux remains unpromoted pending a native Linux desktop smoke test.
+v1.0.11 verifies that the Linux AppImage launches successfully under WSLg with GTK/WebKit initialized, but Linux is not promoted to a tested beta platform because native Linux desktop smoke has not yet been run.
 
 ## Download
 
 | Platform | File | SHA256 | Status |
 |----------|------|--------|--------|
-| Windows x64 | `Orqestra_1.0.10_x64-setup.exe` | See `checksums.txt` | Smoke-tested |
-| Linux x64 | `Orqestra_1.0.10_x64.AppImage` | See `checksums.txt` | Runtime-blocked |
+| Windows x64 | `Orqestra_1.0.11_x64-setup.exe` | See `checksums.txt` | Smoke-tested |
+| Linux x64 | `Orqestra_1.0.11_x64.AppImage` | See `checksums.txt` | runtime-evidence-wslg |
 
 ## Platform Status
 
-| Platform | Status | Artifact | Smoke | Runtime | Blocking |
-|----------|--------|----------|-------|---------|----------|
-| Windows x64 | tested | NSIS | pass | Windows 10 | yes |
-| Linux x64 | runtime-blocked | AppImage | blocked | WSL2 (no display) | no |
-| macOS | build-feasibility-verified | none | -- | CI only | no |
+| Platform | Status | Artifact | Runtime Env | Blocking |
+|----------|--------|----------|-------------|----------|
+| Windows x64 | tested | NSIS | Windows 11 Pro | yes |
+| Linux x64 | runtime-evidence-wslg | AppImage | WSLg Ubuntu 24.04 | no |
+| macOS | build-feasibility-verified | none | CI only | no |
 
-## Linux Runtime Blocker
+## Linux WSLg Runtime Evidence
 
-**The Linux AppImage runtime was tested under WSL2 Ubuntu 24.04.** GTK initialization failed because no display server (X11 or Wayland) was available:
+The Linux AppImage was tested under WSLg (Windows Subsystem for Linux GUI) on Ubuntu 24.04:
 
-```
-thread 'main' panicked at tao-0.35.3/src/platform_impl/linux/event_loop.rs:217:53:
-Failed to initialize gtk backend!: BoolError { message: "Failed to initialize GTK" }
-```
+- **Launch:** Pass -- AppImage launches via `systemd-run`
+- **Main window:** 1280x720 "Orqestra" window created
+- **WebKit:** NetworkProcess + WebProcess running
+- **Memory:** 384MB RSS, stable for 6+ minutes
+- **Screenshot:** Captured (see release assets)
 
-This is an environmental limitation, not an application defect. On a native Linux desktop with a real display server, the app is expected to launch normally.
+GTK initialized, WebKit rendered content, and the app ran stably. However, WSLg is a compatibility layer, not a native Linux desktop. Steps 8-12 of the smoke flow (folder selection, roadmap UI, dashboard) could not be completed because WSLg provides no interactive desktop session in this configuration.
 
 **Linux is not promoted to tested until the AppImage passes on a native Linux desktop.**
 
@@ -36,21 +37,21 @@ This is an environmental limitation, not an application defect. On a native Linu
 
 Windows:
 ```powershell
-Get-FileHash .\Orqestra_1.0.10_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.0.11_x64-setup.exe -Algorithm SHA256
 ```
 
 Linux:
 ```bash
-sha256sum Orqestra_1.0.10_x64.AppImage
+sha256sum Orqestra_1.0.11_x64.AppImage
 ```
 
 ## Platform Evidence
 
-- Platform matrix: `demo/v1.0.10-platform-matrix.md`
-- Windows smoke: `demo/v1.0.10-windows-smoke.md`
-- Linux WSL2 smoke attempt: `demo/v1.0.10-linux-wsl2-smoke-attempt.md`
-- Linux runtime blocker: `demo/v1.0.10-linux-runtime-blocker.md`
-- Demo evidence: `demo/v1.0.10-demo-evidence.md`
+- Platform matrix: `demo/v1.0.11-platform-matrix.md`
+- Windows smoke: `demo/v1.0.11-windows-smoke.md`
+- Linux WSLg smoke: `demo/v1.0.11-linux-wslg-smoke.md`
+- WSLg screenshot: `demo/v1.0.11-wslg-screenshot.png`
+- Demo evidence: `demo/v1.0.11-demo-evidence.md`
 
 ## Signing Status
 
@@ -59,7 +60,7 @@ Windows signing is **blocked** (certificate-not-available). The installer is uns
 ## Known Limitations
 
 - Windows installer is unsigned
-- Linux AppImage runtime-blocked: GTK init fails without display server
+- Linux AppImage runtime-evidence-wslg: passes under WSLg, not promoted
 - Linux not promoted without native desktop smoke
 - macOS has no bundled artifact
 - Some agent paths remain review-only or scaffolded
