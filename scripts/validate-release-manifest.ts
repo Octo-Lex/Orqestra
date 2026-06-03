@@ -21,8 +21,10 @@ import { readFileSync } from 'fs';
 
 const ALLOWED_STATUSES = [
   'tested', 'signed-tested',
-  'built-but-unverified', 'bundle-produced-unverified', 'runtime-evidence-wsl2',
-  'runtime-blocked', 'smoke-failed', 'smoke-blocked',
+  'built-but-unverified', 'bundle-produced-unverified',
+  'runtime-evidence-wsl2', 'runtime-evidence-wslg',
+  'runtime-blocked', 'native-runtime-blocked', 'native-smoke-failed', 'native-smoke-blocked',
+  'smoke-failed', 'smoke-blocked',
   'build-attempted-failed',
   'build-feasibility-verified', 'artifact-built-unnotarized', 'tested-unnotarized',
   'notarized-tested',
@@ -171,10 +173,54 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
     }
   }
 
-  // runtime-blocked: runtime attempted but failed
-  if (plat.status === 'runtime-blocked') {
+  // runtime-evidence-wslg: runtime pass under WSLg, not promoted
+  if (plat.status === 'runtime-evidence-wslg') {
+    if (plat.public_artifact !== true) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have public_artifact: true`);
+    }
+    if (plat.smoke_tested !== false) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have smoke_tested: false (not native desktop)`);
+    }
+    if (plat.native_desktop_smoke !== false) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have native_desktop_smoke: false`);
+    }
     if (!plat.runtime_attempted || plat.runtime_attempted !== true) {
-      fail(`platforms.${key} with status "runtime-blocked" must have runtime_attempted: true`);
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have runtime_attempted: true`);
+    }
+    if (!plat.runtime_result) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have runtime_result`);
+    }
+    if (!plat.promotion_blocker) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have promotion_blocker`);
+    }
+    if (!plat.runtime_environment) {
+      fail(`platforms.${key} with status "runtime-evidence-wslg" must have runtime_environment`);
+    }
+  }
+
+  // native-runtime-blocked: native desktop launch/runtime failed
+  if (plat.status === 'native-runtime-blocked') {
+    if (plat.smoke_tested !== false) {
+      fail(`platforms.${key} with status "native-runtime-blocked" must have smoke_tested: false`);
+    }
+    if (!plat.runtime_attempted || plat.runtime_attempted !== true) {
+      fail(`platforms.${key} with status "native-runtime-blocked" must have runtime_attempted: true`);
+    }
+    if (!plat.runtime_environment) {
+      fail(`platforms.${key} with status "native-runtime-blocked" must have runtime_environment`);
+    }
+    if (!plat.runtime_blocker) {
+      fail(`platforms.${key} with status "native-runtime-blocked" must have runtime_blocker`);
+    }
+  }
+
+  // native-smoke-failed: native desktop launched but smoke path failed
+  if (plat.status === 'native-smoke-failed') {
+    if (!plat.runtime_attempted || plat.runtime_attempted !== true) {
+      fail(`platforms.${key} with status "native-smoke-failed" must have runtime_attempted: true`);
+    }
+    if (!plat.runtime_environment) {
+      fail(`platforms.${key} with status "native-smoke-failed" must have runtime_environment`);
     }
   }
 }
