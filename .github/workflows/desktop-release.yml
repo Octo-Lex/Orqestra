@@ -78,9 +78,9 @@ jobs:
         run: |
           APPIMAGE=$(find target/release/bundle/appimage -name '*.AppImage' 2>/dev/null | head -1)
           if [ -n "$APPIMAGE" ]; then
-            CANONICAL="$(dirname "$APPIMAGE")/Orqestra_1.0.11_x64.AppImage"
+            CANONICAL="$(dirname "$APPIMAGE")/Orqestra_1.0.12_x64.AppImage"
             mv "$APPIMAGE" "$CANONICAL"
-            echo "Renamed to Orqestra_1.0.11_x64.AppImage"
+            echo "Renamed to Orqestra_1.0.12_x64.AppImage"
           else
             echo "No AppImage found to rename"
           fi
