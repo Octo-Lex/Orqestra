@@ -22,7 +22,7 @@ import { readFileSync } from 'fs';
 const ALLOWED_STATUSES = [
   'tested', 'signed-tested',
   'built-but-unverified', 'bundle-produced-unverified', 'runtime-evidence-wsl2',
-  'runtime-blocked', 'smoke-failed', 'smoke-blocked', 'PENDING_SMOKE',
+  'runtime-blocked', 'smoke-failed', 'smoke-blocked',
   'build-attempted-failed',
   'build-feasibility-verified', 'artifact-built-unnotarized', 'tested-unnotarized',
   'notarized-tested',
