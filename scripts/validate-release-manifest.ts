@@ -21,7 +21,9 @@ import { readFileSync } from 'fs';
 
 const ALLOWED_STATUSES = [
   'tested', 'signed-tested',
-  'built-but-unverified', 'bundle-produced-unverified', 'build-attempted-failed',
+  'built-but-unverified', 'bundle-produced-unverified', 'runtime-evidence-wsl2',
+  'runtime-blocked', 'smoke-failed', 'smoke-blocked',
+  'build-attempted-failed',
   'build-feasibility-verified', 'artifact-built-unnotarized', 'tested-unnotarized',
   'notarized-tested',
   'not-built', 'deferred', 'failed', 'unsupported',
@@ -140,7 +142,7 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
     }
   }
 
-  // Non-tested platforms should have compile_status and bundle_status
+  // bundle-produced-unverified: no smoke, no runtime attempt
   if (plat.status === 'built-but-unverified' || plat.status === 'build-feasibility-verified' || plat.status === 'bundle-produced-unverified') {
     if (!plat.compile_status) {
       fail(`platforms.${key} with status "${plat.status}" must have compile_status`);
@@ -153,13 +155,26 @@ for (const [key, plat] of Object.entries(platforms as Record<string, any>)) {
     }
   }
 
-  // bundle-produced-unverified must have public_artifact true
-  if (plat.status === 'bundle-produced-unverified') {
+  // runtime-evidence-wsl2: runtime attempted under WSL2, not promoted
+  if (plat.status === 'runtime-evidence-wsl2') {
     if (plat.public_artifact !== true) {
-      fail(`platforms.${key} with status "bundle-produced-unverified" must have public_artifact: true`);
+      fail(`platforms.${key} with status "runtime-evidence-wsl2" must have public_artifact: true`);
     }
     if (plat.smoke_tested !== false) {
-      fail(`platforms.${key} with status "bundle-produced-unverified" must have smoke_tested: false`);
+      fail(`platforms.${key} with status "runtime-evidence-wsl2" must have smoke_tested: false (not native desktop)`);
+    }
+    if (!plat.runtime_attempted || plat.runtime_attempted !== true) {
+      fail(`platforms.${key} with status "runtime-evidence-wsl2" must have runtime_attempted: true`);
+    }
+    if (!plat.promotion_blocker) {
+      fail(`platforms.${key} with status "runtime-evidence-wsl2" must have promotion_blocker`);
+    }
+  }
+
+  // runtime-blocked: runtime attempted but failed
+  if (plat.status === 'runtime-blocked') {
+    if (!plat.runtime_attempted || plat.runtime_attempted !== true) {
+      fail(`platforms.${key} with status "runtime-blocked" must have runtime_attempted: true`);
     }
   }
 }
