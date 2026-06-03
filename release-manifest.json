@@ -13,7 +13,7 @@
     "build_commit": "821d6eaf098fe22c5b7c36b1f8b5483686845da9",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "PLACEHOLDER",
+    "workflow_run_id": "26859687575",
     "status": "local-build"
   },
   "signing": {
@@ -50,8 +50,8 @@
       "name": "Orqestra_1.0.9_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "PENDING_CI",
-      "size_bytes": 0,
+      "sha256": "ce8c184aeb0c6bbbc74e7970a8108e54cf984799ea428eb9522405658fbd6e42",
+      "size_bytes": 82741752,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
@@ -98,7 +98,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "PENDING_CI",
+    "ci_run_id": "26859687575",
     "ci_run_branch": "v1.0.9",
     "matrix_evidence": "demo/v1.0.9-platform-matrix.md",
     "windows": "demo/v1.0.9-windows-smoke.md",
