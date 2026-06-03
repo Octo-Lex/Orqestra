@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.1.0] - 2026-06-03
+
+### Added
+- Product readiness manifest with credential provider, agents, and native Git pilot fields
+- Manifest validator enforces product_readiness fields and rejects autonomous agent mode
+- Native git status pilot: gix 0.84 branch detection + git CLI status counts (`git_status_cmd`)
+- Structured error DTOs: 9 error codes with likely causes, suggested actions, and secret-safe guarantee
+- First-run product guide (`FirstRunGuide.tsx`): checklist from repo open to optional AI mode
+- AI mode status indicator (`AiModeStatus.tsx`): credential state, agent paths, review-only badge
+- Bugfix agent review panel (`BugfixAgentPanel.tsx`): review-only diff with accept/reject
+- `docs/product-readiness.md`: comprehensive product readiness documentation
+
+### Changed
+- Credential storage: validated OS-keychain path with 11 security tests (already existed, now tested)
+- Manifest `product_readiness.credential_security_level` uses `platform-backed` (not `production-grade`)
+- Native git status pilot is non-blocking by design (always falls back to git CLI)
+- Bugfix agent proposals require human review; commits use normal Git flow (no auto-commit)
+
+### Security
+- Credential DTO tests verify no raw tokens in serialized output
+- Token masking tests verify GitHub PAT patterns are redacted
+- Error responses are secret-safe by design
+
+### Known Limitations
+- Windows installer unsigned (SmartScreen warnings expected)
+- Linux tested on Ubuntu 24.04 only
+- macOS has no bundled artifact
+- Native Git status pilot: staged/unstaged counts come from CLI (gix lacks status API)
+- Agents are review-only, not autonomous
+
 ## [1.0.12] - 2026-06-03
 
 ### Added

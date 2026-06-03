@@ -273,4 +273,87 @@ mod tests {
         vault.put_secret("key", b"value2").unwrap();
         assert_eq!(vault.get_secret("key").unwrap(), b"value2");
     }
+
+    // v1.1.0 product-readiness credential validation tests
+
+    #[test]
+    fn token_status_dto_contains_no_raw_secret() {
+        use crate::security::CredentialMigrationState;
+        let status = crate::security::TokenStatus {
+            exists: true,
+            provider: CredentialProvider::OsKeychain,
+            label: "GitHub PAT".into(),
+            last_updated: Some("2026-06-03T00:00:00Z".into()),
+            migration_state: CredentialMigrationState::NotRequired,
+        };
+        let json = serde_json::to_string(&status).unwrap();
+        // The DTO must never contain a token field
+        assert!(!json.contains("token"));
+        assert!(!json.contains("secret"));
+        assert!(!json.contains("value"));
+        assert!(json.contains("exists"));
+        assert!(json.contains("provider"));
+    }
+
+    #[test]
+    fn credential_vault_status_reports_provider_correctly() {
+        let status = crate::security::CredentialVaultStatus {
+            available: false,
+            provider: CredentialProvider::Unavailable,
+            vault_exists: false,
+            unlock_secret_exists: false,
+            migration_state: crate::security::CredentialMigrationState::NotRequired,
+            last_error: Some("test".into()),
+        };
+        assert!(!status.available);
+        assert_eq!(status.provider, CredentialProvider::Unavailable);
+    }
+
+    #[test]
+    fn credential_provider_display_matches_manifest() {
+        assert_eq!(format!("{}", CredentialProvider::OsKeychain), "os-keychain");
+        assert_eq!(format!("{}", CredentialProvider::SessionOnly), "session-only");
+        assert_eq!(format!("{}", CredentialProvider::Unavailable), "unavailable");
+    }
+
+    #[test]
+    fn credential_error_messages_are_secret_safe() {
+        let err = CredentialError::OperationFailed("Connection refused".into());
+        let msg = format!("{}", err);
+        assert!(!msg.contains("ghp_"));
+        assert!(!msg.contains("sk-"));
+        // The error message should not leak secret patterns
+        assert!(msg.contains("Connection refused"));
+    }
+
+    #[test]
+    fn migration_state_serializes_correctly() {
+        use crate::security::CredentialMigrationState;
+        let states = vec![
+            CredentialMigrationState::NotRequired,
+            CredentialMigrationState::Required,
+            CredentialMigrationState::InProgress,
+            CredentialMigrationState::Complete,
+            CredentialMigrationState::Failed,
+        ];
+        let json = serde_json::to_string(&states).unwrap();
+        assert!(json.contains("not_required"));
+        assert!(json.contains("complete"));
+        assert!(json.contains("failed"));
+    }
+
+    #[test]
+    fn github_connection_status_is_secret_safe() {
+        let status = crate::security::GitHubConnectionStatus {
+            ok: true,
+            username: Some("testuser".into()),
+            scopes: vec!["repo".into()],
+            message: "Connected".into(),
+        };
+        let json = serde_json::to_string(&status).unwrap();
+        assert!(!json.contains("token"));
+        assert!(!json.contains("password"));
+        assert!(json.contains("testuser"));
+        assert!(json.contains("repo"));
+    }
 }

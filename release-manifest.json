@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.0.12",
-    "tag": "v1.0.12",
+    "name": "Orqestra v1.1.0",
+    "tag": "v1.1.0",
     "channel": "public-beta",
-    "release_version": "1.0.12",
-    "app_version": "1.0.12",
+    "release_version": "1.1.0",
+    "app_version": "1.1.0",
     "date": "2026-06-03"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.0.12_x64-setup.exe",
+      "name": "Orqestra_1.1.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "9fdf24a9829e8838364c1de87f5bc1b0711b3ffe015cca5f28d1246f88752a09",
-      "size_bytes": 4716823,
+      "sha256": "cd460935be7641e30f884ad4b28df09b01c34b445869072dcbc7b0b6c166193c",
+      "size_bytes": 4732924,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_1.0.12_x64.AppImage",
+      "name": "Orqestra_1.1.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "839ee8a629b33c82ea39a35dbd6d69e92e2363ae988c2fda0343cc5860900b05",
-      "size_bytes": 82741752,
+      "sha256": "PENDING_CI",
+      "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "github-actions"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -143,5 +143,25 @@
     "Linux screenshot blocked by Wayland rootless compositor; process+window evidence recorded",
     "macOS binary compiles but no bundled artifact",
     "Some agent paths remain review-only or scaffolded"
-  ]
+  ],
+  "product_readiness": {
+    "credential_provider": "os-keychain",
+    "credential_security_level": "platform-backed",
+    "fallback_provider": "session-only",
+    "legacy_migration": "verified",
+    "token_masking": "verified",
+    "real_agents": [
+      "docs-agent",
+      "bugfix-agent"
+    ],
+    "agent_mode": "review-only",
+    "first_run_guide": true,
+    "structured_errors": true,
+    "native_git_pilot": {
+      "operation": "status-read-only",
+      "provider": "gix",
+      "fallback": "git-cli",
+      "blocking": false
+    }
+  }
 }

@@ -118,6 +118,134 @@ fn recovery_cards() -> Vec<(&'static str, &'static str, &'static str, &'static s
     ]
 }
 
+/// Get structured error information for a given error code.
+/// v1.1.0 product-readiness: returns the full structured error DTO.
+#[derive(Debug, Serialize)]
+pub struct StructuredErrorResponse {
+    pub code: String,
+    pub title: String,
+    pub message: String,
+    pub likely_causes: Vec<String>,
+    pub suggested_actions: Vec<String>,
+    pub reporting_hint: String,
+    pub technical_details: Option<serde_json::Value>,
+    pub secret_safe: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct StructuredErrorRequest {
+    pub code: String,
+}
+
+#[command]
+pub fn get_structured_error_cmd(req: StructuredErrorRequest) -> CommandResult<StructuredErrorResponse> {
+    let errors = all_structured_errors();
+    let found = errors.into_iter().find(|e| e.code == req.code);
+    match found {
+        Some(e) => Ok(e),
+        None => Err(CommandError {
+            code: "UNKNOWN_ERROR_CODE",
+            message: format!("No structured error found for code: {}", req.code),
+        }),
+    }
+}
+
+/// All structured error definitions for v1.1.0.
+fn all_structured_errors() -> Vec<StructuredErrorResponse> {
+    vec![
+        StructuredErrorResponse {
+            code: "REPO_OPEN_FAILED".into(),
+            title: "Could not open repository".into(),
+            message: "The selected folder could not be opened as a project.".into(),
+            likely_causes: vec!["Folder does not exist".into(), "Permission denied".into(), "Not a valid directory".into()],
+            suggested_actions: vec!["Select a different folder".into(), "Check folder permissions".into()],
+            reporting_hint: "Include this error code and folder path.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "ROADMAP_PARSE_FAILED".into(),
+            title: "Roadmap could not be loaded".into(),
+            message: "One or more roadmap files could not be parsed.".into(),
+            likely_causes: vec!["Invalid YAML frontmatter".into(), "Missing required task id".into(), "Invalid date format".into()],
+            suggested_actions: vec!["Open the file listed in details".into(), "Fix YAML frontmatter".into(), "Run roadmap validation".into()],
+            reporting_hint: "Include this error code and file path in a bug report.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "DASHBOARD_FETCH_FAILED".into(),
+            title: "Dashboard data could not be loaded".into(),
+            message: "The dashboard data could not be fetched or generated.".into(),
+            likely_causes: vec!["Network error".into(), "Dashboard not deployed yet".into(), "Invalid roadmap data".into()],
+            suggested_actions: vec!["Check network connection".into(), "Generate dashboard JSON first".into()],
+            reporting_hint: "Include this error code and dashboard URL.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "GIT_OPERATION_FAILED".into(),
+            title: "Git operation failed".into(),
+            message: "A Git operation (pull, push, commit) failed.".into(),
+            likely_causes: vec!["Network connectivity".into(), "Authentication expired".into(), "Merge conflict".into()],
+            suggested_actions: vec!["Check network connection".into(), "Update GitHub token".into(), "Resolve conflicts manually".into()],
+            reporting_hint: "Include error code and operation type.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "CREDENTIAL_OPERATION_FAILED".into(),
+            title: "Credential operation failed".into(),
+            message: "A credential save, load, or delete operation failed.".into(),
+            likely_causes: vec!["OS keychain unavailable".into(), "Permission denied".into(), "Keychain service not running".into()],
+            suggested_actions: vec!["Check OS keychain/keyring is running".into(), "Try session-only mode".into()],
+            reporting_hint: "Include error code. Do NOT include tokens or passwords.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "AI_SERVICE_UNREACHABLE".into(),
+            title: "AI service not running".into(),
+            message: "The AI service is not running or unreachable.".into(),
+            likely_causes: vec!["AI service not started".into(), "Wrong port".into(), "Firewall blocking".into()],
+            suggested_actions: vec!["Start the AI service".into(), "Check the service URL".into(), "Retry health check".into()],
+            reporting_hint: "Include error code and service URL.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "AI_KEY_MISSING".into(),
+            title: "AI API key not configured".into(),
+            message: "ZAI_API_KEY is not set. Real AI mode requires an API key.".into(),
+            likely_causes: vec!["Environment variable not set".into(), "Key not saved in credentials".into()],
+            suggested_actions: vec!["Set ZAI_API_KEY environment variable".into(), "Use no-key beta mode instead".into()],
+            reporting_hint: "Do NOT include the API key in reports.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "AGENT_PROPOSAL_FAILED".into(),
+            title: "Agent proposal failed".into(),
+            message: "The AI agent could not generate a proposal.".into(),
+            likely_causes: vec!["AI service error".into(), "Task context too large".into(), "Model timeout".into()],
+            suggested_actions: vec!["Retry the agent".into(), "Simplify task context".into(), "Check AI service logs".into()],
+            reporting_hint: "Include error code, agent type, and task ID.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+        StructuredErrorResponse {
+            code: "LINUX_RUNTIME_CAVEAT".into(),
+            title: "Linux runtime limitation".into(),
+            message: "The Linux AppImage has known runtime caveats.".into(),
+            likely_causes: vec!["Missing WebKit2GTK".into(), "Missing GTK3".into(), "Missing FUSE".into(), "Display server issue".into()],
+            suggested_actions: vec!["Install libwebkit2gtk-4.1-dev".into(), "Install libgtk-3-dev".into(), "Install fuse3".into(), "See docs/linux-native-smoke-guide.md".into()],
+            reporting_hint: "Include distro, desktop environment, and display server.".into(),
+            technical_details: None,
+            secret_safe: true,
+        },
+    ]
+}
+
 // ---------------------------------------------------------------------------
 // Commands
 // ---------------------------------------------------------------------------

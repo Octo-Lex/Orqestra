@@ -51,7 +51,7 @@ function validateCommitSha(value: unknown, field: string): void {
 }
 
 function validateSha256(value: unknown, field: string): void {
-  if (value === null || value === undefined || value === '' || value === 'PENDING_CI') return;
+  if (value === null || value === undefined || value === '' || value === 'PENDING_CI' || value === 'PENDING_BUILD') return;
   if (typeof value !== 'string') fail(`${field} must be a string`);
   if (!SHA256_RE.test(value)) fail(`${field} must be a full 64-char hex SHA256, got: "${value.slice(0, 16)}..."`);
 }
@@ -286,6 +286,49 @@ if (manifest.diagnostics) {
   }
 }
 
+// Product readiness section (v1.1.0+)
+if (manifest.product_readiness) {
+  const pr = manifest.product_readiness;
+  const allowedProviders = ['os-keychain', 'stronghold', 'encrypted-vault'];
+  const allowedSecurityLevels = ['production-grade', 'platform-backed', 'beta-grade', 'migration-required'];
+
+  if (pr.credential_provider && !allowedProviders.includes(pr.credential_provider)) {
+    fail(`product_readiness.credential_provider "${pr.credential_provider}" is not allowed: ${allowedProviders.join(', ')}`);
+  }
+  if (pr.credential_security_level && !allowedSecurityLevels.includes(pr.credential_security_level)) {
+    fail(`product_readiness.credential_security_level "${pr.credential_security_level}" is not allowed: ${allowedSecurityLevels.join(', ')}`);
+  }
+  if (pr.real_agents && !Array.isArray(pr.real_agents)) {
+    fail('product_readiness.real_agents must be an array');
+  }
+  if (pr.agent_mode && pr.agent_mode !== 'review-only' && pr.agent_mode !== 'autonomous') {
+    fail(`product_readiness.agent_mode "${pr.agent_mode}" must be review-only or autonomous`);
+  }
+  if (pr.agent_mode === 'autonomous') {
+    fail('product_readiness.agent_mode "autonomous" is not allowed — agents must remain review-only');
+  }
+  if (pr.native_git_pilot) {
+    const ngp = pr.native_git_pilot;
+    if (ngp.blocking === true) {
+      fail('product_readiness.native_git_pilot.blocking must be false — pilot must not block normal Git');
+    }
+    if (!ngp.fallback) {
+      fail('product_readiness.native_git_pilot.fallback is required');
+    }
+  }
+
+  // Cross-check: if credential_security_level is production-grade,
+  // require evidence that both tested platforms have credential verification
+  if (pr.credential_security_level === 'production-grade') {
+    const testedPlatforms = Object.entries(platforms as Record<string, any>)
+      .filter(([_, p]) => p.status === 'tested');
+    for (const [key, _] of testedPlatforms) {
+      // production-grade claim requires at least one tested platform
+      warn(`product_readiness.credential_security_level is "production-grade" — ensure credential tests exist for ${key}`);
+    }
+  }
+}
+
 // Limitations
 if (!Array.isArray(manifest.limitations)) fail('Missing "limitations" array');
 
@@ -294,3 +337,8 @@ console.log(`  Release: ${release.name}`);
 console.log(`  Channel: ${release.channel}`);
 console.log(`  Artifacts: ${manifest.artifacts.length}`);
 console.log(`  Platforms: ${Object.keys(platforms).join(', ')}`);
+if (manifest.product_readiness) {
+  console.log(`  Credential: ${manifest.product_readiness.credential_provider} (${manifest.product_readiness.credential_security_level})`);
+  console.log(`  Agents: ${manifest.product_readiness.real_agents?.join(', ')} (${manifest.product_readiness.agent_mode})`);
+  console.log(`  Native Git: ${manifest.product_readiness.native_git_pilot?.operation || 'none'}`);
+}

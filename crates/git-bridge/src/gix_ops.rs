@@ -121,6 +121,166 @@ pub fn is_git_repo(project_root: &Path) -> bool {
     gix::open(project_root).is_ok()
 }
 
+// ---------------------------------------------------------------------------
+// Native Git Status Pilot (v1.1.0 spec §10)
+//
+// Read-only status via gix with CLI fallback.
+// This pilot MUST NOT block normal Git operations if it fails.
+// ---------------------------------------------------------------------------
+
+/// Result of a native git status check.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct NativeGitStatus {
+    pub branch: String,
+    pub dirty: bool,
+    pub staged_count: u32,
+    pub unstaged_count: u32,
+    pub untracked_count: u32,
+    pub provider: String,
+    pub latency_ms: u64,
+}
+
+/// Get git status using native gix (preferred) with git CLI fallback.
+///
+/// This is a read-only operation. It never modifies the repository.
+/// If the native gix path fails for any reason, it falls back to
+/// `git status --porcelain` without erroring the caller.
+///
+/// Current implementation: gix provides branch name, CLI provides counts.
+/// This hybrid approach lets us start using gix for what it supports
+/// while relying on CLI for the rest. Future versions may expand gix usage.
+pub fn native_git_status(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError> {
+    let start = std::time::Instant::now();
+
+    // Try gix for branch detection
+    let gix_branch = gix::open(project_root)
+        .ok()
+        .and_then(|repo| {
+            repo.head_name().ok().flatten().map(|name| {
+                let s = format!("{name}");
+                s.strip_prefix("refs/heads/").unwrap_or(&s).to_string()
+            })
+        });
+
+    // Use CLI for full status counts (gix lacks high-level status API)
+    let mut status = git_status_cli(project_root)?;
+
+    // If gix gave us the branch, prefer it and mark provider as hybrid
+    if let Some(branch) = gix_branch {
+        status.branch = branch;
+        status.provider = "gix+cli".to_string();
+    }
+
+    status.latency_ms = start.elapsed().as_millis() as u64;
+    Ok(status)
+}
+
+/// Native gix-based status check (read-only).
+///
+/// Uses gix for branch/HEAD detection and falls back to CLI for
+/// staged/unstaged/untracked counts (gix lacks a high-level status API).
+fn native_git_status_gix(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError> {
+    let repo = gix::open(project_root)
+        .map_err(|e| GitBridgeError::GitOperation(format!("gix open failed: {e}")))?;
+
+    // Get branch name via gix
+    let branch = repo.head_name()
+        .ok()
+        .flatten()
+        .map(|name| {
+            let s = format!("{name}");
+            s.strip_prefix("refs/heads/").unwrap_or(&s).to_string()
+        })
+        .unwrap_or_else(|| "(detached)".to_string());
+
+    // gix does not provide a high-level status/diff API.
+    // For staged/unstaged/untracked counts, fall through to CLI fallback
+    // which is the caller's responsibility.
+    // Here we return the branch-only result, signaling that counts need CLI.
+    Err(GitBridgeError::GitOperation("gix status counts not available".into()))
+}
+
+/// CLI fallback for git status.
+fn git_status_cli(project_root: &Path) -> Result<NativeGitStatus, GitBridgeError> {
+    let output = std::process::Command::new("git")
+        .current_dir(project_root)
+        .args(["status", "--porcelain=v2", "--branch"])
+        .output()
+        .map_err(|e| GitBridgeError::Io(project_root.to_owned(), e))?;
+
+    if !output.status.success() {
+        return Err(GitBridgeError::GitOperation(
+            String::from_utf8_lossy(&output.stderr).to_string(),
+        ));
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let mut branch = String::from("(unknown)");
+    let mut staged_count = 0u32;
+    let mut unstaged_count = 0u32;
+    let mut untracked_count = 0u32;
+
+    for line in stdout.lines() {
+        if let Some(branch_name) = line.strip_prefix("# branch.head ") {
+            branch = branch_name.to_string();
+        } else if let Some(xy) = line.strip_prefix("1 ") {
+            // Porcelain v2: "1 <xy> <sub> <mH> <mI> <mW> <hH> <hI> <path>"
+            let chars: Vec<char> = xy.chars().take(2).collect();
+            if chars.len() >= 2 {
+                let x = chars[0]; // index status
+                let y = chars[1]; // worktree status
+                if x != '.' && x != '?' {
+                    staged_count += 1;
+                }
+                if y != '.' && y != '?' {
+                    unstaged_count += 1;
+                }
+            }
+        } else if line.starts_with("? ") {
+            untracked_count += 1;
+        }
+    }
+
+    let dirty = staged_count > 0 || unstaged_count > 0 || untracked_count > 0;
+
+    Ok(NativeGitStatus {
+        branch,
+        dirty,
+        staged_count,
+        unstaged_count,
+        untracked_count,
+        provider: "git-cli".to_string(),
+        latency_ms: 0,
+    })
+}
+
+/// Recursively walk files in a directory (non-.git entries only).
+fn walkdir_files(root: &Path) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
+    let mut files = Vec::new();
+    let mut stack = vec![root.to_path_buf()];
+
+    while let Some(dir) = stack.pop() {
+        for entry in std::fs::read_dir(&dir)? {
+            let entry = entry?;
+            let path = entry.path();
+            let name = entry.file_name();
+            let name_str = name.to_string_lossy();
+
+            if name_str == ".git" || name_str == ".Orqestra" || name_str == "target" {
+                continue;
+            }
+
+            if path.is_dir() {
+                stack.push(path);
+            } else {
+                files.push(path);
+            }
+        }
+    }
+
+    Ok(files)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -165,5 +325,61 @@ mod tests {
         std::fs::create_dir_all(&tmp).ok();
         assert!(!is_git_repo(&tmp));
         std::fs::remove_dir_all(&tmp).ok();
+    }
+
+    // v1.1.0 native git status pilot tests
+
+    #[test]
+    fn native_git_status_on_current_repo() {
+        let project_root = std::env::current_dir().unwrap();
+        let mut dir = project_root.clone();
+        while !dir.join(".git").exists() {
+            if !dir.pop() {
+                return;
+            }
+        }
+        let result = native_git_status(&dir);
+        assert!(result.is_ok(), "Should get git status: {:?}", result);
+        let status = result.unwrap();
+        assert!(!status.branch.is_empty());
+        assert!(status.provider == "gix" || status.provider == "git-cli" || status.provider == "gix+cli");
+        assert!(status.latency_ms < 5000, "Latency should be reasonable: {}ms", status.latency_ms);
+    }
+
+    #[test]
+    fn native_git_status_nonexistent_repo_fails() {
+        let result = native_git_status(Path::new("/nonexistent/path"));
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn native_git_status_fallback_to_cli() {
+        // Test that the CLI fallback path works independently
+        let project_root = std::env::current_dir().unwrap();
+        let mut dir = project_root.clone();
+        while !dir.join(".git").exists() {
+            if !dir.pop() {
+                return;
+            }
+        }
+        let result = git_status_cli(&dir);
+        assert!(result.is_ok(), "CLI fallback should work: {:?}", result);
+        let status = result.unwrap();
+        assert_eq!(status.provider, "git-cli");
+        assert!(!status.branch.is_empty());
+    }
+
+    #[test]
+    fn native_git_status_reports_provider() {
+        let project_root = std::env::current_dir().unwrap();
+        let mut dir = project_root.clone();
+        while !dir.join(".git").exists() {
+            if !dir.pop() {
+                return;
+            }
+        }
+        let status = native_git_status(&dir).unwrap();
+        // Provider must be either gix or git-cli, never empty
+        assert!(!status.provider.is_empty());
     }
 }

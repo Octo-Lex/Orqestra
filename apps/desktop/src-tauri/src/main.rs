@@ -28,6 +28,7 @@ fn main() {
             commands::roadmap::update_task_status_cmd,
             commands::git::git_pull_roadmap,
             commands::git::git_push_roadmap,
+            commands::git::git_status_cmd,
             commands::commit::semantic_commit_cmd,
             commands::commit::backfill_cmd,
             commands::agents::read_file_cmd,
@@ -78,6 +79,7 @@ fn main() {
             // v1.0.3: Diagnostics and recovery
             commands::diagnostics::export_diagnostics_cmd,
             commands::diagnostics::get_recovery_advice_cmd,
+            commands::diagnostics::get_structured_error_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
