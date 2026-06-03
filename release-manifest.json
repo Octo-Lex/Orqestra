@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.1.1",
-    "tag": "v1.1.1",
+    "name": "Orqestra v1.2.0",
+    "tag": "v1.2.0",
     "channel": "public-beta",
-    "release_version": "1.1.1",
-    "app_version": "1.1.1",
+    "release_version": "1.2.0",
+    "app_version": "1.2.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,21 +39,21 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.1.1_x64-setup.exe",
+      "name": "Orqestra_1.2.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "6e9f3dd4a48a4cf05bee540ef760c6d0d9eac9e534392ec8a832827a1122d6b8",
-      "size_bytes": 4730384,
+      "sha256": "9362ca18da18181627c16b5d6e09f1eb46ae4ae9061953665505a0f341dd56eb",
+      "size_bytes": 4848957,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_1.1.1_x64.AppImage",
+      "name": "Orqestra_1.2.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "226bddee798fd5af4fdfc86f8e1924021ea82b83aae0ea8c5290b6f417ee54ec",
+      "sha256": "PENDING_CI",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
@@ -161,13 +161,6 @@
       "error_codes": 9,
       "secret_redaction": "verified"
     },
-    "native_git_pilot": {
-      "operation": "status-read-only",
-      "provider": "gix-hybrid",
-      "fallback": "git-cli",
-      "blocking": false,
-      "parity": "verified-core-cases"
-    },
     "credential_validation": {
       "windows": {
         "provider": "os-keychain",
@@ -186,6 +179,26 @@
       },
       "token_masking": "verified",
       "legacy_migration": "verified"
+    },
+    "native_git": {
+      "scope": "read-only",
+      "operations": [
+        "repository_snapshot",
+        "branch_head_metadata",
+        "changed_file_summary",
+        "recent_commits",
+        "diff_stat"
+      ],
+      "write_operations_migrated": false,
+      "network_operations_migrated": false,
+      "providers": [
+        "gix-hybrid",
+        "git-cli-fallback"
+      ],
+      "fallback_required": true,
+      "blocking": false,
+      "parity": "verified-core-cases",
+      "secret_safe": true
     }
   }
 }

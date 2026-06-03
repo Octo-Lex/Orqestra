@@ -143,3 +143,40 @@ pub fn git_status_cmd(project_root: String) -> Result<String, String> {
     serde_json::to_string(&status)
         .map_err(|e| format!("Failed to serialize status: {e}"))
 }
+
+// ---------------------------------------------------------------------------
+// v1.2.0: Native Git Operations (read-only)
+// ---------------------------------------------------------------------------
+
+/// Get a repository snapshot — branch, HEAD, status, changed files.
+/// Read-only — never modifies the repository.
+#[command]
+pub fn git_repository_snapshot_cmd(project_root: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let snapshot = git_bridge::repository_snapshot(&path)
+        .map_err(|e| format!("Repository snapshot failed: {e}"))?;
+    serde_json::to_string(&snapshot)
+        .map_err(|e| format!("Failed to serialize snapshot: {e}"))
+}
+
+/// Get recent commit metadata.
+/// Read-only — bounded to 100 max.
+#[command]
+pub fn git_recent_commits_cmd(project_root: String, limit: Option<usize>) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let commits = git_bridge::recent_commits(&path, limit)
+        .map_err(|e| format!("Recent commits failed: {e}"))?;
+    serde_json::to_string(&commits)
+        .map_err(|e| format!("Failed to serialize commits: {e}"))
+}
+
+/// Get diff/stat summary.
+/// Read-only — CLI-backed, never exposes file contents.
+#[command]
+pub fn git_diff_stat_cmd(project_root: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let stat = git_bridge::diff_stat(&path)
+        .map_err(|e| format!("Diff stat failed: {e}"))?;
+    serde_json::to_string(&stat)
+        .map_err(|e| format!("Failed to serialize diff stat: {e}"))
+}

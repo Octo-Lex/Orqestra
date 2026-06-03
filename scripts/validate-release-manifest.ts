@@ -307,6 +307,33 @@ if (manifest.product_readiness) {
   if (pr.agent_mode === 'autonomous') {
     fail('product_readiness.agent_mode "autonomous" is not allowed — agents must remain review-only');
   }
+  // Native Git validation — supports both old pilot and new expanded section
+  const ng = (pr as any).native_git || (pr as any).native_git_pilot;
+  if (ng) {
+    if (ng.blocking === true) {
+      fail('product_readiness.native_git.blocking must be false — must not block normal Git');
+    }
+    if (ng.fallback_required === false || (ng.fallback && ng.fallback === false)) {
+      fail('product_readiness.native_git.fallback_required must be true');
+    }
+    if (ng.write_operations_migrated === true) {
+      fail('product_readiness.native_git.write_operations_migrated must be false — write ops remain CLI');
+    }
+    if (ng.network_operations_migrated === true) {
+      fail('product_readiness.native_git.network_operations_migrated must be false — network ops remain CLI');
+    }
+    if (ng.secret_safe === false) {
+      fail('product_readiness.native_git.secret_safe must be true');
+    }
+    if (!ng.providers || !Array.isArray(ng.providers) || ng.providers.length === 0) {
+      fail('product_readiness.native_git.providers is required and must be non-empty');
+    }
+    if (!ng.parity) {
+      fail('product_readiness.native_git.parity is required');
+    }
+  }
+
+  // Legacy pilot compatibility
   if (pr.native_git_pilot) {
     const ngp = pr.native_git_pilot;
     if (ngp.blocking === true) {
@@ -340,5 +367,6 @@ console.log(`  Platforms: ${Object.keys(platforms).join(', ')}`);
 if (manifest.product_readiness) {
   console.log(`  Credential: ${manifest.product_readiness.credential_provider} (${manifest.product_readiness.credential_security_level})`);
   console.log(`  Agents: ${manifest.product_readiness.real_agents?.join(', ')} (${manifest.product_readiness.agent_mode})`);
-  console.log(`  Native Git: ${manifest.product_readiness.native_git_pilot?.operation || 'none'}`);
+  const ngLabel = (manifest.product_readiness as any).native_git ? 'read-only' : ((manifest.product_readiness as any).native_git_pilot?.operation || 'none');
+  console.log(`  Native Git: ${ngLabel}`);
 }
