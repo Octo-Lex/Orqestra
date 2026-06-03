@@ -1,43 +1,43 @@
-# Orqestra v1.0.12 -- Native Linux Contributor Smoke Enablement
+# Orqestra v1.0.12 -- Linux Promoted to Tested
 
 ## Summary
 
-v1.0.12 does not promote Linux to a tested beta platform. It publishes a native Linux smoke guide, evidence template, and GitHub report form so contributors with a real Linux desktop can run the promotion-grade AppImage smoke test. Prior WSLg runtime evidence remains recorded.
+v1.0.12 promotes Linux x64 to a tested beta platform for the AppImage artifact after native Ubuntu 24.04 GNOME smoke verification. Linux support remains beta-grade and validated only for the recorded environment.
 
 ## Download
 
 | Platform | File | SHA256 | Status |
 |----------|------|--------|--------|
-| Windows x64 | `Orqestra_1.0.12_x64-setup.exe` | See `checksums.txt` | Smoke-tested |
-| Linux x64 | `Orqestra_1.0.12_x64.AppImage` | See `checksums.txt` | Native-smoke-blocked |
+| Windows x64 | `Orqestra_1.0.12_x64-setup.exe` | See `checksums.txt` | Smoke-tested (15/15) |
+| Linux x64 | `Orqestra_1.0.12_x64.AppImage` | See `checksums.txt` | Smoke-tested (9/9) |
 
 ## Platform Status
 
 | Platform | Status | Artifact | Runtime Env | Blocking |
 |----------|--------|----------|-------------|----------|
 | Windows x64 | tested | NSIS | Windows 11 Pro | yes |
-| Linux x64 | native-smoke-blocked | AppImage | Contributor kit published | no |
+| Linux x64 | tested | AppImage | Ubuntu 24.04.4 GNOME | no |
 | macOS | build-feasibility-verified | none | CI only | no |
 
-## Linux Contributor Smoke Kit
+## Linux Smoke Verification
 
-This release includes three tools for Linux contributors:
+Native Ubuntu 24.04.4 LTS GNOME smoke on QEMU VM (Proxmox 8.4.10):
 
-1. **[Smoke Guide](../docs/linux-native-smoke-guide.md)** -- step-by-step instructions for testing the AppImage on a native Linux desktop
-2. **[Evidence Template](../docs/linux-smoke-evidence-template.md)** -- copy-paste template to record your results
-3. **[Issue Form](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=linux_smoke_report.yml)** -- submit your smoke results directly on GitHub
+- WebKit2GTK 2.52.3 (NetworkProcess + WebProcess running)
+- Orqestra window 1280x768 confirmed via xwininfo
+- AppImage SHA256 verified
+- Close and relaunch successful
+- Memory stable at 162 MB RSS
 
-If you have a native Linux desktop (Ubuntu 24.04 GNOME, Fedora, Debian, etc.), you can help promote Linux to a tested platform by running the 9-step smoke flow and submitting evidence.
+**Caveat:** Dashboard link open deferred (headless VM, no browser). Dashboard availability verified independently (200 OK).
 
-## Prior WSLg Evidence
+## Contributor Smoke Kit
 
-The v1.0.11 WSLg evidence shows the app runs successfully:
-- Main window 1280x720
-- WebKit processes running
-- 384MB stable for 6+ minutes
-- Screenshot included
+For testing on other Linux distros:
 
-This evidence is preserved but not used for promotion because WSLg is not a native desktop.
+1. **[Smoke Guide](../blob/master/docs/linux-native-smoke-guide.md)** -- step-by-step instructions
+2. **[Evidence Template](../blob/master/docs/linux-smoke-evidence-template.md)** -- copy-paste template
+3. **[Issue Form](../../issues/new?template=linux_smoke_report.yml)** -- submit results on GitHub
 
 ## Signing Status
 
@@ -46,8 +46,8 @@ Windows signing is **blocked** (certificate-not-available). The installer is uns
 ## Known Limitations
 
 - Windows installer is unsigned
-- Linux contributor smoke kit published, native smoke not yet completed
-- Linux not promoted without native desktop smoke
+- Linux screenshot blocked by Wayland rootless compositor; process+window evidence recorded
+- Linux tested on Ubuntu 24.04 only; other distros welcome
 - macOS has no bundled artifact
 
 ## Checksums

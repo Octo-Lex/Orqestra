@@ -80,11 +80,18 @@
       "bundle_status": "pass",
       "public_artifact": true,
       "smoke_tested": true,
-      "smoke_result": "pass",
+      "smoke_result": "pass-with-documented-dashboard-link-caveat",
       "native_desktop_smoke": true,
       "previous_runtime_evidence": "runtime-evidence-wslg",
-      "notes": "Native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3. Screenshot blocked by Wayland rootless compositor; process+window evidence recorded.",
-      "smoke_evidence": "demo/v1.0.12-linux-native-smoke.md"
+      "notes": "Linux AppImage passed native smoke verification on Ubuntu 24.04.4 GNOME. Dashboard URL/version was verified externally because browser launch was deferred in the headless VM.",
+      "smoke_evidence": "demo/v1.0.12-linux-native-smoke.md",
+      "runtime_environment": {
+        "distribution": "Ubuntu",
+        "version": "24.04.4 LTS",
+        "desktop": "GNOME 46",
+        "display_server": "Wayland",
+        "machine_type": "QEMU VM on Proxmox 8.4.10"
+      }
     },
     "macos": {
       "status": "build-feasibility-verified",

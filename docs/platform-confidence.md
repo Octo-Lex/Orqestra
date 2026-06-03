@@ -1,14 +1,16 @@
 # Platform Confidence
 
-This document explains what each platform status means, what CI evidence exists, and why only Windows x64 is promoted as a tested public beta platform.
+This document explains what each platform status means, what evidence exists, and why each platform has its current classification.
 
 ---
 
-## Current Public Beta Platform
+## Current Platform Matrix (v1.0.12)
 
-**Windows x64** is the only tested platform for Orqestra public beta.
-
-Linux x64 has proven CI compilation. macOS has proven CI compilation. Neither has a bundled artifact or smoke evidence.
+| Platform | Status | Compile | Bundle | Artifact | Signed | Smoke | Blocking |
+|----------|--------|---------|--------|----------|--------|-------|----------|
+| Windows x64 | tested | pass | NSIS installer | Yes | No | Yes (15/15) | yes |
+| Linux x64 | tested | pass | AppImage | Yes | N/A | Yes (9/9) | no |
+| macOS | build-feasibility-verified | pass | not configured | No | No | No | no |
 
 ---
 
@@ -22,26 +24,7 @@ A platform is marked **tested** when:
 4. The release manifest, README, and release notes all agree
 5. Smoke evidence is recorded in `demo/`
 
-Windows x64 meets all five criteria.
-
----
-
-## What "Built but Unverified" Means
-
-
-
-## What "Bundle Produced but Unverified" Means
-
-- The platform compiles successfully in CI
-- A bundled artifact (AppImage) **is produced**
-- SHA256 checksum is generated and published
-- **No smoke test** has been performed on a Linux desktop
-- The artifact is downloadable for early verification
-- The platform is **not a tested public beta platform**
-
-This status proves the bundler works, not just the compiler. It is a meaningful upgrade from  but still not .
-
-
+Both Windows x64 and Linux x64 meet all five criteria.
 
 ---
 
@@ -65,7 +48,7 @@ This status confirms that the codebase can compile for the platform, which is us
 | Artifact | NSIS installer |
 | Signed | No |
 | SmartScreen | Warnings expected (unsigned) |
-| Smoke evidence | `demo/v1.0.8-windows-smoke.md` |
+| Smoke evidence | `demo/v1.0.12-windows-smoke.md` |
 | Checksums | `checksums.txt` in release assets |
 | Release blocking | yes |
 
@@ -92,27 +75,52 @@ See [Troubleshooting](troubleshooting.md) for detailed guidance.
 
 | Property | Value |
 |----------|-------|
-| Status | bundle-produced-unverified |
-| Compile status | pass (CI Run #26847116112) |
+| Status | tested |
+| Compile status | pass (CI Run #26878403707) |
 | Bundle status | pass (AppImage produced) |
-| Artifact | Orqestra_1.0.9_x64.AppImage (CI) |
-| Signed | No |
-| Smoke evidence | None |
+| Artifact | Orqestra_1.0.12_x64.AppImage |
+| SHA256 | `839ee8a629b33c82ea39a35dbd6d69e92e2363ae988c2fda0343cc5860900b05` |
+| Signed | Not applicable |
+| Smoke evidence | `demo/v1.0.12-linux-native-smoke.md` |
 | Release blocking | no |
-| Evidence | `demo/v1.0.9-linux-bundle-evidence.md` |
 
-Linux compiles successfully in CI and now produces an AppImage bundle (Tauri `appimage` target added in v1.0.9). The AppImage has a SHA256 checksum but has **not been smoke-tested** on a Linux desktop.
+### Linux Smoke Verification
 
-The Linux AppImage is provided for early verification only. It is not a tested public beta platform.
+Linux was promoted to `tested` in v1.0.12 after native Ubuntu 24.04 GNOME smoke verification on a QEMU VM (Proxmox 8.4.10).
 
-### To Promote Linux to "Tested"
+**Runtime environment:**
+- Ubuntu 24.04.4 LTS
+- GNOME 46 (Wayland + Xwayland rootless)
+- WebKit2GTK 2.52.3-0ubuntu0.24.04.1
+- GTK 3.24.41-4ubuntu1.3
+- FUSE 3.14.0-5build1
+- QEMU VM, virtio-gpu (software rendering)
 
-1. ~~Configure Tauri bundler targets~~ (done in v1.0.9)
-2. ~~Produce a standard installer artifact in CI~~ (done in v1.0.9)
-3. ~~Compute and publish SHA256 checksum~~ (done in v1.0.9)
-4. Run smoke test on a Linux desktop environment
-5. Record smoke evidence in `demo/`
-6. Update manifest, README, and release notes
+**Smoke result:** 9/9 steps pass with one documented caveat:
+- Dashboard link open: deferred because the VM had no browser installed
+- Dashboard availability/version: independently verified 200 OK
+
+**Screenshot note:** Screenshot capture was blocked by the Wayland rootless compositor (XGetImage not supported). Process and window evidence (`xwininfo`) substitutes for visual screenshot evidence.
+
+### Linux Maturity Progression
+
+| Release | Status | What changed |
+|---------|--------|--------------|
+| v1.0.8 | compiled-binary-only | CI compile evidence |
+| v1.0.9 | bundle-produced-unverified | AppImage + SHA256 |
+| v1.0.10 | runtime-blocked | GTK init fails without display server |
+| v1.0.11 | runtime-evidence-wslg | App runs under WSLg (not promoted) |
+| v1.0.12 | **tested** | Native Ubuntu 24.04 GNOME smoke pass |
+
+### Contributor Smoke Kit
+
+v1.0.12 also published a contributor smoke kit for community testing on additional distros:
+
+- **Guide:** `docs/linux-native-smoke-guide.md`
+- **Evidence template:** `docs/linux-smoke-evidence-template.md`
+- **Issue form:** `.github/ISSUE_TEMPLATE/linux_smoke_report.yml`
+
+Contributor reports on other distros (Fedora, Debian, Mint, etc.) are welcome and will expand the recorded Linux support matrix.
 
 ---
 
@@ -121,11 +129,11 @@ The Linux AppImage is provided for early verification only. It is not a tested p
 | Property | Value |
 |----------|-------|
 | Status | build-feasibility-verified |
-| Compile status | pass (CI Run #26847116112) |
-| Bundle status | pass (AppImage produced) |
+| Compile status | pass (CI Run #26878403707) |
+| Bundle status | not configured |
 | CI target | universal-apple-darwin |
 | CI runner | macos-latest |
-| Artifact | Orqestra_1.0.9_x64.AppImage (CI) |
+| Artifact | None |
 | Signed | No |
 | Notarized | No |
 | Smoke evidence | None |
@@ -156,8 +164,8 @@ A platform is **release-blocking** when its failure prevents the release from sh
 | Platform | Release Blocking | Reason |
 |----------|-----------------|--------|
 | Windows x64 | **yes** | Primary tested public beta platform |
-| Linux x64 | no | Not promoted, no bundled artifact |
-| macOS | no | Not promoted, no bundled artifact |
+| Linux x64 | no | Tested but not primary |
+| macOS | no | Not promoted |
 
 ---
 
@@ -181,17 +189,8 @@ Additionally:
 ## Known Platform Limitations
 
 - Windows installer is unsigned -- SmartScreen warnings are expected
-- Linux AppImage is produced by CI but not smoke-tested
+- Linux screenshot blocked by Wayland rootless compositor; process+window evidence recorded instead
+- Linux smoke tested on Ubuntu 24.04 only; other distros welcome via contributor reports
 - macOS binary compiles but no DMG/app bundle is produced
 - No platform has code-signing or notarization configured
 - Platform support is beta-grade and evidence-limited
-
----
-
-## Current v1.0.9 Platform Matrix
-
-| Platform | Status | Compile | Bundle | Artifact | Signed | Smoke | Blocking |
-|----------|--------|---------|--------|----------|--------|-------|----------|
-| Windows x64 | tested | pass | NSIS installer | Yes | No | Yes | yes |
-| Linux x64 | bundle-produced-unverified | pass | AppImage | Yes (CI) | N/A | No | no |
-| macOS | build-feasibility-verified | pass | not configured | No | No | No | no |
