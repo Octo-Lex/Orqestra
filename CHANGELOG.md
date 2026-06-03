@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - `previous_runtime_evidence` field preserving WSLg evidence
 
 ### Changed
-- Linux status: `runtime-evidence-wslg` -> `native-smoke-blocked` (contributor kit published)
+- Linux status: `runtime-evidence-wslg` -> `tested` (native Ubuntu 24.04 GNOME smoke pass)
 - Platform confidence documentation updated with contributor smoke path
 - README links to Linux smoke guide for contributors
 
@@ -24,8 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Issue templates warn users not to share API keys, tokens, `.env` files, or secrets
 
 ### Known Limitations
-- Linux AppImage native-smoke-blocked: contributor kit published, native desktop smoke pending
-- Linux not promoted without native desktop smoke
+- Linux AppImage tested on native Ubuntu 24.04 GNOME (QEMU/Proxmox)
+- Linux screenshot blocked by Wayland rootless compositor; process+window evidence recorded
 - Windows installer remains unsigned
 - macOS remains build-feasibility-only
 

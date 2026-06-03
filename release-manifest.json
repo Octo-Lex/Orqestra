@@ -58,7 +58,7 @@
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
-      "verification_status": "checksummed-contributor-smoke-pending",
+      "verification_status": "smoke-passed-native-desktop",
       "source": "github-actions"
     }
   ],
@@ -72,24 +72,19 @@
       "notes": "Unsigned tested public beta installer"
     },
     "linux-x64": {
-      "status": "native-smoke-blocked",
+      "status": "tested",
       "release_blocking": false,
       "artifact": "Orqestra_1.0.12_x64.AppImage",
       "signed": false,
       "compile_status": "pass",
       "bundle_status": "pass",
       "public_artifact": true,
-      "smoke_tested": false,
-      "smoke_result": "blocked",
-      "native_desktop_smoke": false,
+      "smoke_tested": true,
+      "smoke_result": "pass",
+      "native_desktop_smoke": true,
       "previous_runtime_evidence": "runtime-evidence-wslg",
-      "promotion_blocker": "no-native-linux-desktop-smoke",
-      "contributor_smoke_kit": {
-        "guide": "docs/linux-native-smoke-guide.md",
-        "evidence_template": "docs/linux-smoke-evidence-template.md",
-        "issue_template": ".github/ISSUE_TEMPLATE/linux_smoke_report.yml"
-      },
-      "notes": "Linux AppImage has WSLg runtime evidence, but native desktop smoke has not been completed. Contributor smoke kit published."
+      "notes": "Native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3. Screenshot blocked by Wayland rootless compositor; process+window evidence recorded.",
+      "smoke_evidence": "demo/v1.0.12-linux-native-smoke.md"
     },
     "macos": {
       "status": "build-feasibility-verified",
@@ -131,15 +126,14 @@
     "dashboard_ts_build": "pass",
     "windows_smoke": "pass",
     "linux_wslg_smoke": "pass-wslg (prior release)",
-    "linux_native_smoke": "not-run",
+    "linux_native_smoke": "pass",
     "dashboard_status": "200 OK",
     "real_ai_demo": "pass",
     "rust_tests_count": 141
   },
   "limitations": [
     "Unsigned Windows installer",
-    "Linux AppImage: native smoke not completed; contributor smoke kit published",
-    "Linux not promoted without native desktop smoke",
+    "Linux screenshot blocked by Wayland rootless compositor; process+window evidence recorded",
     "macOS binary compiles but no bundled artifact",
     "Some agent paths remain review-only or scaffolded"
   ]

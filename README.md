@@ -6,7 +6,7 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ## Public Beta Status
 
-Orqestra v1.0.12 is a **public beta** for technical reviewers and early adopters. v1.0.12 does not promote Linux to a tested beta platform. It publishes a native Linux smoke guide, evidence template, and GitHub report form so contributors with a real Linux desktop can run the promotion-grade AppImage smoke test. Prior WSLg runtime evidence remains recorded.
+Orqestra v1.0.12 is a **public beta** for technical reviewers and early adopters. v1.0.12 promotes Linux to a tested beta platform after native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3 confirmed running with all 9 smoke steps passing.
 
 ## Quick Start for Public Beta Reviewers
 
@@ -59,14 +59,14 @@ See [Signing Plan](docs/release-signing-plan.md) for the full path.
 | Platform | Status | Notes |
 |----------|--------|-------|
 | Windows x64 | tested | NSIS installer, unsigned beta |
-| Linux x64 | native-smoke-blocked | Contributor smoke kit published; native desktop smoke pending |
+| Linux x64 | tested | Native Ubuntu 24.04 GNOME smoke pass; WebKit2GTK 2.52.3 |
 | macOS | build-feasibility-verified | CI compiles universal binary, no DMG/app bundle |
 
 See [Platform Confidence](docs/platform-confidence.md) for what each status means and promotion criteria.
 
 ### Linux AppImage Warning
 
-v1.0.12 does not promote Linux to a tested beta platform. It publishes a native Linux smoke guide, evidence template, and GitHub report form so contributors with a real Linux desktop can run the promotion-grade AppImage smoke test. Prior WSLg runtime evidence remains recorded.
+v1.0.12 promotes Linux to a tested beta platform after native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3 confirmed running with all 9 smoke steps passing.
 
 To verify the Linux AppImage:
 
