@@ -431,6 +431,26 @@ if (manifest.product_readiness) {
       if (cp.secret_contents_excluded !== true) {
         fail('product_readiness.agent_context_quality.context_content_policy.secret_contents_excluded must be true');
       }
+      if (cp.absolute_paths_displayed !== false) {
+        fail('product_readiness.agent_context_quality.context_content_policy.absolute_paths_displayed must be false');
+      }
+    }
+    // v1.4.1: degradation guarantees
+    if (acq.context_degradation) {
+      const cd = acq.context_degradation;
+      if (cd.graceful !== true) {
+        fail('product_readiness.agent_context_quality.context_degradation.graceful must be true');
+      }
+      if (cd.failure_blocks_agent !== false) {
+        fail('product_readiness.agent_context_quality.context_degradation.failure_blocks_agent must be false');
+      }
+    }
+    // v1.4.1: stabilization evidence
+    if (acq.stabilization) {
+      const st = acq.stabilization;
+      if (st.forbidden_field_scan !== 'path-aware') {
+        fail('product_readiness.agent_context_quality.stabilization.forbidden_field_scan must be path-aware');
+      }
     }
   }
 

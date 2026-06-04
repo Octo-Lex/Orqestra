@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.4.1] - 2026-06-04
+
+### Added
+- Agent Context v2 payload regression fixtures for docs-agent and bugfix-agent (22 payload tests)
+- Path-aware forbidden-field scan expanded from 6 to 10 forbidden keys (content, body, diff, patch, file_text, raw, token, authorization, secret_value, private_key)
+- Graceful degradation tests for non-repo, deleted directory, .git-as-file, and path-points-to-file
+- Forbidden-field scan scoped to `git_context` only (safe keys in task, context_files, agent response excluded from scan)
+- Agent diagnostics UI shows error code when context unavailable, review-only status always visible
+- Manifest `context_degradation` section (graceful, failure_blocks_agent: false)
+- Manifest `stabilization` section (payload_fixtures, forbidden_field_scan: path-aware)
+- Manifest `absolute_paths_displayed: false` in content policy
+
+### Changed
+- Agent context diagnostics now clearly distinguish available and unavailable context states
+- Manifest validation now records context degradation guarantees
+- Agent context documentation now explains path-aware forbidden-field scanning
+
+### Security
+- Agent Git context remains content-free
+- Forbidden-field scan checks JSON keys inside `git_context` without false-positive substring matching
+- Safe metadata keys (`secret_count`, `secret_contents_excluded`, `raw_diffs: false`) pass scan correctly
+- Context failures do not enable auto-apply, auto-commit, path expansion, or repository writes
+- Diagnostics continue to use repo-relative paths only
+
+### Known Limitations
+- v1.4.1 does not add new agent roles
+- Agents remain review-only
+- Agents do not stage files, create commits, push, pull, or perform autonomous operations
+- Agent quality claims remain payload-structure-based unless separately evaluated
+
 ## [1.4.0] - 2026-06-04
 
 ### Added
