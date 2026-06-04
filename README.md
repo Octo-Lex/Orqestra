@@ -6,20 +6,20 @@ Orqestra turns a Git repository into a structured workspace with roadmap trackin
 
 ## Public Beta Status
 
-Orqestra v1.0.12 is a **public beta** for technical reviewers and early adopters. v1.0.12 promotes Linux to a tested beta platform after native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3 confirmed running with all 9 smoke steps passing.
+Orqestra is a **public beta** for technical reviewers and early adopters. The current release is **v1.5.0** with 328 passing tests, review-only agents, and an opt-in safe diff context pilot.
 
 ## Quick Start for Public Beta Reviewers
 
 ### 1. Download
 
-Download `Orqestra_1.0.12_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download `Orqestra_1.5.0_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
 
 The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
 ### 2. Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.12_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_1.5.0_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` attached to the release.
@@ -27,7 +27,7 @@ Compare against `checksums.txt` or `release-manifest.json` attached to the relea
 ### 3. Verify Signature
 
 ```powershell
-Get-AuthenticodeSignature .\Orqestra_1.0.12_x64-setup.exe
+Get-AuthenticodeSignature .\Orqestra_1.5.0_x64-setup.exe
 ```
 
 Expected: `Status: NotSigned` — the installer is unsigned because no code-signing certificate has been configured.
@@ -48,7 +48,7 @@ If anything goes wrong, see **[Troubleshooting Guide](docs/troubleshooting.md)**
 
 ## Windows SmartScreen
 
-The Windows installer is unsigned. Windows SmartScreen warnings are expected. v1.0.12 records the signing blocker status and the next action toward signed distribution.
+The Windows installer is unsigned. Windows SmartScreen warnings are expected.
 
 Even when signing is implemented, SmartScreen may still warn for new or low-reputation downloads until reputation is established.
 
@@ -58,58 +58,101 @@ See [Signing Plan](docs/release-signing-plan.md) for the full path.
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| Windows x64 | tested | NSIS installer, unsigned beta |
-| Linux x64 | tested | Native Ubuntu 24.04 GNOME smoke pass; WebKit2GTK 2.52.3 |
-| macOS | build-feasibility-verified | CI compiles universal binary, no DMG/app bundle |
+| Windows x64 | **release-tested** | NSIS installer, unsigned beta |
+| Linux x64 | **smoke-tested** | Ubuntu 24.04 GNOME smoke pass (v1.0.12); CI-built AppImage |
+| macOS | **build-feasibility-verified** | CI compiles universal binary; no DMG/app bundle |
 
 See [Platform Confidence](docs/platform-confidence.md) for what each status means and promotion criteria.
 
-### Linux AppImage Warning
+---
 
-v1.0.12 promotes Linux to a tested beta platform after native Ubuntu 24.04 GNOME smoke pass on QEMU/Proxmox. WebKit2GTK 2.52.3 confirmed running with all 9 smoke steps passing.
-
-To verify the Linux AppImage:
-
-```bash
-sha256sum Orqestra_1.0.12_x64.AppImage
-chmod a+x Orqestra_1.0.12_x64.AppImage
-./Orqestra_1.0.12_x64.AppImage
-```
-
-If you encounter issues, see [Troubleshooting](docs/troubleshooting.md) or [file an issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml).
-
-## What Works
+## Capability Matrix
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Roadmap parsing | Implemented and verified | Local |
+| Roadmap parsing & indexing | Implemented and verified | Markdown-native, self-hosted |
 | Desktop PM views | Implemented and verified | Table, Gantt, Kanban |
-| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed, freshness metadata |
-| OS keychain credentials | Implemented and verified | Windows Credential Manager |
-| Docs agent | Implemented, review-only | Real AI when ZAI_API_KEY set |
-| Bugfix agent | Implemented, review-only | User-selected files only |
+| Dashboard | Deployed at [orqestra.pages.dev](https://orqestra.pages.dev) | CI auto-deployed on master push |
+| OS keychain credentials | Implemented and verified | Windows Credential Manager; Linux Secret Service; macOS Keychain |
+| Docs agent | Implemented, review-only | Real AI service (`/agent/docs`); Agent Context v2 |
+| Bugfix agent | Implemented, review-only | Real AI service (`/agent/bugfix`); Agent Context v2 |
+| Semantic commit preparation | Implemented, proposal-only | Deterministic heuristics, no AI dependency; 1341 LOC |
+| Native Git operations | Implemented, read-only scope | Hybrid gix + CLI fallback (see provider matrix below) |
+| Agent Context v2 | Implemented and verified | Schema-versioned, content-free, review-only constraints enforced |
+| Safe diff context pilot | Implemented pilot, disabled by default | Opt-in via `ORQESTRA_SAFE_DIFF_CONTEXT` env var |
+| Knowledge graph & triple store | Implemented | Content-addressed triple store with commit indexer |
+| CRDT sync (local) | Implemented | Loro per-file document model, two-peer offline merge verified |
+| Shockwave merge UI | **Mock/prototype** | Uses fixture data, not real merge conflict resolution |
+| Vector/embedding search | Implemented in Python AI service | `all-MiniLM-L6-v2` embeddings + cosine similarity via `/query_history` endpoint |
 | First-run onboarding | Implemented and verified | Guided wizard with sample project |
-| Environment readiness | Implemented and verified | Setup checks for all integrations |
 | Diagnostics export | Implemented and verified | Redacted bundle, no raw secrets |
 | Release manifest | Implemented and verified | Provenance, signing, diagnostics, platform fields |
-| Dashboard freshness | Implemented | Version, commit, timestamp in footer |
-| Beta quickstart | Implemented | [docs/beta-quickstart.md](docs/beta-quickstart.md) |
-| Troubleshooting | Implemented | [docs/troubleshooting.md](docs/troubleshooting.md) |
-| Installer diagnostics | Implemented | [docs/installer-diagnostics.md](docs/installer-diagnostics.md) |
-| Platform confidence | Implemented | [docs/platform-confidence.md](docs/platform-confidence.md) |
-| Issue triage | Implemented | [docs/beta-issue-triage.md](docs/beta-issue-triage.md) |
 | Issue templates | Implemented | Install, AI mode, dashboard, bug report |
+
+### Agent Matrix
+
+| Agent | Status | Mode | Endpoint |
+|-------|--------|------|----------|
+| docs-agent | **Real, review-only** | Agent Context v2 + safe diff context (pilot) | `POST /agent/docs` |
+| bugfix-agent | **Real, review-only** | Agent Context v2 + safe diff context (pilot) | `POST /agent/bugfix` |
+| architect-agent | **Not implemented** | — | — |
+| Autonomy | **Disabled** | `auto_commit: false`, `auto_apply: false`, `autonomous_actions: false` | — |
+
+### Git Provider Matrix
+
+| Operation | Provider | Status |
+|-----------|----------|--------|
+| HEAD SHA read | gix (native) | Verified |
+| Branch name read | gix (native) | Verified |
+| Recent commit metadata | gix (native traversal) | Verified |
+| Commit creation | gix (native, tree-from-index via CLI) | Verified |
+| Repository snapshot | gix hybrid (branch/HEAD via gix, counts via CLI) | Verified |
+| Changed file summary | gix hybrid | Verified |
+| Diff/stat | CLI fallback (`git diff --stat`) | Verified |
+| Safe diff context extraction | CLI fallback (`git diff --unified=3`) | Verified, pilot |
+| Staging | CLI fallback (`git add`) | Verified |
+| Push/pull | **Not implemented in git-bridge** | Backlog |
+| Merge/rebase | **Not implemented in git-bridge** | Backlog |
+
+### Test Trend
+
+| Release | Tests | Delta |
+|---------|-------|-------|
+| v1.0.12 | 141 | — |
+| v1.1.0 | 151 | +10 |
+| v1.1.1 | 165 | +14 |
+| v1.2.0 | 194 | +29 |
+| v1.2.1 | 215 | +21 |
+| v1.3.0 | 240 | +25 |
+| v1.3.1 | 269 | +29 |
+| v1.4.0 | 287 | +18 |
+| v1.4.1 | 305 | +18 |
+| v1.5.0 | 328 | +23 |
+
+---
 
 ## Known Limitations
 
-- **Windows installer is unsigned** — SmartScreen warnings are expected
-- **macOS artifacts are not built** — not available for this release
-- **Linux artifacts are CI-built but not verified** — not recommended for public beta
-- **Architect agent** — mock-mode
+- **Windows installer is unsigned** — SmartScreen warnings are expected; code-signing certificate not available
+- **macOS** — CI builds a universal binary but no DMG/app bundle is published
+- **Linux AppImage** — CI-built; smoke-tested on Ubuntu 24.04 GNOME; AppImage naming has a CI versioning issue
+- **Architect agent** — not implemented
 - **ML-Master exploration** — stub
-- **Edge relay / CRDT sync** — not available
-- **Full native Git** — 8 shell-outs remain
+- **Edge relay / CRDT sync** — local CRDT works; Cloudflare Durable Object relay not implemented
+- **Git write operations** — push, pull, merge, rebase not migrated to native providers; remain CLI-only or not implemented
 - **Code signing** — blocked, certificate not available
+- **Safe diff context** — pilot, disabled by default, CLI-backed provider only
+- **Shockwave merge** — mock/prototype, uses fixture data
+
+---
+
+## Documentation Doctrine
+
+> Documentation is advisory. Code on disk is authoritative. Release claims must be backed by tests, artifacts, manifests, or verified implementation.
+>
+> If a document says X but the code does Y, the code is correct. File a docs issue.
+
+---
 
 ## Report an Issue
 
@@ -132,6 +175,11 @@ Each release includes `release-manifest.json` with: full Git SHAs, CI workflow r
 | [Troubleshooting](docs/troubleshooting.md) | Common issues and fixes |
 | [Installer Diagnostics](docs/installer-diagnostics.md) | Install failure diagnostic steps |
 | [Platform Confidence](docs/platform-confidence.md) | What each platform status means |
+| [Product Readiness](docs/product-readiness.md) | Capability maturity and verification |
+| [Native Git](docs/native-git.md) | Hybrid gix + CLI provider details |
+| [Semantic Commit Preparation](docs/semantic-commit-preparation.md) | Proposal-only deterministic commit pipeline |
+| [Agent Context Quality](docs/agent-context-quality.md) | Agent Context v2 and content policy |
+| [Safe Diff Context](docs/safe-diff-context.md) | Opt-in diff pilot for review-only agents |
 | [Issue Triage](docs/beta-issue-triage.md) | How beta feedback is managed |
 | [Signing Plan](docs/release-signing-plan.md) | Path to signed, notarized releases |
 | [Release Artifacts](docs/RELEASE_ARTIFACTS.md) | Platform downloads and limitations |
