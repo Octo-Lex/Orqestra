@@ -180,3 +180,18 @@ pub fn git_diff_stat_cmd(project_root: String) -> Result<String, String> {
     serde_json::to_string(&stat)
         .map_err(|e| format!("Failed to serialize diff stat: {e}"))
 }
+
+// ---------------------------------------------------------------------------
+// v1.3.0: Semantic Commit Preparation (proposal-only)
+// ---------------------------------------------------------------------------
+
+/// Prepare a semantic commit proposal.
+/// Read-only — never stages files, creates commits, or mutates the repository.
+#[command]
+pub fn prepare_semantic_commit_cmd(project_root: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let proposal = git_bridge::prepare_semantic_commit(&path)
+        .map_err(|e| format!("Semantic commit preparation failed: {e}"))?;
+    serde_json::to_string(&proposal)
+        .map_err(|e| format!("Failed to serialize proposal: {e}"))
+}
