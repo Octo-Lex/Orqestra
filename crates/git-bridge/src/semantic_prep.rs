@@ -186,6 +186,92 @@ pub fn build_agent_context(
 }
 
 // ---------------------------------------------------------------------------
+// Agent Context v2 — structured, schema-versioned, content-policy-aware
+// ---------------------------------------------------------------------------
+
+/// Summary-only proposal metadata — no body field.
+#[derive(Debug, Clone, Serialize)]
+pub struct ProposalSummary {
+    pub title: String,
+    pub scope: String,
+    pub change_type: String,
+    pub risk_level: String,
+    pub confidence: f64,
+}
+
+/// Explicit content policy declaring what is excluded from agent context.
+#[derive(Debug, Clone, Serialize)]
+pub struct ContentPolicy {
+    pub git_context_file_contents: bool,
+    pub diff_body_included: bool,
+    pub secret_contents_excluded: bool,
+    pub binary_contents_excluded: bool,
+    pub large_contents_excluded: bool,
+    pub symlink_contents_excluded: bool,
+}
+
+/// Agent Context v2 — structured, schema-versioned, content-policy-aware.
+/// Provides rich semantic Git context without file contents.
+#[derive(Debug, Clone, Serialize)]
+pub struct AgentContextV2 {
+    pub schema_version: String,
+    pub branch: String,
+    pub head_short_sha: String,
+    pub dirty: bool,
+    pub changed_files: Vec<ChangedFileSummary>,
+    pub risk_summary: RiskSummary,
+    pub diff_stat: DiffStatSummary,
+    pub commit_groups: Vec<CommitGroup>,
+    pub semantic_proposal: ProposalSummary,
+    pub recent_commit_subjects: Vec<String>,
+    pub provider: String,
+    pub content_policy: ContentPolicy,
+}
+
+impl ContentPolicy {
+    /// Default policy: all content excluded, all safety flags true.
+    pub fn safe_default() -> Self {
+        ContentPolicy {
+            git_context_file_contents: false,
+            diff_body_included: false,
+            secret_contents_excluded: true,
+            binary_contents_excluded: true,
+            large_contents_excluded: true,
+            symlink_contents_excluded: true,
+        }
+    }
+}
+
+/// Build Agent Context v2 with structured groups, proposal summary, and content policy.
+pub fn build_agent_context_v2(
+    project_root: &Path,
+) -> Result<AgentContextV2, GitBridgeError> {
+    let input = build_semantic_commit_input(project_root)?;
+    let proposal = prepare_semantic_commit(project_root)?;
+
+    Ok(AgentContextV2 {
+        schema_version: "agent-context-v2".to_string(),
+        branch: input.branch.clone(),
+        head_short_sha: input.head_short_sha.clone(),
+        dirty: input.dirty,
+        changed_files: input.changed_files.clone(),
+        risk_summary: input.risk_summary.clone(),
+        diff_stat: input.diff_stat_summary.clone(),
+        commit_groups: proposal.groups.clone(),
+        semantic_proposal: ProposalSummary {
+            title: proposal.title.clone(),
+            scope: proposal.scope.clone(),
+            change_type: proposal.change_type.clone(),
+            risk_level: proposal.risk_level.clone(),
+            confidence: proposal.confidence,
+        },
+        recent_commit_subjects: input.recent_commit_subjects.clone(),
+        provider: input.provider.clone(),
+        content_policy: ContentPolicy::safe_default(),
+    })
+}
+
+// ---------------------------------------------------------------------------
 // Risk summary builder
 // ---------------------------------------------------------------------------
 

@@ -16,9 +16,11 @@ pub use diff::{GitDiffStat, diff_stat};
 pub use error::GitBridgeError;
 pub use semantic::{AuthorType, SemanticCommitObject, SemanticPayload};
 pub use semantic_prep::{
-    AgentGitContext, CommitGroup, DiffStatSummary, RiskSummary,
+    AgentContextV2, AgentGitContext, CommitGroup, ContentPolicy, DiffStatSummary,
+    ProposalSummary, RiskSummary,
     SemanticCommitInput, SemanticCommitProposal,
-    build_agent_context, build_semantic_commit_input, prepare_semantic_commit,
+    build_agent_context, build_agent_context_v2, build_semantic_commit_input,
+    prepare_semantic_commit,
 };
 pub use snapshot::{GitRepositorySnapshot, GitChangedFile, GitHeadMetadata, repository_snapshot};
 pub use status::update_task_status;
