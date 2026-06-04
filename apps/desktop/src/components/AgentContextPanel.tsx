@@ -84,7 +84,13 @@ export function AgentContextPanel({ projectRoot }: { projectRoot: string }) {
     return (
       <div style={{ padding: '12px', fontSize: '12px' }}>
         <div style={{ color: '#ef4444', fontWeight: 600, marginBottom: '4px' }}>Context Unavailable</div>
-        <div style={{ color: '#6b7280' }}>Git context could not be built. Agents will run without repository metadata.</div>
+        <div style={{ color: '#6b7280', marginBottom: '4px' }}>Git context could not be built. Agents will run without repository metadata.</div>
+        <div style={{ fontSize: '10px', color: '#9ca3af', fontFamily: 'monospace', marginBottom: '4px' }}>
+          Error: AGENT_CONTEXT_BUILD_FAILED
+        </div>
+        <div style={{ padding: '4px 6px', backgroundColor: '#f0fdf4', border: '1px solid #86efac', borderRadius: '4px', fontSize: '10px', color: '#15803d', marginBottom: '8px' }}>
+          Agent mode: review-only &middot; Auto-commit: false &middot; Auto-apply: false
+        </div>
         <button onClick={refresh} style={{ marginTop: '8px', fontSize: '11px', padding: '4px 8px', cursor: 'pointer' }}>Retry</button>
       </div>
     );
