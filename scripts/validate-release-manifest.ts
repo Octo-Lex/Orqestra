@@ -390,6 +390,50 @@ if (manifest.product_readiness) {
     }
   }
 
+  // Agent context quality (v1.4.0)
+  if (pr.agent_context_quality) {
+    const acq = pr.agent_context_quality;
+    if (acq.review_only !== true) {
+      fail('product_readiness.agent_context_quality.review_only must be true');
+    }
+    if (acq.auto_commit !== false) {
+      fail('product_readiness.agent_context_quality.auto_commit must be false');
+    }
+    if (acq.auto_apply !== false) {
+      fail('product_readiness.agent_context_quality.auto_apply must be false');
+    }
+    if (acq.stages_files !== false) {
+      fail('product_readiness.agent_context_quality.stages_files must be false');
+    }
+    if (acq.writes_repository !== false) {
+      fail('product_readiness.agent_context_quality.writes_repository must be false');
+    }
+    if (acq.native_commit_execution !== false) {
+      fail('product_readiness.agent_context_quality.native_commit_execution must be false');
+    }
+    if (acq.autonomous_actions !== false) {
+      fail('product_readiness.agent_context_quality.autonomous_actions must be false');
+    }
+    if (acq.schema_version !== 'agent-context-v2') {
+      fail('product_readiness.agent_context_quality.schema_version must be agent-context-v2');
+    }
+    if (!acq.forbidden_fields || !Array.isArray(acq.forbidden_fields)) {
+      fail('product_readiness.agent_context_quality.forbidden_fields is required and must be an array');
+    }
+    if (acq.context_content_policy) {
+      const cp = acq.context_content_policy;
+      if (cp.git_context_file_contents !== false) {
+        fail('product_readiness.agent_context_quality.context_content_policy.git_context_file_contents must be false');
+      }
+      if (cp.raw_diffs !== false) {
+        fail('product_readiness.agent_context_quality.context_content_policy.raw_diffs must be false');
+      }
+      if (cp.secret_contents_excluded !== true) {
+        fail('product_readiness.agent_context_quality.context_content_policy.secret_contents_excluded must be true');
+      }
+    }
+  }
+
   // Legacy pilot compatibility
   if (pr.native_git_pilot) {
     const ngp = pr.native_git_pilot;

@@ -96,22 +96,35 @@ pub fn run_docs_agent_cmd(
     let files: Vec<serde_json::Value> = serde_json::from_str(&context_files)
         .map_err(|e| format!("Invalid context_files JSON: {}", e))?;
 
-    // Build safe Git context (content-free)
+    // Build safe Git context v2 (content-free, schema-versioned)
     let git_context = std::path::PathBuf::from(&project_root);
-    let safe_context = git_bridge::build_agent_context(&git_context)
-        .ok()
-        .map(|ctx| serde_json::to_value(ctx).unwrap_or(serde_json::json!({})))
-        .unwrap_or(serde_json::json!({}));
+    let (safe_context, git_context_status, git_context_error_code) =
+        match git_bridge::build_agent_context_v2(&git_context) {
+            Ok(ctx) => (
+                serde_json::to_value(&ctx).unwrap_or(serde_json::json!({})),
+                "available".to_string(),
+                serde_json::Value::Null,
+            ),
+            Err(_) => (
+                serde_json::json!({}),
+                "unavailable".to_string(),
+                serde_json::json!("AGENT_CONTEXT_BUILD_FAILED"),
+            ),
+        };
 
     // Build request body
     let request_body = serde_json::json!({
         "task": task_obj,
         "context_files": files,
         "git_context": safe_context,
+        "git_context_status": git_context_status,
+        "git_context_error_code": git_context_error_code,
         "constraints": {
             "allowed_paths": ["README.md", "docs/", "roadmap/", "CHANGELOG.md"],
             "max_files_changed": 3,
-            "auto_commit": false
+            "review_only": true,
+            "auto_commit": false,
+            "auto_apply": false
         }
     });
 
@@ -256,21 +269,34 @@ pub fn run_bugfix_agent_cmd(
         .filter_map(|f| f.get("path").and_then(|p| p.as_str()).map(String::from))
         .collect();
 
-    // Build safe Git context (content-free)
+    // Build safe Git context v2 (content-free, schema-versioned)
     let git_ctx_path = std::path::PathBuf::from(&project_root);
-    let safe_context = git_bridge::build_agent_context(&git_ctx_path)
-        .ok()
-        .map(|ctx| serde_json::to_value(ctx).unwrap_or(serde_json::json!({})))
-        .unwrap_or(serde_json::json!({}));
+    let (safe_context, git_context_status, git_context_error_code) =
+        match git_bridge::build_agent_context_v2(&git_ctx_path) {
+            Ok(ctx) => (
+                serde_json::to_value(&ctx).unwrap_or(serde_json::json!({})),
+                "available".to_string(),
+                serde_json::Value::Null,
+            ),
+            Err(_) => (
+                serde_json::json!({}),
+                "unavailable".to_string(),
+                serde_json::json!("AGENT_CONTEXT_BUILD_FAILED"),
+            ),
+        };
 
     let request_body = serde_json::json!({
         "task": task_obj,
         "allowed_files": files,
         "git_context": safe_context,
+        "git_context_status": git_context_status,
+        "git_context_error_code": git_context_error_code,
         "constraints": {
             "allowed_paths": allowed_paths,
             "max_files_changed": allowed_paths.len(),
+            "review_only": true,
             "auto_commit": false,
+            "auto_apply": false,
             "may_request_more_files": true
         }
     });

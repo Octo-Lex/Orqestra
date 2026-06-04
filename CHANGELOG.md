@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.4.0] - 2026-06-04
+
+### Added
+- Agent Context v2 schema (`AgentContextV2`) for docs-agent and bugfix-agent
+- `ProposalSummary` struct (summary-only, no `body` field)
+- `ContentPolicy` struct explicitly declaring all content exclusions
+- `build_agent_context_v2()` producing structured, schema-versioned context
+- Agent context diagnostics UI (`AgentContextPanel`, `AgentDiagnosticsPanel`)
+- 18 agent context integration tests: schema, content policy, 11 fixtures, agent payloads, forbidden-field scan, graceful degradation
+- Manifest `agent_context_quality` section with no-autonomy and content-policy validator gates
+- Explicit `git_context_status` and `git_context_error_code` in agent request payloads
+- v1.4.0 agent context evidence
+
+### Changed
+- Docs-agent receives Agent Context v2: changed-file paths/statuses, risk summaries, commit groups, proposal summaries, recent commit subjects, diff/stat counts
+- Bugfix-agent receives Agent Context v2: same structured context with user-selected allowed paths
+- Both agents now send explicit `review_only: true`, `auto_commit: false`, `auto_apply: false` constraints
+- Context build failure degrades gracefully with `unavailable` status and error code (does not block agent request)
+- Product readiness docs now distinguish agent context quality from agent autonomy
+
+### Security
+- Git context remains content-free by construction
+- Raw diffs, file contents, secrets, tokens, binary data, large file contents, and symlink targets are excluded
+- Forbidden-field scan is path-aware: `secret_count`, `secret_contents_excluded`, `raw_diffs: false` are safe metadata keys
+- `ProposalSummary` has no `body` field — summary-only
+- Diagnostics UI displays repo-relative paths only
+- Agents remain review-only with `auto_commit: false` and `auto_apply: false`
+
+### Known Limitations
+- Agent quality improvements are structural unless otherwise evidenced
+- Agents do not autonomously apply patches or create commits
+- New agent roles are not introduced in v1.4.0
+- Diff body pilot remains disabled by default
+- Native commit execution is not implemented
+
 ## [1.3.1] - 2026-06-04
 
 ### Added
