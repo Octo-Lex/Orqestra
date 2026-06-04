@@ -96,10 +96,18 @@ pub fn run_docs_agent_cmd(
     let files: Vec<serde_json::Value> = serde_json::from_str(&context_files)
         .map_err(|e| format!("Invalid context_files JSON: {}", e))?;
 
+    // Build safe Git context (content-free)
+    let git_context = std::path::PathBuf::from(&project_root);
+    let safe_context = git_bridge::build_agent_context(&git_context)
+        .ok()
+        .map(|ctx| serde_json::to_value(ctx).unwrap_or(serde_json::json!({})))
+        .unwrap_or(serde_json::json!({}));
+
     // Build request body
     let request_body = serde_json::json!({
         "task": task_obj,
         "context_files": files,
+        "git_context": safe_context,
         "constraints": {
             "allowed_paths": ["README.md", "docs/", "roadmap/", "CHANGELOG.md"],
             "max_files_changed": 3,
@@ -248,9 +256,17 @@ pub fn run_bugfix_agent_cmd(
         .filter_map(|f| f.get("path").and_then(|p| p.as_str()).map(String::from))
         .collect();
 
+    // Build safe Git context (content-free)
+    let git_ctx_path = std::path::PathBuf::from(&project_root);
+    let safe_context = git_bridge::build_agent_context(&git_ctx_path)
+        .ok()
+        .map(|ctx| serde_json::to_value(ctx).unwrap_or(serde_json::json!({})))
+        .unwrap_or(serde_json::json!({}));
+
     let request_body = serde_json::json!({
         "task": task_obj,
         "allowed_files": files,
+        "git_context": safe_context,
         "constraints": {
             "allowed_paths": allowed_paths,
             "max_files_changed": allowed_paths.len(),
