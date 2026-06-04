@@ -226,6 +226,7 @@ pub struct AgentContextV2 {
     pub recent_commit_subjects: Vec<String>,
     pub provider: String,
     pub content_policy: ContentPolicy,
+    pub safe_diff_context: SafeDiffContext,
 }
 
 impl ContentPolicy {
@@ -268,6 +269,7 @@ pub fn build_agent_context_v2(
         recent_commit_subjects: input.recent_commit_subjects.clone(),
         provider: input.provider.clone(),
         content_policy: ContentPolicy::safe_default(),
+        safe_diff_context: build_safe_diff_context(project_root, &input.changed_files)?,
     })
 }
 
@@ -668,6 +670,336 @@ fn build_groups(
 // ---------------------------------------------------------------------------
 
 /// Check if diff body pilot is enabled via environment variable.
+// ---------------------------------------------------------------------------
+// Safe Diff Context Pilot (v1.5.0)
+// ---------------------------------------------------------------------------
+
+/// Policy governing safe diff context extraction.
+#[derive(Debug, Clone, Serialize)]
+pub struct SafeDiffPolicy {
+    pub default: String,
+    pub runtime_toggle: String,
+    pub max_files: usize,
+    pub max_file_size_bytes: u64,
+    pub max_lines_per_hunk: usize,
+    pub max_lines_per_file: usize,
+    pub max_total_lines: usize,
+    pub secret_risk_excluded: bool,
+    pub binary_excluded: bool,
+    pub large_excluded: bool,
+    pub symlink_excluded: bool,
+    pub workflow_risk_excluded_by_default: bool,
+}
+
+impl Default for SafeDiffPolicy {
+    fn default() -> Self {
+        SafeDiffPolicy {
+            default: "off".to_string(),
+            runtime_toggle: "ORQESTRA_SAFE_DIFF_CONTEXT".to_string(),
+            max_files: 5,
+            max_file_size_bytes: 262144,
+            max_lines_per_hunk: 80,
+            max_lines_per_file: 120,
+            max_total_lines: 250,
+            secret_risk_excluded: true,
+            binary_excluded: true,
+            large_excluded: true,
+            symlink_excluded: true,
+            workflow_risk_excluded_by_default: true,
+        }
+    }
+}
+
+/// A single diff hunk from a safe file.
+#[derive(Debug, Clone, Serialize)]
+pub struct SafeDiffHunk {
+    pub old_start: u32,
+    pub old_lines: u32,
+    pub new_start: u32,
+    pub new_lines: u32,
+    pub lines: Vec<String>,
+}
+
+/// Per-file safe diff context with eligibility tracking.
+#[derive(Debug, Clone, Serialize)]
+pub struct SafeDiffFile {
+    pub path: String,
+    pub status: String,
+    pub included: bool,
+    pub exclusion_reason: Option<String>,
+    pub risk: String,
+    pub file_kind: String,
+    pub original_path: Option<String>,
+    pub hunks: Vec<SafeDiffHunk>,
+    pub line_count: usize,
+}
+
+/// Summary of safe diff context extraction.
+#[derive(Debug, Clone, Serialize)]
+pub struct SafeDiffSummary {
+    pub included_files: usize,
+    pub excluded_files: usize,
+    pub total_lines: usize,
+    pub truncated: bool,
+}
+
+/// Safe diff context — opt-in, bounded diff excerpts for review-only agents.
+#[derive(Debug, Clone, Serialize)]
+pub struct SafeDiffContext {
+    pub enabled: bool,
+    pub enabled_source: String,
+    pub included: bool,
+    pub provider: Option<String>,
+    pub policy: SafeDiffPolicy,
+    pub files: Vec<SafeDiffFile>,
+    pub summary: SafeDiffSummary,
+}
+
+impl SafeDiffContext {
+    /// Create disabled state.
+    pub fn disabled() -> Self {
+        SafeDiffContext {
+            enabled: false,
+            enabled_source: "default-off".to_string(),
+            included: false,
+            provider: None,
+            policy: SafeDiffPolicy::default(),
+            files: Vec::new(),
+            summary: SafeDiffSummary {
+                included_files: 0,
+                excluded_files: 0,
+                total_lines: 0,
+                truncated: false,
+            },
+        }
+    }
+}
+
+/// Check if safe diff context is enabled via environment variable.
+fn safe_diff_context_enabled() -> (bool, String) {
+    match std::env::var("ORQESTRA_SAFE_DIFF_CONTEXT") {
+        Ok(v) if v == "true" || v == "1" => (true, "env:ORQESTRA_SAFE_DIFF_CONTEXT".to_string()),
+        _ => (false, "default-off".to_string()),
+    }
+}
+
+/// Check eligibility of a single file for safe diff inclusion.
+pub fn check_diff_eligibility(
+    file: &ChangedFileSummary,
+    policy: &SafeDiffPolicy,
+) -> (bool, Option<String>) {
+    // Status policy:
+    // modified / staged / added / renamed -> eligible if safe
+    // deleted / untracked -> excluded
+    match file.status.as_str() {
+        "deleted" => return (false, Some("unsupported-status".to_string())),
+        "untracked" => return (false, Some("unsupported-status".to_string())),
+        "modified" | "staged" | "renamed" | "added" => {}
+        _ => return (false, Some("unsupported-status".to_string())),
+    }
+
+    // Only text files
+    if file.file_kind != "text" {
+        return (false, Some("non-text".to_string()));
+    }
+
+    // Risk checks
+    match file.risk.as_str() {
+        "secret" => return (false, Some("secret-risk".to_string())),
+        "workflow" if policy.workflow_risk_excluded_by_default => {
+            return (false, Some("workflow-risk".to_string()));
+        }
+        "binary" => return (false, Some("binary".to_string())),
+        "large" => return (false, Some("large".to_string())),
+        "unknown" => return (false, Some("symlink".to_string())),
+        _ => {}
+    }
+
+    (true, None)
+}
+
+/// Parse unified diff output into hunks.
+fn parse_diff_hunks(diff_output: &str, max_lines_per_hunk: usize) -> Vec<SafeDiffHunk> {
+    let mut hunks = Vec::new();
+    let mut current_hunk: Option<SafeDiffHunk> = None;
+    let mut hunk_line_count = 0;
+
+    for line in diff_output.lines() {
+        if line.starts_with("@@") {
+            if let Some(h) = current_hunk.take() {
+                hunks.push(h);
+            }
+            if let Some(info) = parse_hunk_header(line) {
+                current_hunk = Some(SafeDiffHunk {
+                    old_start: info.0,
+                    old_lines: info.1,
+                    new_start: info.2,
+                    new_lines: info.3,
+                    lines: Vec::new(),
+                });
+                hunk_line_count = 0;
+            }
+        } else if let Some(ref mut hunk) = current_hunk {
+            if hunk_line_count < max_lines_per_hunk {
+                if line.starts_with('+') || line.starts_with('-') || line.starts_with(' ') {
+                    hunk.lines.push(line.to_string());
+                    hunk_line_count += 1;
+                }
+            }
+        }
+    }
+    if let Some(h) = current_hunk.take() {
+        hunks.push(h);
+    }
+    hunks
+}
+
+/// Parse @@ -old_start,old_lines +new_start,new_lines @@ header.
+pub fn parse_hunk_header(line: &str) -> Option<(u32, u32, u32, u32)> {
+    let start = line.find("@@ ")?;
+    let rest = &line[start + 3..];
+    let end = rest.find(" @@")?;
+    let header = &rest[..end];
+    let parts: Vec<&str> = header.split_whitespace().collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let old_part = parts.get(0)?.strip_prefix('-')?;
+    let new_part = parts.get(1)?.strip_prefix('+')?;
+    let old_start: u32 = old_part.split(',').next()?.parse().ok()?;
+    let old_lines: u32 = old_part.split(',').nth(1).unwrap_or("0").parse().unwrap_or(0);
+    let new_start: u32 = new_part.split(',').next()?.parse().ok()?;
+    let new_lines: u32 = new_part.split(',').nth(1).unwrap_or("0").parse().unwrap_or(0);
+    Some((old_start, old_lines, new_start, new_lines))
+}
+
+/// Build safe diff context for Agent Context v2.
+/// Disabled by default. Only enabled via ORQESTRA_SAFE_DIFF_CONTEXT env var.
+pub fn build_safe_diff_context(
+    project_root: &Path,
+    changed_files: &[ChangedFileSummary],
+) -> Result<SafeDiffContext, GitBridgeError> {
+    let policy = SafeDiffPolicy::default();
+    let (enabled, enabled_source) = safe_diff_context_enabled();
+
+    if !enabled {
+        return Ok(SafeDiffContext::disabled());
+    }
+
+    let mut result_files = Vec::new();
+    let mut excluded_count = 0;
+    let mut total_lines = 0;
+    let mut truncated = false;
+
+    for file in changed_files {
+        let (eligible, reason) = check_diff_eligibility(file, &policy);
+        if !eligible {
+            excluded_count += 1;
+            result_files.push(SafeDiffFile {
+                path: file.path.clone(),
+                status: file.status.clone(),
+                included: false,
+                exclusion_reason: reason,
+                risk: file.risk.clone(),
+                file_kind: file.file_kind.clone(),
+                original_path: file.original_path.clone(),
+                hunks: Vec::new(),
+                line_count: 0,
+            });
+            continue;
+        }
+
+        // Cap: max files
+        let included_so_far = result_files.iter().filter(|f| f.included).count();
+        if included_so_far >= policy.max_files {
+            excluded_count += 1;
+            result_files.push(SafeDiffFile {
+                path: file.path.clone(),
+                status: file.status.clone(),
+                included: false,
+                exclusion_reason: Some("file-limit".to_string()),
+                risk: file.risk.clone(),
+                file_kind: file.file_kind.clone(),
+                original_path: file.original_path.clone(),
+                hunks: Vec::new(),
+                line_count: 0,
+            });
+            truncated = true;
+            continue;
+        }
+
+        // Extract diff via git CLI
+        let diff_output = std::process::Command::new("git")
+            .current_dir(project_root)
+            .args(["diff", "--unified=3", "--", &file.path])
+            .output();
+
+        let hunks = match diff_output {
+            Ok(output) if output.status.success() => {
+                let text = String::from_utf8_lossy(&output.stdout);
+                parse_diff_hunks(&text, policy.max_lines_per_hunk)
+            }
+            _ => {
+                excluded_count += 1;
+                result_files.push(SafeDiffFile {
+                    path: file.path.clone(),
+                    status: file.status.clone(),
+                    included: false,
+                    exclusion_reason: Some("read-error".to_string()),
+                    risk: file.risk.clone(),
+                    file_kind: file.file_kind.clone(),
+                    original_path: file.original_path.clone(),
+                    hunks: Vec::new(),
+                    line_count: 0,
+                });
+                continue;
+            }
+        };
+
+        let mut line_count: usize = hunks.iter().map(|h| h.lines.len()).sum();
+        if line_count > policy.max_lines_per_file {
+            line_count = policy.max_lines_per_file;
+            truncated = true;
+        }
+        if total_lines + line_count > policy.max_total_lines {
+            line_count = policy.max_total_lines.saturating_sub(total_lines);
+            truncated = true;
+        }
+        total_lines += line_count;
+
+        result_files.push(SafeDiffFile {
+            path: file.path.clone(),
+            status: file.status.clone(),
+            included: true,
+            exclusion_reason: None,
+            risk: file.risk.clone(),
+            file_kind: file.file_kind.clone(),
+            original_path: file.original_path.clone(),
+            hunks,
+            line_count,
+        });
+    }
+
+    let included_count = result_files.iter().filter(|f| f.included).count();
+
+    Ok(SafeDiffContext {
+        enabled: true,
+        enabled_source,
+        included: included_count > 0,
+        provider: Some("git-cli-fallback".to_string()),
+        policy,
+        files: result_files,
+        summary: SafeDiffSummary {
+            included_files: included_count,
+            excluded_files: excluded_count,
+            total_lines,
+            truncated,
+        },
+    })
+}
+
+/// Legacy semantic-prep body pilot.
+/// Not used for Agent Context v2 safe diff context.
 pub fn diff_body_pilot_enabled() -> bool {
     std::env::var("SEMANTIC_PREP_DIFF_BODY_ENABLED")
         .map(|v| v == "true" || v == "1")
