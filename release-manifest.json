@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.5.0",
-    "tag": "v1.5.0",
+    "name": "Orqestra v1.5.1",
+    "tag": "v1.5.1",
     "channel": "public-beta",
-    "release_version": "1.5.0",
-    "app_version": "1.5.0",
+    "release_version": "1.5.1",
+    "app_version": "1.5.1",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.5.0_x64-setup.exe",
+      "name": "Orqestra_1.5.1_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "ce05603935dded81df2aa0887baff1fb16de8007313670e67df8b4109b5d21f9",
-      "size_bytes": 4883743,
+      "sha256": "430c5f53a25269275ccb45e98f66a6cf588b5ef72607ac3d4d543d8d7df6e1bd",
+      "size_bytes": 4886105,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.5.0_x64.AppImage",
+      "name": "Orqestra_1.5.1_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "d8924bd71737eea9ad4f35492f755ba3509d2b178164454ea64c9d197d4f73d6",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
