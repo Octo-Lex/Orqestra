@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.3.1] - 2026-06-04
+
+### Added
+- 29 semantic commit stabilization tests (proposal fixtures, no-write regression, grouping, agent context safety, diff body pilot)
+- No-write regression tests proving HEAD, staging area, and worktree are unchanged after proposal generation
+- Proposal quality fixtures for docs-only, test-only, Rust source, TS UI, mixed, release, workflow-risk, secret-risk, renamed, deleted, and multi-scope changes
+- Agent context serialization test proving no `content`/`body`/`diff`/`patch` fields
+- Diff body pilot workflow-risk exclusion test
+- Determinism test proving identical input produces identical proposal
+- Manifest `pushes: false`, `pulls: false`, `stabilization` sub-object, `runtime_toggle`, `release_verified_state`
+
+### Changed
+- Semantic commit UI now explicitly states "No files are staged. No commit is created. Copy/fill does not mutate the repository."
+- Validator enforces `pushes`, `pulls`, and `release_verified_state` for semantic commit preparation
+
+### Security
+- No-write regression tests prove proposal generation never mutates repository state
+- Agent context tests prove `.env`, key files, and symlinks do not leak content into JSON payloads
+- Diff body pilot remains disabled by default; release state explicitly recorded as `disabled`
+
+### Known Limitations
+- Native commit execution is not implemented
+- Push, pull, merge, and network Git operations remain on existing human-triggered flow
+- AI-assisted commit message generation remains backlog
+
 ## [1.3.0] - 2026-06-04
 
 ### Added

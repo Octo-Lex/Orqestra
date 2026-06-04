@@ -378,6 +378,16 @@ if (manifest.product_readiness) {
         fail('product_readiness.semantic_commit_preparation.diff_body_pilot.secret_risk_excluded must be true');
       }
     }
+    // v1.3.1: explicit push/pull/release_verified_state gates
+    if (scp.pushes === true) {
+      fail('product_readiness.semantic_commit_preparation.pushes must be false');
+    }
+    if (scp.pulls === true) {
+      fail('product_readiness.semantic_commit_preparation.pulls must be false');
+    }
+    if (scp.diff_body_pilot && !scp.diff_body_pilot.release_verified_state) {
+      fail('product_readiness.semantic_commit_preparation.diff_body_pilot.release_verified_state is required');
+    }
   }
 
   // Legacy pilot compatibility
