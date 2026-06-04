@@ -28,7 +28,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 - Native commit execution is not implemented
 - Push, pull, merge, and network Git operations remain on existing human-triggered flow
 - AI-assisted commit message generation remains backlog
-
 ## [1.3.0] - 2026-06-04
 
 ### Added
