@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.2.1",
-    "tag": "v1.2.1",
+    "name": "Orqestra v1.3.0",
+    "tag": "v1.3.0",
     "channel": "public-beta",
-    "release_version": "1.2.1",
-    "app_version": "1.2.1",
+    "release_version": "1.3.0",
+    "app_version": "1.3.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.2.1_x64-setup.exe",
+      "name": "Orqestra_1.3.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "2a2143d4aa91fbb230859ece1fae56fe1e3b19197856412a4788d0df8d553e79",
-      "size_bytes": 4851827,
+      "sha256": "f805d5f59bd06e17709d50947104946063ffa90e13449e7c0ad7722ae46e6e81",
+      "size_bytes": 4869198,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.2.1_x64.AppImage",
+      "name": "Orqestra_1.3.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "113d3562b0f316f039757aa941c6b19dc836d18f03cc94e7d24977c90a34cfea",
+      "sha256": "PENDING_CI",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -205,6 +205,35 @@
         "binary_sampling": "bounded-8192-bytes",
         "symlink_following": false,
         "large_file_threshold": "10MiB"
+      }
+    },
+    "semantic_commit_preparation": {
+      "enabled": true,
+      "mode": "proposal-only",
+      "provider": "deterministic-heuristic",
+      "uses_native_git": true,
+      "native_commit_execution": false,
+      "autonomous_commit": false,
+      "stages_files": false,
+      "writes_repository": false,
+      "requires_review": true,
+      "agent_context_content_free": true,
+      "secret_safe": true,
+      "inputs": [
+        "repository_snapshot",
+        "changed_file_summary",
+        "diff_stat",
+        "recent_commits"
+      ],
+      "diff_body_pilot": {
+        "enabled": false,
+        "default": "off",
+        "max_file_size": "256KiB",
+        "secret_risk_excluded": true,
+        "binary_excluded": true,
+        "large_excluded": true,
+        "symlink_excluded": true,
+        "workflow_risk_excluded_by_default": true
       }
     }
   }

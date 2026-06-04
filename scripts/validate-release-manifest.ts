@@ -346,6 +346,40 @@ if (manifest.product_readiness) {
     }
   }
 
+  // v1.3.0: Semantic commit preparation validation
+  const scp = (pr as any).semantic_commit_preparation;
+  if (scp) {
+    if (scp.native_commit_execution === true) {
+      fail('product_readiness.semantic_commit_preparation.native_commit_execution must be false');
+    }
+    if (scp.autonomous_commit === true) {
+      fail('product_readiness.semantic_commit_preparation.autonomous_commit must be false');
+    }
+    if (scp.stages_files === true) {
+      fail('product_readiness.semantic_commit_preparation.stages_files must be false');
+    }
+    if (scp.writes_repository === true) {
+      fail('product_readiness.semantic_commit_preparation.writes_repository must be false');
+    }
+    if (scp.requires_review !== true) {
+      fail('product_readiness.semantic_commit_preparation.requires_review must be true');
+    }
+    if (scp.mode !== 'proposal-only') {
+      fail('product_readiness.semantic_commit_preparation.mode must be "proposal-only"');
+    }
+    if (scp.secret_safe !== true) {
+      fail('product_readiness.semantic_commit_preparation.secret_safe must be true');
+    }
+    if (scp.diff_body_pilot && scp.diff_body_pilot.enabled === true) {
+      if (!scp.diff_body_pilot.max_file_size) {
+        fail('product_readiness.semantic_commit_preparation.diff_body_pilot.max_file_size is required when enabled');
+      }
+      if (scp.diff_body_pilot.secret_risk_excluded !== true) {
+        fail('product_readiness.semantic_commit_preparation.diff_body_pilot.secret_risk_excluded must be true');
+      }
+    }
+  }
+
   // Legacy pilot compatibility
   if (pr.native_git_pilot) {
     const ngp = pr.native_git_pilot;
