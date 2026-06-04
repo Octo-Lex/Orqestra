@@ -202,6 +202,21 @@ fn detect_file_kind(repo_root: &Path, relative_path: &str, risk: &str) -> (Strin
 // Changed-file list from CLI porcelain v2
 // ---------------------------------------------------------------------------
 
+/// Combine path-based risk with file-kind detection results.
+/// If file_kind detection found a symlink, override risk to unknown.
+fn combine_risk_and_kind(
+    risk: &str,
+    risk_reason: Option<String>,
+    file_kind: &str,
+    kind_reason: Option<String>,
+) -> (String, Option<String>) {
+    if kind_reason.as_ref().map_or(false, |r| r.contains("symlink")) {
+        ("unknown".into(), kind_reason)
+    } else {
+        (risk.into(), risk_reason.or(kind_reason))
+    }
+}
+
 /// Parse `git status --porcelain=v2` into per-file entries with risk classification.
 pub fn parse_changed_files(
     output: &str,
@@ -235,14 +250,16 @@ pub fn parse_changed_files(
             let (risk, risk_reason) = classify_risk_by_path(path);
             let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
 
+            let (final_risk, final_reason) = combine_risk_and_kind(risk, risk_reason, &file_kind, kind_reason);
+
             files.push(GitChangedFile {
                 path: path.into(),
                 original_path: None,
                 status: status.into(),
                 staged,
                 file_kind,
-                risk: risk.into(),
-                risk_reason: risk_reason.or(kind_reason),
+                risk: final_risk,
+                risk_reason: final_reason,
             });
         } else if line.starts_with("2 ") {
             // Renamed/copied entry: 2 XY sub perm hm hm score path\torig_path
@@ -270,14 +287,16 @@ pub fn parse_changed_files(
             let (risk, risk_reason) = classify_risk_by_path(path);
             let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
 
+            let (final_risk, final_reason) = combine_risk_and_kind(risk, risk_reason, &file_kind, kind_reason);
+
             files.push(GitChangedFile {
                 path: path.into(),
                 original_path: if orig_path.is_empty() { None } else { Some(orig_path.into()) },
                 status: status.into(),
                 staged,
                 file_kind,
-                risk: risk.into(),
-                risk_reason: risk_reason.or(kind_reason),
+                risk: final_risk,
+                risk_reason: final_reason,
             });
         } else if line.starts_with("u ") {
             // Unmerged entry — mark as unknown risk
@@ -298,14 +317,16 @@ pub fn parse_changed_files(
             let (risk, risk_reason) = classify_risk_by_path(path);
             let (file_kind, kind_reason) = detect_file_kind(repo_root, path, risk);
 
+            let (final_risk, final_reason) = combine_risk_and_kind(risk, risk_reason, &file_kind, kind_reason);
+
             files.push(GitChangedFile {
                 path: path.into(),
                 original_path: None,
                 status: "untracked".into(),
                 staged: false,
                 file_kind,
-                risk: risk.into(),
-                risk_reason: risk_reason.or(kind_reason),
+                risk: final_risk,
+                risk_reason: final_reason,
             });
         }
 
