@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.3.0",
-    "tag": "v1.3.0",
+    "name": "Orqestra v1.3.1",
+    "tag": "v1.3.1",
     "channel": "public-beta",
-    "release_version": "1.3.0",
-    "app_version": "1.3.0",
+    "release_version": "1.3.1",
+    "app_version": "1.3.1",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "26942628825",
+    "workflow_run_id": "26947570202",
     "status": "local-build"
   },
   "signing": {
@@ -39,21 +39,21 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.3.0_x64-setup.exe",
+      "name": "Orqestra_1.3.1_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "906a4c0d3c41c5a7f42719db58b469667e0397485f860f92b05163bb5dcb0c3a",
-      "size_bytes": 4869198,
+      "sha256": "a2ec9df41e04cd259ad79bdbbb9c6d587865fb79d23d3a7eafda39cbf1006bde",
+      "size_bytes": 4870462,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "ci-build"
     },
     {
-      "name": "Orqestra_1.3.0_x64.AppImage",
+      "name": "Orqestra_1.3.1_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "2f080f559209f0d5fe9d3261a00359855dfd17a231c0e354f0e6cdec2b7cff00",
+      "sha256": "c69add5ccbe4754fef8fd41604d7fcc45ad4e5e574610cbff386efd2a6a49690",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "26942628825",
+    "ci_run_id": "26947570202",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
@@ -233,7 +233,17 @@
         "binary_excluded": true,
         "large_excluded": true,
         "symlink_excluded": true,
-        "workflow_risk_excluded_by_default": true
+        "workflow_risk_excluded_by_default": true,
+        "runtime_toggle": "SEMANTIC_PREP_DIFF_BODY_ENABLED",
+        "release_verified_state": "disabled"
+      },
+      "pushes": false,
+      "pulls": false,
+      "stabilization": {
+        "proposal_quality_fixtures": true,
+        "no_write_regression_tests": true,
+        "grouping_fixtures": true,
+        "agent_context_safety_tests": true
       }
     }
   }

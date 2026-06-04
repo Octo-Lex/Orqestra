@@ -82,15 +82,18 @@ export function SemanticCommitPrepPanel({ projectRoot }: SemanticCommitPrepPanel
       {/* Review Required badge */}
       {proposal.requires_review && (
         <div style={{
-          padding: '4px 8px',
+          padding: '6px 8px',
           backgroundColor: '#fef3c7',
           border: '1px solid #f59e0b',
           borderRadius: '4px',
           fontSize: '11px',
           color: '#92400e',
           marginBottom: '12px',
+          lineHeight: '1.5',
         }}>
-          ⚠ Review Required — This is a proposal only. No files are staged or committed.
+          <strong>Review Required</strong> — This is a proposal only.<br />
+          No files are staged. No commit is created. Copy/fill does not mutate the repository.<br />
+          The existing commit flow remains separate.
         </div>
       )}
 
