@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.4.0",
-    "tag": "v1.4.0",
+    "name": "Orqestra v1.4.1",
+    "tag": "v1.4.1",
     "channel": "public-beta",
-    "release_version": "1.4.0",
-    "app_version": "1.4.0",
+    "release_version": "1.4.1",
+    "app_version": "1.4.1",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.4.0_x64-setup.exe",
+      "name": "Orqestra_1.4.1_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "1c9b07acf189025b6ab4caf6220e26ba71b0d6c60a1fc76be4de0233140b3f19",
-      "size_bytes": 4876391,
+      "sha256": "0e7c41905cdfc882d77ae84c7272e0e491e3a86662774a2bd654f7390a895e5e",
+      "size_bytes": 4876047,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.4.0_x64.AppImage",
+      "name": "Orqestra_1.4.1_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "e4fb1dff3e44f147d4d045474a9278a72e7eb66b85c0365f6a6d692083b7befa",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -266,7 +266,8 @@
         "secret_contents_excluded": true,
         "binary_contents_excluded": true,
         "large_contents_excluded": true,
-        "symlink_contents_excluded": true
+        "symlink_contents_excluded": true,
+        "absolute_paths_displayed": false
       },
       "inputs": [
         "changed_file_paths",
@@ -283,8 +284,24 @@
         "diff",
         "patch",
         "file_text",
-        "raw"
-      ]
+        "raw",
+        "token",
+        "authorization",
+        "secret_value",
+        "private_key"
+      ],
+      "context_degradation": {
+        "graceful": true,
+        "status_field": "git_context_status",
+        "error_code_field": "git_context_error_code",
+        "failure_blocks_agent": false
+      },
+      "stabilization": {
+        "payload_fixtures": true,
+        "forbidden_field_scan": "path-aware",
+        "graceful_degradation_tests": true,
+        "diagnostics_ui_checked": true
+      }
     }
   }
 }
