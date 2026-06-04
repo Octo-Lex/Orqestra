@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.5.1] - 2026-06-05
+
+### Changed
+- README rewritten from v1.0.12-era to v1.5.0 reality
+- Added capability matrix, agent matrix, Git provider matrix, platform matrix, test trend table
+- Updated download links to v1.5.0 release
+- Fixed Known Limitations (Linux verified, Git hybrid not "shell-out only", bugfix agent real)
+- Added documentation doctrine section
+- docs/product-readiness.md rewritten from v1.1.0-era to v1.5.0-era
+- Added sections for native Git, semantic commit preparation, agent context quality, safe diff context pilot
+- Downgraded Shockwave merge labeling to "mock/prototype" in capability matrix
+- Corrected vector search status: implemented in Python AI service, not "not found on disk"
+
+### Fixed
+- No current document says credentials are XOR-based
+- No current document says bugfix agent is mock
+- No current document says Linux is unverified
+- No current document says "all Git operations shell out"
+- Semantic commit preparation is described as deterministic and proposal-only
+- Dashboard deployment status reflects CI reality
+
+### Security
+- No code changes — documentation/status alignment only
+- 328 tests unchanged
+
+### Known Limitations
+- No new limitations introduced
+
 ## [1.5.0] - 2026-06-04
 
 ### Added
