@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.4.1",
-    "tag": "v1.4.1",
+    "name": "Orqestra v1.5.0",
+    "tag": "v1.5.0",
     "channel": "public-beta",
-    "release_version": "1.4.1",
-    "app_version": "1.4.1",
+    "release_version": "1.5.0",
+    "app_version": "1.5.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "26961172833",
+    "workflow_run_id": "26968029913",
     "status": "local-build"
   },
   "signing": {
@@ -39,21 +39,21 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.4.1_x64-setup.exe",
+      "name": "Orqestra_1.5.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "133eaee4ee493c3f787f69a047e1ff84466f8c0b4b6df369c00c4f4807e126fa",
-      "size_bytes": 4876047,
+      "sha256": "ce05603935dded81df2aa0887baff1fb16de8007313670e67df8b4109b5d21f9",
+      "size_bytes": 4883743,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "ci-build"
     },
     {
-      "name": "Orqestra_1.4.1_x64.AppImage",
+      "name": "Orqestra_1.5.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "fc0ab93c19f2ef34e18d98fbe0fd16e7758d1c5696b6cca4fbe03ac3974908fb",
+      "sha256": "d8924bd71737eea9ad4f35492f755ba3509d2b178164454ea64c9d197d4f73d6",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "26961172833",
+    "ci_run_id": "26968029913",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
@@ -302,6 +302,54 @@
         "graceful_degradation_tests": true,
         "diagnostics_ui_checked": true
       }
+    },
+    "safe_diff_context_pilot": {
+      "enabled": true,
+      "default": "off",
+      "runtime_toggle": "ORQESTRA_SAFE_DIFF_CONTEXT",
+      "agents": [
+        "docs-agent",
+        "bugfix-agent"
+      ],
+      "provider": "git-cli-fallback",
+      "review_only": true,
+      "auto_commit": false,
+      "auto_apply": false,
+      "stages_files": false,
+      "writes_repository": false,
+      "native_commit_execution": false,
+      "autonomous_actions": false,
+      "policy": {
+        "max_files": 5,
+        "max_file_size_bytes": 262144,
+        "max_lines_per_hunk": 80,
+        "max_lines_per_file": 120,
+        "max_total_lines": 250,
+        "secret_risk_excluded": true,
+        "binary_excluded": true,
+        "large_excluded": true,
+        "symlink_excluded": true,
+        "workflow_risk_excluded_by_default": true,
+        "absolute_paths_excluded": true
+      },
+      "forbidden_fields": [
+        "diff",
+        "raw_diff",
+        "patch",
+        "content",
+        "body",
+        "token",
+        "authorization",
+        "secret_value",
+        "private_key"
+      ],
+      "allowed_context_fields": [
+        "safe_diff_context",
+        "hunks",
+        "lines",
+        "exclusion_reason",
+        "truncated"
+      ]
     }
   }
 }

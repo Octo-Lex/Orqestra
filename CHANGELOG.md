@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.5.0] - 2026-06-04
+
+### Added
+- Opt-in safe diff context pilot for docs-agent and bugfix-agent
+- `SafeDiffContext` DTO with `enabled_source`, policy caps, per-file eligibility, exclusion reasons, hunks, and summary
+- Eligibility gate with 11 exclusion reasons (secret-risk, binary, large, symlink, workflow-risk, file-limit, non-text, unsupported-status, read-error, absolute-path, disabled)
+- Status policy: modified/staged/added/renamed eligible; deleted/untracked excluded
+- Bounded diff hunk extraction via `git diff` (CLI-backed, provider: `git-cli-fallback`)
+- Policy caps: max 5 files, max 80 lines/hunk, max 120 lines/file, max 250 total lines
+- `SafeDiffContextPanel.tsx` diagnostics UI
+- 23 safe diff context tests (default-off, eligibility, caps, payloads, forbidden scan, degradation, parsing)
+- Manifest `safe_diff_context_pilot` section with 15+ validator gates
+- `ORQESTRA_SAFE_DIFF_CONTEXT` environment variable for opt-in enablement
+- v1.5.0 safe diff context evidence
+
+### Changed
+- Agent Context v2 now carries optional `safe_diff_context` metadata
+- Agent diagnostics show diff-context status, caps, included/excluded files, and truncation
+- `enabled_source` field records how context was enabled (`default-off` or `env:ORQESTRA_SAFE_DIFF_CONTEXT`)
+- Renamed files preserve `original_path` metadata in diff context
+
+### Security
+- Safe diff context is disabled by default
+- Secret-risk, binary, large, symlink, and absolute-path files are excluded
+- Workflow-risk files are excluded by default
+- Diff fields use `safe_diff_context`, `hunks`, and `lines`; raw `diff`/`raw_diff`/`patch` fields remain forbidden
+- `SEMANTIC_PREP_DIFF_BODY_ENABLED` does not enable Agent Context safe diff context
+- Legacy `read_safe_diff_body` annotated as not used for Agent Context v2
+- Agents remain review-only and cannot stage files, create commits, push, pull, or auto-apply changes
+
+### Known Limitations
+- Safe diff context is a pilot
+- Provider is CLI-backed in v1.5.0
+- No native diff-body provider is claimed
+- No subjective AI quality improvement is claimed without separate evaluation
+
 ## [1.4.1] - 2026-06-04
 
 ### Added
