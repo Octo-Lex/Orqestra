@@ -454,6 +454,62 @@ if (manifest.product_readiness) {
     }
   }
 
+  // Safe diff context pilot (v1.5.0)
+  if (pr.safe_diff_context_pilot) {
+    const sdc = pr.safe_diff_context_pilot;
+    if (sdc.default !== 'off') {
+      fail('product_readiness.safe_diff_context_pilot.default must be off');
+    }
+    if (sdc.review_only !== true) {
+      fail('product_readiness.safe_diff_context_pilot.review_only must be true');
+    }
+    if (sdc.auto_commit !== false) {
+      fail('product_readiness.safe_diff_context_pilot.auto_commit must be false');
+    }
+    if (sdc.auto_apply !== false) {
+      fail('product_readiness.safe_diff_context_pilot.auto_apply must be false');
+    }
+    if (sdc.stages_files !== false) {
+      fail('product_readiness.safe_diff_context_pilot.stages_files must be false');
+    }
+    if (sdc.writes_repository !== false) {
+      fail('product_readiness.safe_diff_context_pilot.writes_repository must be false');
+    }
+    if (sdc.native_commit_execution !== false) {
+      fail('product_readiness.safe_diff_context_pilot.native_commit_execution must be false');
+    }
+    if (sdc.autonomous_actions !== false) {
+      fail('product_readiness.safe_diff_context_pilot.autonomous_actions must be false');
+    }
+    if (!sdc.provider) {
+      fail('product_readiness.safe_diff_context_pilot.provider is required');
+    }
+    if (sdc.policy) {
+      const p = sdc.policy;
+      if (p.secret_risk_excluded !== true) {
+        fail('product_readiness.safe_diff_context_pilot.policy.secret_risk_excluded must be true');
+      }
+      if (p.binary_excluded !== true) {
+        fail('product_readiness.safe_diff_context_pilot.policy.binary_excluded must be true');
+      }
+      if (p.large_excluded !== true) {
+        fail('product_readiness.safe_diff_context_pilot.policy.large_excluded must be true');
+      }
+      if (p.symlink_excluded !== true) {
+        fail('product_readiness.safe_diff_context_pilot.policy.symlink_excluded must be true');
+      }
+      if (p.absolute_paths_excluded !== true) {
+        fail('product_readiness.safe_diff_context_pilot.policy.absolute_paths_excluded must be true');
+      }
+      if (!p.max_files || !p.max_total_lines) {
+        fail('product_readiness.safe_diff_context_pilot.policy must have caps (max_files, max_total_lines)');
+      }
+    }
+    if (!sdc.forbidden_fields || !Array.isArray(sdc.forbidden_fields)) {
+      fail('product_readiness.safe_diff_context_pilot.forbidden_fields is required');
+    }
+  }
+
   // Legacy pilot compatibility
   if (pr.native_git_pilot) {
     const ngp = pr.native_git_pilot;
