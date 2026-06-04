@@ -32,6 +32,7 @@ fn main() {
             commands::git::git_repository_snapshot_cmd,
             commands::git::git_recent_commits_cmd,
             commands::git::git_diff_stat_cmd,
+            commands::git::prepare_semantic_commit_cmd,
             commands::commit::semantic_commit_cmd,
             commands::commit::backfill_cmd,
             commands::agents::read_file_cmd,

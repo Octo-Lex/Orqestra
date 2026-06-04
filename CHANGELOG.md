@@ -4,6 +4,37 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.3.0] - 2026-06-04
+
+### Added
+- Proposal-only semantic commit preparation (`prepare_semantic_commit_cmd`)
+- Deterministic commit title/body/scope/risk proposal builder (path-based heuristics, no AI dependency)
+- Commit grouping suggestions (scope grouping + risk isolation)
+- Semantic commit input model composing repository snapshot, changed files, diff/stat, and recent commits
+- Content-free agent Git context injection for docs-agent and bugfix-agent
+- `SemanticCommitPrepPanel` and `CommitGroupingPanel` UI components
+- Manifest `semantic_commit_preparation` section with proposal-only enforcement
+- Validator blocks `native_commit_execution`, `autonomous_commit`, `stages_files`, `writes_repository`
+- 25 new tests: scope extraction, type heuristics, confidence, risk levels, grouping, diff body safety
+
+### Changed
+- Agent requests now include `git_context` with safe branch/HEAD/file/risk metadata
+- Manifest validator enforces semantic commit preparation constraints
+- `semantic_prep` module exports `prepare_semantic_commit`, `build_semantic_commit_input`, `build_agent_context`
+
+### Security
+- Secret-risk files are flagged by path only — contents never read
+- Binary, large, and symlink files excluded from content analysis
+- Agent context is content-free (paths + risk flags only, no file contents)
+- Diff body pilot disabled by default; bounded to 256 KiB text files with normal risk
+- Proposal always sets `write_operations: false` and `requires_review: true`
+
+### Known Limitations
+- Native commit execution is not implemented
+- Push, pull, merge, and network Git operations remain on existing human flow
+- AI-assisted commit message generation is backlog
+- Diff body pilot remains disabled by default
+
 ## [1.2.1] - 2026-06-04
 
 ### Added
