@@ -46,6 +46,8 @@ fn main() {
             // v1.0.2: Bugfix agent commands
             commands::agents::run_bugfix_agent_cmd,
             commands::agents::read_project_file_cmd,
+            // v1.9.0: Architect agent
+            commands::agents::run_architect_agent_cmd,
             // v1.7.0: Patch governance
             commands::agents::apply_agent_patch_cmd,
             commands::agents::reject_agent_patch_cmd,

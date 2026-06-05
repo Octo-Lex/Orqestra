@@ -12,9 +12,11 @@ from .embed import embed
 from .explore import explore
 from .docs_agent import docs_agent, DocsAgentRequest, DocsAgentResponse
 from .bugfix_agent import router as bugfix_router
+from .architect_agent import router as architect_router
 
-app = FastAPI(title="Orqestra AI Service", version="0.2.0")
+app = FastAPI(title="Orqestra AI Service", version="0.3.0")
 app.include_router(bugfix_router)
+app.include_router(architect_router)
 
 
 @app.get("/health")

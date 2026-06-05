@@ -2,4 +2,6 @@
 //!
 //! Only exports modules that are testable without Tauri runtime.
 
+pub mod commands;
+pub mod diagnostics;
 pub mod security;
