@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.8.0] - 2026-06-05
+
+### Added
+- `crates/code-intel/` — pure Rust crate with zero Tauri/git-bridge dependency
+- Tree-sitter integration for Rust and TypeScript symbol extraction
+- `SymbolSummary` DTO: path, language, symbols, parse_status, parse_latency_ms
+- `Symbol` DTO: name, kind, line_start, line_end, is_public, parent — no source bodies
+- `SymbolKind` enum: Function, Method, Struct, Enum, Trait, Impl, TypeAlias, Interface, Class, Module, Import, Constant, Variable
+- `ParseStatus` enum: Success, ParseError, Excluded, TooLarge, Binary, Secret
+- `CodeLanguage` detection by extension: .rs, .ts, .tsx, .js, .jsx
+- Deterministic symbol ordering (line_start → line_end → kind → name → parent)
+- File exclusion: binary, secret, generated/vendor dirs, >256 KiB, unsupported languages
+- Parse error detection via ERROR/MISSING node ratio threshold (30%)
+- `extract_symbols_cmd` Tauri command in `commands/code_intel.rs`
+- `extract_symbols_batch_cmd` for multi-file extraction
+- 29 code intelligence tests (Rust extraction, TypeScript extraction, exclusions, determinism, parse errors)
+- Manifest `code_intelligence` section with 16 validator gates
+- `docs/code-intelligence.md` documentation
+
+### Changed
+- Bugfix-agent context receives symbol summaries for changed files
+- Semantic commit preparation references file-level affected symbols
+- Docs-agent does not receive symbol context by default (`docs_agent_symbol_context: disabled-by-default`)
+
+### Security
+- Symbol extraction is read-only — never writes repository files
+- Content-safe: outputs symbol names/kinds/ranges only, never source bodies
+- Excluded files (binary, secret, generated, large) are never parsed
+- `code-intel` crate has zero dependency on Tauri or git-bridge (no circular dependency)
+
+### Known Limitations
+- Only Rust and TypeScript supported (no other languages)
+- Affected symbols are file-level, not hunk-level
+- Parse error threshold is heuristic (30% ERROR ratio)
+
 ## [1.7.0] - 2026-06-05
 
 ### Added
