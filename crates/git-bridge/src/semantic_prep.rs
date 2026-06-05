@@ -227,6 +227,9 @@ pub struct AgentContextV2 {
     pub provider: String,
     pub content_policy: ContentPolicy,
     pub safe_diff_context: SafeDiffContext,
+    /// v2.3.0: Hunk-level symbol impacts (high-confidence only: InsideSymbol + TouchesSymbolBoundary).
+    /// None if hunk mapping not yet computed.
+    pub hunk_level_symbols: Option<Vec<code_intel::hunk_map::SymbolImpact>>,
 }
 
 impl ContentPolicy {
@@ -270,6 +273,7 @@ pub fn build_agent_context_v2(
         provider: input.provider.clone(),
         content_policy: ContentPolicy::safe_default(),
         safe_diff_context: build_safe_diff_context(project_root, &input.changed_files)?,
+        hunk_level_symbols: None, // Populated on demand by hunk mapping
     })
 }
 

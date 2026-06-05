@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.3.0] - 2026-06-05
+
+### Added
+- Hunk-to-symbol impact mapping (interval overlap semantics)
+- ParsedHunk DTO with old/new line ranges
+- SymbolImpact DTO with overlap_type, confidence, parent_symbol metadata
+- OverlapType enum: InsideSymbol, TouchesSymbolBoundary, NearSymbol, FileLevelOnly, NoSymbolMatch
+- One hunk → many symbols mapping
+- Most-specific symbol wins; parent as metadata (not separate impact)
+- Bounded output: max 50 per file, 200 total, truncation reported
+- ArchitectSymbolSummary DTO for architect-agent context
+- hunk_level_symbols on AgentContextV2 (high-confidence filter)
+- Hunk header parser (unified diff format)
+- 16 code-intel hunk_map tests + 11 integration tests
+
+### Changed
+- Primary mapping uses new-file line ranges against current-file symbols
+- Deleted hunks/files degrade gracefully without parsing old blobs
+- code-intel dependency added to git-bridge
+
+### Security
+- SymbolImpact contains no source bodies
+- Path redaction in diagnostics bundles
+- Read-only: no file writes, no mutations
+
 ## [2.2.0] - 2026-06-05
 
 ### Added

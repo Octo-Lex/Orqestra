@@ -558,6 +558,26 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.3.0: Hunk-to-Symbol Impact Mapping
+  if ((pr as any).hunk_to_symbol_mapping) {
+    const hm = (pr as any).hunk_to_symbol_mapping;
+    if (hm.enabled !== true) fail('product_readiness.hunk_to_symbol_mapping.enabled must be true');
+    if (hm.primary_mapping_basis !== 'new_file_line_ranges') fail('product_readiness.hunk_to_symbol_mapping.primary_mapping_basis must be new_file_line_ranges');
+    if (!Array.isArray(hm.overlap_types) || hm.overlap_types.length < 5) fail('product_readiness.hunk_to_symbol_mapping.overlap_types must have at least 5 types');
+    if (hm.one_hunk_many_symbols !== true) fail('product_readiness.hunk_to_symbol_mapping.one_hunk_many_symbols must be true');
+    if (hm.most_specific_symbol_wins !== true) fail('product_readiness.hunk_to_symbol_mapping.most_specific_symbol_wins must be true');
+    if (hm.parent_as_metadata_not_separate_impact !== true) fail('product_readiness.hunk_to_symbol_mapping.parent_as_metadata_not_separate_impact must be true');
+    if (hm.max_impacts_per_file > 50) fail('product_readiness.hunk_to_symbol_mapping.max_impacts_per_file must be <= 50');
+    if (hm.max_impacts_total > 200) fail('product_readiness.hunk_to_symbol_mapping.max_impacts_total must be <= 200');
+    if (hm.truncation_reported !== true) fail('product_readiness.hunk_to_symbol_mapping.truncation_reported must be true');
+    if (hm.path_redaction_in_diagnostics !== true) fail('product_readiness.hunk_to_symbol_mapping.path_redaction_in_diagnostics must be true');
+    if (hm.no_source_bodies !== true) fail('product_readiness.hunk_to_symbol_mapping.no_source_bodies must be true');
+    if (hm.read_only !== true) fail('product_readiness.hunk_to_symbol_mapping.read_only must be true');
+    if (hm.deterministic !== true) fail('product_readiness.hunk_to_symbol_mapping.deterministic must be true');
+  } else {
+    warn('product_readiness.hunk_to_symbol_mapping section missing (v2.3.0+)');
+  }
+
   // v2.2.0: Dashboard Sync Coherence
   if ((pr as any).dashboard_sync_coherence) {
     const dc = (pr as any).dashboard_sync_coherence;

@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.2.0",
-    "tag": "v2.2.0",
+    "name": "Orqestra v2.3.0",
+    "tag": "v2.3.0",
     "channel": "public-beta",
-    "release_version": "2.2.0",
-    "app_version": "2.2.0",
+    "release_version": "2.3.0",
+    "app_version": "2.3.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.2.0_x64-setup.exe",
+      "name": "Orqestra_2.3.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "4ceec6cb47cb9977bdcb4795b359d0bca33cc9c14e40a39550d88c460d7e5daa",
-      "size_bytes": 5150404,
+      "sha256": "f125fdc7add6b41b7105f185fa34c0c748e07aa3e733d18591d8f95bb7993032",
+      "size_bytes": 5154088,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_2.2.0_x64.AppImage",
+      "name": "Orqestra_2.3.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -534,6 +534,27 @@
       "relay_metadata_optional": true,
       "coherence_diagnostics_redacted": true,
       "dashboard_backward_compatible": true
+    },
+    "hunk_to_symbol_mapping": {
+      "enabled": true,
+      "primary_mapping_basis": "new_file_line_ranges",
+      "overlap_types": [
+        "inside_symbol",
+        "touches_symbol_boundary",
+        "near_symbol",
+        "file_level_only",
+        "no_symbol_match"
+      ],
+      "one_hunk_many_symbols": true,
+      "most_specific_symbol_wins": true,
+      "parent_as_metadata_not_separate_impact": true,
+      "max_impacts_per_file": 50,
+      "max_impacts_total": 200,
+      "truncation_reported": true,
+      "path_redaction_in_diagnostics": true,
+      "no_source_bodies": true,
+      "read_only": true,
+      "deterministic": true
     }
   }
 }
