@@ -1,10 +1,25 @@
-# Product Readiness (v1.5.0)
+# Product Readiness (v2.0.0)
 
 ## Overview
 
-Orqestra v1.5.0 is a public beta with 328 passing tests, review-only agents, hybrid native Git operations, deterministic semantic commit preparation, and an opt-in safe diff context pilot.
+Orqestra v2.0.0 is a **governed AI-native development beta** with 447 passing tests, three bounded agents, patch governance, code intelligence, and hybrid native Git operations.
 
 This document describes the current capability state and verification status.
+
+---
+
+## Classification
+
+Orqestra is a **governed AI-native development beta**. Not prototype. Not full product. A governed beta.
+
+The key distinction: all three agent roles exist, but authority remains bounded:
+
+- docs and bugfix can propose (via governance)
+- bugfix is symbol-aware and patch-governed
+- architect can plan but not mutate
+- no agent can auto-commit
+- AI-service failure does not fabricate plans
+- repository and `.Orqestra` runtime state remain protected
 
 ---
 
@@ -21,146 +36,160 @@ This document describes the current capability state and verification status.
 
 ---
 
-## Real Agent Paths
+## Agent Portfolio
 
-| Agent | Mode | Endpoint | Context | Status |
-|-------|------|----------|---------|--------|
-| docs-agent | review-only | `POST /agent/docs` | Agent Context v2 + safe diff context (pilot) | Real AI service |
-| bugfix-agent | review-only | `POST /agent/bugfix` | Agent Context v2 + safe diff context (pilot) | Real AI service |
-| architect-agent | — | — | — | Not implemented |
+| Agent | Mode | Endpoint | Context | Writes | Patch-Governed |
+|-------|------|----------|---------|--------|---------------|
+| docs-agent | review-only | `POST /agent/docs` | Agent Context v2 + safe diff context (pilot) | via governance | yes |
+| bugfix-agent | review-only, symbol-aware | `POST /agent/bugfix` | Agent Context v2 + symbols + safe diff context (pilot) | via governance | yes |
+| architect-agent | read-only planner | `POST /agent/architect` | Agent Context v2 + symbols + ADRs + risks | **no** | no |
+| autonomy | disabled | — | — | — | — |
 
 ### Review-Only Agent Policy
 
-All agents operate in **review-only** mode:
-
 - Agents propose changes (diagnosis + diff)
 - Changes are displayed for human review
-- Accept applies the patch but does NOT auto-commit
+- Accept applies the patch through governance (atomic write + audit trail)
 - Commits use the normal human-triggered Git flow
 - No autonomous commits, no dependency installs, no workflow edits
 
-### Agent Context Quality (v1.4.0)
+### Architect Non-Mutating Policy
 
-Agent Context v2 provides structured, schema-versioned Git metadata to both agents:
-
-- Branch, HEAD SHA, changed file paths/statuses/risk levels
-- Risk summary, diff/stat counts, commit groups, proposal summary
-- Explicit content policy (all content excluded)
-- `review_only: true`, `auto_commit: false`, `auto_apply: false`
-- Graceful degradation: context failure does not block agent execution
-
-### Safe Diff Context Pilot (v1.5.0)
-
-Opt-in pilot for bounded diff excerpts:
-
-- **Disabled by default** — enabled only via `ORQESTRA_SAFE_DIFF_CONTEXT` env var
-- Only normal-risk, text files under 256 KiB included
-- Secret-risk, binary, large, symlink, and workflow-risk files excluded
-- Caps: max 5 files, max 80 lines/hunk, max 120 lines/file, max 250 total lines
-- Provider: `git-cli-fallback`
-- Fields named `safe_diff_context`, `hunks`, `lines` — no `diff`, `raw_diff`, or `patch` keys
+- Architect produces plans only (no patches, no file writes)
+- Architect output has no `before`/`after`/`edits` fields
+- Architect plan cannot be passed to `apply_agent_patch_cmd`
+- Missing AI service returns error (no fake plans)
 
 ---
 
-## Native Git Operations (v1.2.0)
+## Patch Governance (v1.7.0)
 
-Read-only native Git layer using hybrid gix + CLI fallback:
+All agent file modifications go through `PatchApplicationGuard`:
 
-| Operation | Provider | Native? |
-|-----------|----------|---------|
-| HEAD SHA read | gix | Yes |
-| Branch name read | gix | Yes |
-| Recent commit metadata | gix | Yes |
-| Commit creation | gix (tree-from-index via CLI) | Partial |
-| Repository snapshot | gix hybrid | Partial |
-| Changed file summary | gix hybrid | Partial |
-| Diff/stat | CLI fallback | No |
-| Staging | CLI fallback | No |
+- **Typed DTOs**: `PatchProposal` with stable `proposal_id`
+- **Forbidden paths**: secrets, `.env`, `*.pem`, `*.key`, `.github/workflows`, lock files, binaries
+- **Before-content verification**: content must match expected `before` state
+- **Atomic writes**: temp-then-rename; failed writes leave original unchanged
+- **JSONL audit trail**: every proposal, application, and rejection recorded
+- **Server-side policy**: frontend may narrow but never widen allowed paths
+- **AgentRunner auto_commit removed**: agents never write files directly
 
-### Key Properties
+---
 
-- **Scope:** read-only — no push/pull/merge
-- **Providers:** `gix`, `gix-hybrid`, `git-cli-fallback` — explicitly labeled
-- **Fallback required:** true — CLI fallback always available
-- **Blocking:** false — native operations never block normal Git flow
-- **Secret-safe:** true — secret-risk paths detected by path pattern, never read
+## Code Intelligence (v1.8.0)
 
-### Risk Classification (v1.2.1)
+- **Engine**: tree-sitter 0.24 (pure Rust crate, zero Tauri/git-bridge dependency)
+- **Languages**: Rust, TypeScript
+- **Symbol extraction**: functions, structs, enums, traits, impls, modules, interfaces, classes
+- **File exclusion**: binary, secret, generated, >256 KiB
+- **Parse error threshold**: ERROR/MISSING ratio >30% = ParseError
+- **Deterministic ordering**: line_start → line_end → kind → name → parent
+- **Agent integration**: bugfix-agent receives symbols; docs-agent disabled by default
+- **Architect integration**: affected symbols in plan output
 
-Changed file risk classification is path-only (never reads contents):
+---
 
-| Risk | Detection | Examples |
-|------|-----------|----------|
-| `secret` | Path pattern | `.env`, `*.pem`, `*_rsa`, `credentials.*` |
-| `workflow` | Path pattern | `.github/workflows/**`, `.github/actions/**` |
-| `binary` | Bounded 8 KiB sampling | Non-text bytes in first 8192 bytes |
-| `large` | Size threshold | Files > 10 MiB |
-| `unknown` | Symlink detection | Never classified as `normal` |
-| `normal` | Default | Everything else |
+## Git Provider System (v1.6.0)
+
+### GitProvider Enum
+
+```rust
+pub enum GitProvider {
+    Gix,           // Pure gix native
+    GixHybrid,     // gix + CLI fallback (e.g., tree-from-index via git write-tree)
+    GitCliFallback, // CLI fallback for unsupported operations
+    DeterministicHeuristic, // Deterministic file kind/risk classification
+    NotImplemented, // Operation not yet migrated
+}
+```
+
+### Per-Operation Provider Report
+
+13 operations tracked with provider, native status, fallback availability, and read-only flag.
+
+### Response Wrappers
+
+`RecentCommitsResult` and `DiffStatResult` carry provider information even on empty results.
+
+### Non-Mutating Diagnostics
+
+`build_provider_report()` only executes read-only operations. Mutating ops reported from static registry only.
 
 ---
 
 ## Semantic Commit Preparation (v1.3.0)
 
-Deterministic, proposal-only commit preparation — no AI dependency:
-
-- **Mode:** proposal-only — never stages, commits, pushes, or pulls
-- **Provider:** deterministic-heuristic (path-based scope/type extraction)
-- **Scope extraction:** git, desktop, dashboard, docs, ci, build, release
-- **Change type inference:** test, docs, ci, build, feat, refactor, chore
-- **Confidence scoring:** 1.0 single-scope → 0.3 minimum
-- **Commit grouping:** scope grouping + risk isolation
-- **Agent context:** content-free — paths, statuses, risk flags only, no file contents
-- **Diff body pilot:** disabled by default, bounded 256 KiB, text+normal risk only
-
-### Manifest Enforcement
-
-The validator structurally enforces:
-
-```
-mode == "proposal-only"
-native_commit_execution == false
-autonomous_commit == false
-stages_files == false
-writes_repository == false
-requires_review == true
-```
+- Deterministic heuristics (no AI dependency)
+- Confidence scoring (0.0–1.0)
+- Commit grouping by file area
+- Content-free agent context (paths + risk flags only)
+- Proposal-only — never auto-commits
 
 ---
 
-## Knowledge Graph
+## Agent Context v2 (v1.4.0)
 
-- **Triple store:** Content-addressed, commit-indexed
-- **Commit indexer:** Maps commits to graph entries
-- **Vector/embedding search:** Implemented in Python AI service (`all-MiniLM-L6-v2` + cosine similarity via `/query_history` endpoint)
-- **Natural-language query history:** UI exists, backed by triple store
-
----
-
-## CRDT Sync
-
-- **Engine:** Loro per-file document model
-- **Local merge:** Two-peer offline merge verified
-- **Cloud relay:** Not implemented — Cloudflare Durable Object relay is backlog
-- **UI:** SyncPanel shows CRDT documents and merge status
+- Schema-versioned (`schema_version` field)
+- Content-free (no file contents in context)
+- Explicit `ContentPolicy` with all content excluded
+- `review_only: true`, `auto_commit: false`, `auto_apply: false`
+- Graceful degradation: context failure does not block agent execution
+- Forbidden-field scan scoped to `git_context` object keys only
 
 ---
 
-## Shockwave Merge
+## Safe Diff Context (v1.5.0)
 
-- **Status:** Mock/prototype
-- **Data:** Uses fixture data, not real merge conflict resolution
-- **UI:** Visual merge conflict display exists but is not connected to real merge operations
+- Opt-in via `ORQESTRA_SAFE_DIFF_CONTEXT` environment variable
+- `SafeDiffContext` DTO with policy caps
+- Eligibility gate (only review-only agents)
+- Bounded diff hunk extraction
+- No `diff`/`raw_diff`/`patch` keys in DTO — uses `safe_diff_context`/`hunks`/`lines`
 
 ---
 
-## Dashboard
+## First-Run Environment Checks (v2.0.0)
 
-- **URL:** [orqestra.pages.dev](https://orqestra.pages.dev)
-- **Deploy:** CI-driven on master push via Cloudflare Pages
-- **Data source:** Generated JSON from roadmap indexer
-- **Freshness:** Version, commit SHA, and generation timestamp in footer
-- **Limitation:** Static snapshot — not real-time synchronized with repository changes
+10 non-mutating probes:
+
+| # | Check | Source | Mutating? |
+|---|-------|--------|-----------|
+| 1 | Git available | `git --version` probe | No |
+| 2 | Repository selectable | project_root exists | No |
+| 3 | Roadmap valid | `_index.md` parseable (bounded read, 4 KiB) | No |
+| 4 | AI service reachable | `/health` ping (optional/degraded) | No |
+| 5 | Credential provider available | keyring probe (read-only) | No |
+| 6 | Dashboard export visible | file existence check | No |
+| 7 | Agent endpoints available | `/health` ping (optional/degraded) | No |
+| 8 | Patch governance enabled | audit dir existence check | No |
+| 9 | Code intelligence enabled | bounded probe on test string | No |
+| 10 | Git provider resolved | single read-only provider report | No |
+
+AI service and agent endpoint unavailability → `optional`/`degraded` status (not setup failure).
+
+---
+
+## Diagnostics Bundle (v2.0.0)
+
+13 diagnostic files, all secret-redacted, non-mutating:
+
+| File | Content |
+|------|---------|
+| `app.json` | App version, platform |
+| `readiness.json` | Environment readiness report |
+| `project-validation.json` | Project validation result |
+| `git-provider.json` | Per-operation provider diagnostics |
+| `credential-status.json` | Credential provider availability |
+| `agent-matrix.json` | Agent mode, endpoint, availability |
+| `patch-governance.json` | Policy version, audit entries |
+| `code-intel.json` | Languages supported, parse probe status |
+| `roadmap-status.json` | Parse status, task count |
+| `recent-errors.json` | Recent command errors |
+| `system.txt` | OS, arch, git version |
+| `ai-health.json` | AI service health check |
+| `dashboard-status.json` | Dashboard data freshness |
+
+**No secrets, no source bodies, no raw diffs, no private file contents.** Machine-checked by redaction tests.
 
 ---
 
@@ -186,12 +215,14 @@ requires_review == true
 
 | Area | Tests | Verified |
 |------|-------|----------|
-| Rust workspace | 328 passing | Yes |
+| Rust workspace | 447 passing | Yes |
 | Desktop TypeScript build | Clean | Yes |
 | Manifest validation | Pass | Yes |
-| Windows release build | 4.7 MB NSIS | Yes |
+| Windows release build | NSIS installer | Yes |
 | Linux CI build | AppImage | Yes |
 | macOS CI build | Universal binary | Yes |
+| First-run probes | 12 tests (non-mutating) | Yes |
+| Redaction verification | 8 tests (machine-checked) | Yes |
 
 ---
 

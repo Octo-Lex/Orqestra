@@ -558,6 +558,23 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.0.0: Beta Hardening
+  if ((pr as any).beta_hardening) {
+    const bh = (pr as any).beta_hardening;
+    if (bh.enabled !== true) fail('product_readiness.beta_hardening.enabled must be true');
+    if (bh.first_run_checks !== 10) fail('product_readiness.beta_hardening.first_run_checks must be 10');
+    if (bh.first_run_non_mutating !== true) fail('product_readiness.beta_hardening.first_run_non_mutating must be true');
+    if (bh.diagnostic_bundle_files !== 13) fail('product_readiness.beta_hardening.diagnostic_bundle_files must be 13');
+    if (bh.diagnostic_bundle_non_mutating !== true) fail('product_readiness.beta_hardening.diagnostic_bundle_non_mutating must be true');
+    if (bh.ai_service_optional !== true) fail('product_readiness.beta_hardening.ai_service_optional must be true');
+    if (bh.agent_endpoints_optional !== true) fail('product_readiness.beta_hardening.agent_endpoints_optional must be true');
+    if (bh.redaction_machine_checked !== true) fail('product_readiness.beta_hardening.redaction_machine_checked must be true');
+    if (bh.redaction_tests < 6) fail('product_readiness.beta_hardening.redaction_tests must be >= 6');
+    if (!Array.isArray(bh.new_docs) || bh.new_docs.length < 4) fail('product_readiness.beta_hardening.new_docs must have at least 4 docs');
+  } else {
+    warn('product_readiness.beta_hardening section missing (v2.0.0+)');
+  }
+
   // v1.9.0: Architect Agent
   if ((pr as any).architect_agent) {
     const aa = (pr as any).architect_agent;
