@@ -19,6 +19,7 @@ fn main() {
             token_manager: Mutex::new(
                 loro_engine::sync::TokenManager::new("default-master-token")
             ),
+            relay_client: Mutex::new(None),
         })
         // v1.0.3: Onboarding state
         .manage(commands::onboarding::OnboardingStateManager::default())
@@ -74,6 +75,10 @@ fn main() {
             commands::sync::sync_status_cmd,
             commands::sync::generate_token_cmd,
             commands::sync::validate_token_cmd,
+            // v2.1.0: Relay commands
+            commands::sync::connect_relay_cmd,
+            commands::sync::disconnect_relay_cmd,
+            commands::sync::relay_status_cmd,
             // v1.0.2: Secure credential commands (OS-keychain backed)
             commands::credentials::bootstrap_credential_vault_cmd,
             commands::credentials::save_github_token_cmd,

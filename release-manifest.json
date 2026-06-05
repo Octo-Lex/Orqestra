@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.0.0",
-    "tag": "v2.0.0",
+    "name": "Orqestra v2.1.0",
+    "tag": "v2.1.0",
     "channel": "public-beta",
-    "release_version": "2.0.0",
-    "app_version": "2.0.0",
+    "release_version": "2.1.0",
+    "app_version": "2.1.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "27023267343",
+    "workflow_run_id": "27027774836",
     "status": "local-build"
   },
   "signing": {
@@ -39,21 +39,21 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.0.0_x64-setup.exe",
+      "name": "Orqestra_2.1.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "c094e16532462d8c0bb885322de7dc75fc8596c0b86363c66a8204f05397660c",
-      "size_bytes": 5137664,
+      "sha256": "2a7b95a3a2821b6fce07d44b2d7cdd4b25a1d77b607ff6ac492b5201d98219d0",
+      "size_bytes": 5149441,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "ci-build"
     },
     {
-      "name": "Orqestra_2.0.0_x64.AppImage",
+      "name": "Orqestra_2.1.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "527ee6c5838287cb94acd71610c5065a3e06f15528f4d13e573f432e39e1a9ff",
+      "sha256": "29853975073628224932980fce8bc9aa23c13cf495b44962c51f52cf11466478",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "27023267343",
+    "ci_run_id": "27027774836",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
@@ -499,6 +499,24 @@
         "code-intelligence.md",
         "DEMO_SCRIPT_v2.0.0.md"
       ]
+    },
+    "cloud_crdt_relay": {
+      "enabled": true,
+      "protocol_version": 1,
+      "relay_type": "cloudflare-durable-object",
+      "trust_boundary": "master-secret-worker-only",
+      "token_scoping": "workspace-scoped-read-write-admin",
+      "idempotency": "message_id-deduped",
+      "payload_bounds": {
+        "max_delta_mb": 1,
+        "max_snapshot_mb": 10,
+        "max_queued_deltas": 100,
+        "max_peers_per_room": 20
+      },
+      "sync_diagnostics_redacted": true,
+      "local_first_without_relay": true,
+      "dashboard_not_realtime": true,
+      "worker_test_suite": true
     }
   }
 }

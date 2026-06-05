@@ -558,6 +558,21 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.1.0: Cloud CRDT Relay
+  if ((pr as any).cloud_crdt_relay) {
+    const cr = (pr as any).cloud_crdt_relay;
+    if (cr.enabled !== true) fail('product_readiness.cloud_crdt_relay.enabled must be true');
+    if (cr.protocol_version !== 1) fail('product_readiness.cloud_crdt_relay.protocol_version must be 1');
+    if (cr.trust_boundary !== 'master-secret-worker-only') fail('product_readiness.cloud_crdt_relay.trust_boundary must be master-secret-worker-only');
+    if (cr.idempotency !== 'message_id-deduped') fail('product_readiness.cloud_crdt_relay.idempotency must be message_id-deduped');
+    if (cr.sync_diagnostics_redacted !== true) fail('product_readiness.cloud_crdt_relay.sync_diagnostics_redacted must be true');
+    if (cr.local_first_without_relay !== true) fail('product_readiness.cloud_crdt_relay.local_first_without_relay must be true');
+    if (cr.dashboard_not_realtime !== true) fail('product_readiness.cloud_crdt_relay.dashboard_not_realtime must be true');
+    if (cr.worker_test_suite !== true) fail('product_readiness.cloud_crdt_relay.worker_test_suite must be true');
+  } else {
+    warn('product_readiness.cloud_crdt_relay section missing (v2.1.0+)');
+  }
+
   // v2.0.0: Beta Hardening
   if ((pr as any).beta_hardening) {
     const bh = (pr as any).beta_hardening;
