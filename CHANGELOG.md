@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.9.0] - 2026-06-05
+
+### Added
+- `POST /agent/architect` Python AI endpoint with structured plan generation
+- `run_architect_agent_cmd` Rust Tauri command — read-only, no write path
+- `ArchitectPlanResult` typed DTO (plan_id, summary, context_analysis, proposed_approach, affected_symbols, risk_assessment, dependency_warnings, acceptance_criteria, test_strategy, task_breakdown, adr_draft, confidence, schema_version)
+- `SymbolRef`, `RiskItem`, `TaskBreakdownItem` DTOs for structured plan output
+- `ArchitectAgentPanel.tsx` — display-only UI (no accept/reject patch buttons)
+- Bounded ADR context (path, title, status, excerpt capped at 500 chars, max 10 ADRs)
+- Architect context bundle: Agent Context v2 + symbol summaries + risk summary + existing ADRs
+- 10 architect agent tests (structure, no-mutation, missing-service, schema, confidence, no-patch-fields, .Orqestra state unchanged)
+- Manifest `architect_agent` section with 12 validator gates
+
+### Changed
+- Manifest `real_agents` now includes `architect-agent`
+- AgentRunner architect mock removed — replaced with empty placeholder directing to Tauri command
+- Architect route is React UI → Tauri command → Rust builds context → Python AI endpoint (no direct frontend-to-AI calls)
+
+### Security
+- Architect output has no patch-shaped fields (no before/after/edits)
+- Architect plan cannot be passed to `apply_agent_patch_cmd` (structurally incompatible)
+- Missing AI service returns structured error — no runtime fake plan
+- Architect execution does not mutate repository files, .Orqestra runtime state, or audit files
+- ADR content is bounded (metadata + 500-char excerpt only)
+
+### Known Limitations
+- Architect output is display-only in v1.9.0 (no export/save to Markdown yet)
+- ADR draft is optional — only produced when applicable
+- Requires ZAI_API_KEY set in Python AI service environment
+
 ## [1.8.0] - 2026-06-05
 
 ### Added

@@ -558,6 +558,24 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v1.9.0: Architect Agent
+  if ((pr as any).architect_agent) {
+    const aa = (pr as any).architect_agent;
+    if (aa.enabled !== true) fail('product_readiness.architect_agent.enabled must be true');
+    if (aa.mode !== 'read-only-planner') fail('product_readiness.architect_agent.mode must be read-only-planner');
+    if (aa.may_edit_files === true) fail('product_readiness.architect_agent.may_edit_files must be false');
+    if (aa.may_create_adrs === true) fail('product_readiness.architect_agent.may_create_adrs must be false');
+    if (aa.patch_application === true) fail('product_readiness.architect_agent.patch_application must be false');
+    if (aa.emits_patch_proposals === true) fail('product_readiness.architect_agent.emits_patch_proposals must be false');
+    if (aa.writes_repository === true) fail('product_readiness.architect_agent.writes_repository must be false');
+    if (aa.schema_versioned !== true) fail('product_readiness.architect_agent.schema_versioned must be true');
+    if (aa.no_runtime_mock !== true) fail('product_readiness.architect_agent.no_runtime_mock must be true');
+    if (!Array.isArray(aa.context_sources) || aa.context_sources.length < 3) fail('product_readiness.architect_agent.context_sources must have at least 3 sources');
+    if (!Array.isArray(aa.output_artifacts) || aa.output_artifacts.length < 5) fail('product_readiness.architect_agent.output_artifacts must have at least 5 artifacts');
+  } else {
+    warn('product_readiness.architect_agent section missing (v1.9.0+)');
+  }
+
   // v1.8.0: Code Intelligence
   if ((pr as any).code_intelligence) {
     const ci = (pr as any).code_intelligence;
