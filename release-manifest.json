@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.2.0",
-    "tag": "v2.2.0",
+    "name": "Orqestra v2.3.0",
+    "tag": "v2.3.0",
     "channel": "public-beta",
-    "release_version": "2.2.0",
-    "app_version": "2.2.0",
+    "release_version": "2.3.0",
+    "app_version": "2.3.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "27029545925",
+    "workflow_run_id": "27036260668",
     "status": "local-build"
   },
   "signing": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.2.0_x64-setup.exe",
+      "name": "Orqestra_2.3.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "4ceec6cb47cb9977bdcb4795b359d0bca33cc9c14e40a39550d88c460d7e5daa",
-      "size_bytes": 5150404,
+      "sha256": "be8c328ed1349d4e4b6101cbfaa0922d9ccf31b689545cb32b6feed2a28c4b1d",
+      "size_bytes": 5154088,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "ci-build"
     },
     {
-      "name": "Orqestra_2.2.0_x64.AppImage",
+      "name": "Orqestra_2.3.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "27029545925",
+    "ci_run_id": "27036260668",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
@@ -534,6 +534,27 @@
       "relay_metadata_optional": true,
       "coherence_diagnostics_redacted": true,
       "dashboard_backward_compatible": true
+    },
+    "hunk_to_symbol_mapping": {
+      "enabled": true,
+      "primary_mapping_basis": "new_file_line_ranges",
+      "overlap_types": [
+        "inside_symbol",
+        "touches_symbol_boundary",
+        "near_symbol",
+        "file_level_only",
+        "no_symbol_match"
+      ],
+      "one_hunk_many_symbols": true,
+      "most_specific_symbol_wins": true,
+      "parent_as_metadata_not_separate_impact": true,
+      "max_impacts_per_file": 50,
+      "max_impacts_total": 200,
+      "truncation_reported": true,
+      "path_redaction_in_diagnostics": true,
+      "no_source_bodies": true,
+      "read_only": true,
+      "deterministic": true
     }
   }
 }

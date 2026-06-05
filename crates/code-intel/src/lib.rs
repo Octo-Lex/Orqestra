@@ -8,6 +8,7 @@
 
 mod extract;
 mod exclude;
+pub mod hunk_map;
 
 use serde::Serialize;
 
