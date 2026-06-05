@@ -3,6 +3,7 @@ pub mod commit;
 pub mod commits;
 pub mod diff;
 pub mod error;
+pub mod operational_risk;
 pub mod gix_ops;
 pub mod semantic;
 pub mod semantic_prep;
