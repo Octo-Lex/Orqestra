@@ -558,6 +558,32 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v1.7.0: Patch Governance
+  if ((pr as any).patch_governance) {
+    const pg = (pr as any).patch_governance;
+    if (pg.enabled !== true) fail('product_readiness.patch_governance.enabled must be true');
+    if (pg.validation_before_apply !== true) fail('product_readiness.patch_governance.validation_before_apply must be true');
+    if (pg.forbidden_path_enforcement !== true) fail('product_readiness.patch_governance.forbidden_path_enforcement must be true');
+    if (pg.binary_write_blocked !== true) fail('product_readiness.patch_governance.binary_write_blocked must be true');
+    if (pg.secret_path_blocked !== true) fail('product_readiness.patch_governance.secret_path_blocked must be true');
+    if (pg.workflow_path_blocked !== true) fail('product_readiness.patch_governance.workflow_path_blocked must be true');
+    if (pg.dependency_lock_blocked !== true) fail('product_readiness.patch_governance.dependency_lock_blocked must be true');
+    if (pg.before_checksum_verification !== true) fail('product_readiness.patch_governance.before_checksum_verification must be true');
+    if (pg.atomic_writes !== true) fail('product_readiness.patch_governance.atomic_writes must be true');
+    if (pg.audit_trail !== true) fail('product_readiness.patch_governance.audit_trail must be true');
+    if (pg.proposal_id_required !== true) fail('product_readiness.patch_governance.proposal_id_required must be true');
+    if (pg.server_side_agent_policy !== true) fail('product_readiness.patch_governance.server_side_agent_policy must be true');
+    if (pg.frontend_narrows_only !== true) fail('product_readiness.patch_governance.frontend_narrows_only must be true');
+    if (pg.auto_commit === true) fail('product_readiness.patch_governance.auto_commit must be false');
+    if (pg.auto_apply === true) fail('product_readiness.patch_governance.auto_apply must be false');
+    if (!Array.isArray(pg.states) || !pg.states.includes('applied') || !pg.states.includes('rejected')) {
+      fail('product_readiness.patch_governance.states must include applied and rejected');
+    }
+    if (pg.typed_dtos !== true) fail('product_readiness.patch_governance.typed_dtos must be true');
+  } else {
+    warn('product_readiness.patch_governance section missing (v1.7.0+)');
+  }
+
   // Cross-check: if credential_security_level is production-grade,
   // require evidence that both tested platforms have credential verification
   if (pr.credential_security_level === 'production-grade') {

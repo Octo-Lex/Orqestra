@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.6.0",
-    "tag": "v1.6.0",
+    "name": "Orqestra v1.7.0",
+    "tag": "v1.7.0",
     "channel": "public-beta",
-    "release_version": "1.6.0",
-    "app_version": "1.6.0",
+    "release_version": "1.7.0",
+    "app_version": "1.7.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.6.0_x64-setup.exe",
+      "name": "Orqestra_1.7.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "6bb7a6f0a582db01e917f1c3f0c748e93833ba96c852fea607db7edbac96d2e8",
-      "size_bytes": 4891181,
+      "sha256": "ec77fb8e69ed68d8cf67f251377018231f4358b168878c8b301919af678d203f",
+      "size_bytes": 4910671,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.6.0_x64.AppImage",
+      "name": "Orqestra_1.7.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "38b715b1998f02dbe751443e50c06e00bc6d3d1fadc180b7685a309e90829da4",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -382,6 +382,36 @@
       "test_coverage": "per-operation",
       "no_mutation_guarantee": true,
       "commit_creation_provider": "gix-hybrid"
+    },
+    "patch_governance": {
+      "enabled": true,
+      "validation_before_apply": true,
+      "forbidden_path_enforcement": true,
+      "binary_write_blocked": true,
+      "secret_path_blocked": true,
+      "workflow_path_blocked": true,
+      "dependency_lock_blocked": true,
+      "infrastructure_config_blocked": true,
+      "before_checksum_verification": true,
+      "before_content_verification": true,
+      "atomic_writes": true,
+      "audit_trail": true,
+      "audit_format": "jsonl",
+      "proposal_id_required": true,
+      "server_side_agent_policy": true,
+      "frontend_narrows_only": true,
+      "states": [
+        "proposed",
+        "rejected",
+        "apply_failed",
+        "applied"
+      ],
+      "auto_commit": false,
+      "auto_apply": false,
+      "typed_dtos": true,
+      "response_wrappers": [
+        "PatchApplicationResult"
+      ]
     }
   }
 }
