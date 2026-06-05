@@ -1,4 +1,5 @@
 pub mod keyring_store;
+pub mod patch_guard;
 pub mod token_mask;
 
 use serde::{Deserialize, Serialize};

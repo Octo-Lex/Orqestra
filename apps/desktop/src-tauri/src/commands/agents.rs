@@ -1,3 +1,7 @@
+use crate::security::patch_guard::{
+    AgentType, PatchProposal, PatchApplicationResult,
+    apply_agent_patch, reject_agent_patch,
+};
 use std::fs;
 use tauri::command;
 
@@ -421,4 +425,43 @@ pub fn list_workspaces_cmd(project_root: String) -> Result<Vec<WorkspaceEntry>, 
     }
 
     Ok(entries)
+}
+
+// ---------------------------------------------------------------------------
+// v1.7.0: Patch Application Governance
+//
+// Typed DTOs — no JSON string arguments.
+// Server-side agent policy enforced; frontend may narrow but not widen.
+// Accepted is a UI state; audit records capture durable outcomes.
+// ---------------------------------------------------------------------------
+
+/// Apply an agent patch with full governance.
+/// Validated, atomic, audited. No auto-commit.
+#[command]
+pub fn apply_agent_patch_cmd(
+    project_root: String,
+    patch: PatchProposal,
+    allowed_paths: Vec<String>,
+    agent_type: AgentType,
+) -> Result<PatchApplicationResult, String> {
+    let root = std::path::PathBuf::from(&project_root);
+    if !root.exists() {
+        return Err("Project root does not exist".into());
+    }
+    Ok(apply_agent_patch(&root, &patch, &allowed_paths, &agent_type))
+}
+
+/// Record a patch rejection without modifying any file.
+#[command]
+pub fn reject_agent_patch_cmd(
+    project_root: String,
+    patch: PatchProposal,
+    agent_type: AgentType,
+    reason: String,
+) -> Result<PatchApplicationResult, String> {
+    let root = std::path::PathBuf::from(&project_root);
+    if !root.exists() {
+        return Err("Project root does not exist".into());
+    }
+    Ok(reject_agent_patch(&root, &patch, &agent_type, &reason))
 }
