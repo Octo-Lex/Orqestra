@@ -195,3 +195,39 @@ pub fn prepare_semantic_commit_cmd(project_root: String) -> Result<String, Strin
     serde_json::to_string(&proposal)
         .map_err(|e| format!("Failed to serialize proposal: {e}"))
 }
+
+// ---------------------------------------------------------------------------
+// v1.6.0: Git Provider Diagnostics
+// ---------------------------------------------------------------------------
+
+/// Get per-operation Git provider diagnostics.
+/// Read-only — never mutates the repository.
+#[command]
+pub fn git_provider_diagnostics_cmd(project_root: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let report = git_bridge::build_provider_report(&path)
+        .map_err(|e| format!("Provider diagnostics failed: {e}"))?;
+    serde_json::to_string(&report)
+        .map_err(|e| format!("Failed to serialize provider report: {e}"))
+}
+
+/// Get recent commits with provider metadata.
+/// Response wrapper carries provider even when list is empty.
+#[command]
+pub fn git_recent_commits_with_provider_cmd(project_root: String, limit: Option<usize>) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let result = git_bridge::recent_commits_with_provider(&path, limit)
+        .map_err(|e| format!("Recent commits with provider failed: {e}"))?;
+    serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize result: {e}"))
+}
+
+/// Get diff/stat with provider metadata.
+#[command]
+pub fn git_diff_stat_with_provider_cmd(project_root: String) -> Result<String, String> {
+    let path = std::path::PathBuf::from(&project_root);
+    let result = git_bridge::diff_stat_with_provider(&path)
+        .map_err(|e| format!("Diff stat with provider failed: {e}"))?;
+    serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize result: {e}"))
+}

@@ -521,6 +521,43 @@ if (manifest.product_readiness) {
     }
   }
 
+  // v1.6.0: Git Provider Diagnostics
+  if ((pr as any).git_provider_diagnostics) {
+    const gpd = (pr as any).git_provider_diagnostics;
+    if (gpd.enabled !== true) {
+      fail('product_readiness.git_provider_diagnostics.enabled must be true');
+    }
+    if (gpd.per_operation_reporting !== true) {
+      fail('product_readiness.git_provider_diagnostics.per_operation_reporting must be true');
+    }
+    if (gpd.provider_enum !== true) {
+      fail('product_readiness.git_provider_diagnostics.provider_enum must be true — enum-backed labels required');
+    }
+    if (gpd.read_only_diagnostics_only !== true) {
+      fail('product_readiness.git_provider_diagnostics.read_only_diagnostics_only must be true — diagnostics must never mutate');
+    }
+    if (gpd.mutating_ops_registered_not_executed !== true) {
+      fail('product_readiness.git_provider_diagnostics.mutating_ops_registered_not_executed must be true');
+    }
+    if (!Array.isArray(gpd.operations) || gpd.operations.length < 10) {
+      fail('product_readiness.git_provider_diagnostics.operations must list at least 10 operations');
+    }
+    if (gpd.commit_creation_provider !== 'gix-hybrid') {
+      fail('product_readiness.git_provider_diagnostics.commit_creation_provider must be "gix-hybrid" — tree-from-index is CLI');
+    }
+    if (gpd.no_mutation_guarantee !== true) {
+      fail('product_readiness.git_provider_diagnostics.no_mutation_guarantee must be true');
+    }
+    if (gpd.empty_result_provider_guaranteed !== true) {
+      fail('product_readiness.git_provider_diagnostics.empty_result_provider_guaranteed must be true — wrappers must carry provider on empty results');
+    }
+    if (!Array.isArray(gpd.response_wrappers) || gpd.response_wrappers.length < 2) {
+      fail('product_readiness.git_provider_diagnostics.response_wrappers must list at least 2 wrappers');
+    }
+  } else {
+    warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
+  }
+
   // Cross-check: if credential_security_level is production-grade,
   // require evidence that both tested platforms have credential verification
   if (pr.credential_security_level === 'production-grade') {
