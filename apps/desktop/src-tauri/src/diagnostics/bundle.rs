@@ -50,6 +50,7 @@ pub fn create_diagnostic_bundle(
     code_intel_json: &str,
     roadmap_status_json: &str,
     sync_status_json: &str,
+    coherence_json: &str,
 ) -> Result<DiagnosticBundleResult, String> {
     let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     let bundle_name = format!("orqestra-diagnostics-{}", timestamp);
@@ -118,6 +119,12 @@ pub fn create_diagnostic_bundle(
             "sync-status.json",
             sync_status_json,
             "Sync relay connection status (redacted)",
+        ),
+        // v2.2.0: Dashboard/workspace/relay coherence
+        (
+            "coherence.json",
+            coherence_json,
+            "Dashboard/workspace/relay coherence (redacted)",
         ),
     ];
 

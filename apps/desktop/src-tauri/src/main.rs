@@ -111,6 +111,8 @@ fn main() {
             commands::diagnostics::check_patch_governance_cmd,
             commands::diagnostics::check_code_intel_cmd,
             commands::diagnostics::check_git_provider_cmd,
+            // v2.2.0: Coherence check
+            commands::diagnostics::check_dashboard_coherence_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
