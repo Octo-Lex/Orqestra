@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.6.0] - 2026-06-05
+
+### Added
+- `GitProvider` enum — canonical provider labels (gix, gix-hybrid, git-cli-fallback, deterministic-heuristic, not-implemented)
+- `GitOperationProvider` DTO with per-operation provider, native flag, read-only, mutates_repository, executed_in_diagnostics, latency_ms
+- `GitProviderReport` DTO with per-operation diagnostics and repository validity
+- `build_provider_report()` — read-only diagnostics builder (mutating ops registered but never executed)
+- `RecentCommitsResult` response wrapper — carries provider even on empty commit lists
+- `DiffStatResult` response wrapper — carries provider and latency
+- `git_provider_diagnostics_cmd` Tauri command
+- `git_recent_commits_with_provider_cmd` Tauri command
+- `git_diff_stat_with_provider_cmd` Tauri command
+- `GitProviderDiagnosticsPanel.tsx` — per-operation provider table with color-coded badges
+- 17 provider diagnostics tests (completeness, accuracy, no-mutation guarantee, empty results, graceful degradation)
+- Manifest `git_provider_diagnostics` section with 11 validator gates
+- docs/native-git.md updated with v1.6.0 provider diagnostics section
+- docs/product-readiness.md structured errors table now lists all 9 codes
+
+### Changed
+- Commit creation classified as `gix-hybrid` (not `gix`) — tree-from-index is CLI
+- Push/pull/merge classified as `not-implemented` in provider registry
+- `GitDiagnosticsPanel.tsx` provider badges now align with `GitProvider` enum values
+
+### Security
+- Provider diagnostics never mutate the repository (test-verified)
+- Mutating operations show `executed_in_diagnostics: false` and `latency_ms: null`
+- All new operations are read-only
+
+### Known Limitations
+- Provider diagnostics execute read-only operations only; mutating ops are reported from static registry
+- Diff/stat and safe diff context remain CLI-only providers
+- Push/pull/merge not implemented in git-bridge
+
 ## [1.5.1] - 2026-06-05
 
 ### Changed

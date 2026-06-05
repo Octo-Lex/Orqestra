@@ -169,6 +169,20 @@ fn recent_commits_cli(
 }
 
 // ---------------------------------------------------------------------------
+// Response wrapper (v1.6.0)
+// ---------------------------------------------------------------------------
+
+/// Response wrapper for recent commits.
+/// Carries provider even when commit list is empty.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct RecentCommitsResult {
+    pub provider: String,
+    pub commits: Vec<GitCommitSummary>,
+    pub fallback_used: bool,
+    pub latency_ms: u64,
+}
+
+// ---------------------------------------------------------------------------
 // Public command
 // ---------------------------------------------------------------------------
 
@@ -186,6 +200,36 @@ pub fn recent_commits(
         Err(_) => {
             // CLI fallback
             recent_commits_cli(project_root, limit)
+        }
+    }
+}
+
+/// Read recent commits with provider metadata.
+/// Returns a wrapper that carries provider even when commit list is empty.
+pub fn recent_commits_with_provider(
+    project_root: &Path,
+    limit: Option<usize>,
+) -> Result<RecentCommitsResult, GitBridgeError> {
+    let start = std::time::Instant::now();
+    let limit = limit.unwrap_or(DEFAULT_LIMIT).min(MAX_LIMIT).max(1);
+
+    // Try native gix first
+    match recent_commits_gix(project_root, limit) {
+        Ok(commits) => Ok(RecentCommitsResult {
+            provider: "gix".into(),
+            commits,
+            fallback_used: false,
+            latency_ms: start.elapsed().as_millis() as u64,
+        }),
+        Err(_) => {
+            // CLI fallback
+            let commits = recent_commits_cli(project_root, limit)?;
+            Ok(RecentCommitsResult {
+                provider: "git-cli-fallback".into(),
+                commits,
+                fallback_used: true,
+                latency_ms: start.elapsed().as_millis() as u64,
+            })
         }
     }
 }
