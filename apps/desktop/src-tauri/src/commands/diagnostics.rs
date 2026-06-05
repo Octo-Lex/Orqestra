@@ -413,6 +413,7 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         &code_intel_json,
         &roadmap_status_json,
         "{}",  // sync-status (populated when relay is active)
+        "{}",  // coherence (populated when dashboard export exists)
     )
     .map_err(|e| CommandError {
         code: "DIAGNOSTICS_EXPORT_FAILED",
@@ -588,6 +589,123 @@ pub fn check_git_provider_cmd(project_root: String) -> CommandResult<serde_json:
         }
         Err(e) => Ok(serde_json::json!({"resolved": false, "reason": e.to_string()})),
     }
+}
+
+// ---------------------------------------------------------------------------
+// v2.2.0: Dashboard / Workspace Sync Coherence
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, serde::Serialize)]
+pub struct RelayCoherence {
+    pub available: bool,
+    pub relay_url_host: Option<String>,
+    pub workspace_id_hash: Option<String>,
+    pub last_snapshot_hash: Option<String>,
+    pub connected: bool,
+}
+
+#[derive(Debug, serde::Serialize)]
+pub struct CoherenceResult {
+    pub dashboard_export_exists: bool,
+    pub dashboard_commit: Option<String>,
+    pub local_head: Option<String>,
+    pub commits_behind: Option<u32>,
+    pub freshness: String,
+    pub local_roadmap_state_hash: Option<String>,
+    pub dashboard_roadmap_state_hash: Option<String>,
+    pub task_count_local: Option<usize>,
+    pub task_count_dashboard: Option<usize>,
+    pub relay: RelayCoherence,
+}
+
+/// Check dashboard/workspace/relay coherence.
+/// Desktop-computed: compares local HEAD vs dashboard export commit.
+/// Uses canonical roadmap state hashes.
+#[command]
+pub fn check_dashboard_coherence_cmd(project_root: String) -> CommandResult<CoherenceResult> {
+    let root = std::path::PathBuf::from(&project_root);
+    if !root.exists() {
+        return Ok(CoherenceResult {
+            dashboard_export_exists: false,
+            dashboard_commit: None,
+            local_head: None,
+            commits_behind: None,
+            freshness: "unknown".to_string(),
+            local_roadmap_state_hash: None,
+            dashboard_roadmap_state_hash: None,
+            task_count_local: None,
+            task_count_dashboard: None,
+            relay: RelayCoherence {
+                available: false,
+                relay_url_host: None,
+                workspace_id_hash: None,
+                last_snapshot_hash: None,
+                connected: false,
+            },
+        });
+    }
+
+    let local_head = git_bridge::get_head_hash(&root).ok();
+
+    let dashboard_json_path = root
+        .join("apps")
+        .join("dashboard")
+        .join("public")
+        .join("orqestra-roadmap.json");
+
+    let (dashboard_export_exists, dashboard_commit, dashboard_hash, dashboard_task_count) =
+        if dashboard_json_path.exists() {
+            match std::fs::read_to_string(&dashboard_json_path) {
+                Ok(content) => {
+                    let parsed: serde_json::Value = serde_json::from_str(&content).unwrap_or_default();
+                    let commit = parsed.get("source")
+                        .and_then(|s| s.get("commit"))
+                        .and_then(|c| c.as_str())
+                        .map(|s| s.to_string());
+                    let task_count = parsed.get("summary")
+                        .and_then(|s| s.get("total_tasks"))
+                        .and_then(|t| t.as_u64())
+                        .map(|t| t as usize);
+                    let hash = parsed.get("coherence")
+                        .and_then(|c| c.get("roadmap_state_hash"))
+                        .and_then(|h| h.as_str())
+                        .map(|h| h.to_string());
+                    (true, commit, hash, task_count)
+                }
+                Err(_) => (true, None, None, None),
+            }
+        } else {
+            (false, None, None, None)
+        };
+
+    let freshness = if !dashboard_export_exists {
+        "local-only".to_string()
+    } else if dashboard_commit.is_none() || local_head.is_none() {
+        "unknown".to_string()
+    } else if dashboard_commit.as_deref() == local_head.as_deref() {
+        "current".to_string()
+    } else {
+        "stale".to_string()
+    };
+
+    Ok(CoherenceResult {
+        dashboard_export_exists,
+        dashboard_commit,
+        local_head,
+        commits_behind: None,
+        freshness,
+        local_roadmap_state_hash: None,
+        dashboard_roadmap_state_hash: dashboard_hash,
+        task_count_local: None,
+        task_count_dashboard: dashboard_task_count,
+        relay: RelayCoherence {
+            available: false,
+            relay_url_host: None,
+            workspace_id_hash: None,
+            last_snapshot_hash: None,
+            connected: false,
+        },
+    })
 }
 
 #[command]

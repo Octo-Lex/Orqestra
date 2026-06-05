@@ -558,6 +558,21 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.2.0: Dashboard Sync Coherence
+  if ((pr as any).dashboard_sync_coherence) {
+    const dc = (pr as any).dashboard_sync_coherence;
+    if (dc.enabled !== true) fail('product_readiness.dashboard_sync_coherence.enabled must be true');
+    if (dc.canonical_hash !== 'sha256-over-canonical-roadmap-json') fail('product_readiness.dashboard_sync_coherence.canonical_hash must be sha256-over-canonical-roadmap-json');
+    if (!Array.isArray(dc.freshness_states) || dc.freshness_states.length < 5) fail('product_readiness.dashboard_sync_coherence.freshness_states must have at least 5 states');
+    if (dc.static_dashboard_no_local_head !== true) fail('product_readiness.dashboard_sync_coherence.static_dashboard_no_local_head must be true');
+    if (dc.desktop_computes_freshness !== true) fail('product_readiness.dashboard_sync_coherence.desktop_computes_freshness must be true');
+    if (dc.relay_metadata_optional !== true) fail('product_readiness.dashboard_sync_coherence.relay_metadata_optional must be true');
+    if (dc.coherence_diagnostics_redacted !== true) fail('product_readiness.dashboard_sync_coherence.coherence_diagnostics_redacted must be true');
+    if (dc.dashboard_backward_compatible !== true) fail('product_readiness.dashboard_sync_coherence.dashboard_backward_compatible must be true');
+  } else {
+    warn('product_readiness.dashboard_sync_coherence section missing (v2.2.0+)');
+  }
+
   // v2.1.0: Cloud CRDT Relay
   if ((pr as any).cloud_crdt_relay) {
     const cr = (pr as any).cloud_crdt_relay;
