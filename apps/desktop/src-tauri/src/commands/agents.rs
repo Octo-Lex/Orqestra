@@ -2,8 +2,68 @@ use crate::security::patch_guard::{
     AgentType, PatchProposal, PatchApplicationResult,
     apply_agent_patch, reject_agent_patch,
 };
+use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::command;
+
+// ---------------------------------------------------------------------------
+// v1.9.0: Architect Agent DTOs
+//
+// Read-only planner. No patch-shaped fields (no before/after/edits).
+// Cannot be passed to apply_agent_patch_cmd.
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SymbolRef {
+    pub name: String,
+    pub kind: String,
+    pub file: String,
+    #[serde(default)]
+    pub is_public: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RiskItem {
+    pub risk: String,
+    pub severity: String,
+    pub mitigation: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskBreakdownItem {
+    pub task: String,
+    pub scope: String,
+    pub complexity: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchitectPlanResult {
+    pub plan_id: String,
+    pub schema_version: String,
+    pub summary: String,
+    pub context_analysis: String,
+    pub proposed_approach: Vec<String>,
+    pub affected_symbols: Vec<SymbolRef>,
+    pub risk_assessment: Vec<RiskItem>,
+    pub dependency_warnings: Vec<String>,
+    pub acceptance_criteria: Vec<String>,
+    pub test_strategy: Vec<String>,
+    pub task_breakdown: Vec<TaskBreakdownItem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub adr_draft: Option<String>,
+    pub confidence: f64,
+    // Structural guarantee: this DTO has no before/after/edits/patch fields.
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ArchitectAgentResult {
+    pub plan: ArchitectPlanResult,
+    pub agent: String,
+    pub mode: String,
+    pub timestamp: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<String>,
+}
 
 /// Read a file from disk. Used by SkillLoader and workspace state loading.
 #[command]
@@ -464,4 +524,171 @@ pub fn reject_agent_patch_cmd(
         return Err("Project root does not exist".into());
     }
     Ok(reject_agent_patch(&root, &patch, &agent_type, &reason))
+}
+
+// ---------------------------------------------------------------------------
+// v1.9.0: Architect Agent — Read-Only Planner
+//
+// Calls /agent/architect endpoint. Never writes files.
+// ArchitectPlanResult has no patch-shaped fields.
+// ---------------------------------------------------------------------------
+
+/// Run the architect agent — read-only planning.
+/// Builds context (Agent Context v2 + symbols + risks + ADRs), calls AI service.
+/// Returns a structured plan. Never mutates the repository.
+#[command]
+pub fn run_architect_agent_cmd(
+    project_root: String,
+    task: String,
+) -> Result<String, String> {
+    let root = std::path::PathBuf::from(&project_root);
+    if !root.exists() {
+        return Err("Project root does not exist".into());
+    }
+
+    let task_obj: serde_json::Value = serde_json::from_str(&task)
+        .map_err(|e| format!("Invalid task JSON: {e}"))?;
+
+    // Build Agent Context v2 (content-free, schema-versioned)
+    let (safe_context, git_context_status, git_context_error_code) =
+        match git_bridge::build_agent_context_v2(&root) {
+            Ok(ctx) => (
+                serde_json::to_value(&ctx).unwrap_or(serde_json::json!({})),
+                "available".to_string(),
+                serde_json::Value::Null,
+            ),
+            Err(_) => (
+                serde_json::json!({}),
+                "unavailable".to_string(),
+                serde_json::json!("AGENT_CONTEXT_BUILD_FAILED"),
+            ),
+        };
+
+    // Extract symbol summaries for changed files
+    let symbol_summaries = _extract_symbols_for_context(&root, &safe_context);
+
+    // Find existing ADRs (bounded metadata only)
+    let existing_adrs = _find_existing_adrs(&root);
+
+    // Build constraints
+    let constraints = serde_json::json!({
+        "read_only": true,
+        "may_edit_files": false,
+        "may_create_adrs": false,
+        "max_plan_sections": 8
+    });
+
+    let request_body = serde_json::json!({
+        "task": task_obj,
+        "git_context": safe_context,
+        "git_context_status": git_context_status,
+        "symbol_summaries": symbol_summaries,
+        "risk_summary": null,
+        "existing_adrs": existing_adrs,
+        "constraints": constraints
+    });
+
+    // Call AI service — raises on failure, no runtime mock
+    let client = reqwest::blocking::Client::new();
+    let response = client
+        .post("http://localhost:8000/agent/architect")
+        .json(&request_body)
+        .timeout(std::time::Duration::from_secs(45))
+        .send()
+        .map_err(|e| format!("AI service unreachable: {e}"))?;
+
+    if !response.status().is_success() {
+        let status = response.status();
+        let body = response.text().unwrap_or_default();
+        return Err(format!("AI service error {status}: {body}"));
+    }
+
+    let result: serde_json::Value = response
+        .json()
+        .map_err(|e| format!("Invalid AI response: {e}"))?;
+
+    serde_json::to_string(&result)
+        .map_err(|e| format!("Failed to serialize architect result: {e}"))
+}
+
+/// Extract symbol summaries for changed files in the git context.
+fn _extract_symbols_for_context(
+    project_root: &std::path::PathBuf,
+    git_context: &serde_json::Value,
+) -> Vec<serde_json::Value> {
+    let changed_files = git_context
+        .get("changed_files")
+        .and_then(|f| f.as_array())
+        .cloned()
+        .unwrap_or_default();
+
+    let mut summaries = Vec::new();
+    for file in changed_files.iter().take(20) {
+        let path = file.get("path").and_then(|p| p.as_str()).unwrap_or("");
+        let risk = file.get("risk").and_then(|r| r.as_str()).unwrap_or("normal");
+
+        // Only extract for normal-risk supported files
+        if risk != "normal" {
+            continue;
+        }
+
+        let full_path = project_root.join(path);
+        if let Ok(source) = std::fs::read_to_string(&full_path) {
+            let summary = code_intel::extract_symbols(path, &source);
+            if matches!(summary.parse_status, code_intel::ParseStatus::Success) {
+                summaries.push(serde_json::to_value(&summary).unwrap_or_default());
+            }
+        }
+    }
+    summaries
+}
+
+/// Find existing ADRs with bounded metadata.
+fn _find_existing_adrs(project_root: &std::path::PathBuf) -> Vec<serde_json::Value> {
+    let mut adrs = Vec::new();
+    let roadmap_dir = project_root.join("roadmap");
+    if !roadmap_dir.exists() {
+        return adrs;
+    }
+
+    if let Ok(entries) = std::fs::read_dir(&roadmap_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().map(|e| e == "md").unwrap_or(false) {
+                let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+                if name.starts_with("ADR-") {
+                    // Read only first 500 bytes for metadata
+                    if let Ok(content) = std::fs::read_to_string(&path) {
+                        let title = content
+                            .lines()
+                            .find(|l| l.starts_with("title:"))
+                            .map(|l| l.splitn(2, ':').nth(1).unwrap_or("").trim().to_string())
+                            .unwrap_or_default();
+                        let status = content
+                            .lines()
+                            .find(|l| l.starts_with("status:"))
+                            .map(|l| l.splitn(2, ':').nth(1).unwrap_or("").trim().to_string())
+                            .unwrap_or_default();
+                        let excerpt: String = content
+                            .lines()
+                            .skip_while(|l| !l.starts_with("---") || l.starts_with("---"))
+                            .skip(1)
+                            .take(5)
+                            .collect::<Vec<_>>()
+                            .join(" ");
+                        adrs.push(serde_json::json!({
+                            "path": format!("roadmap/{}", name),
+                            "title": title,
+                            "status": status,
+                            "excerpt": excerpt.chars().take(500).collect::<String>()
+                        }));
+                    }
+                }
+            }
+            if adrs.len() >= 10 {
+                break;
+            }
+        }
+    }
+    adrs
 }
