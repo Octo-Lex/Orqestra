@@ -1,0 +1,17 @@
+name = "orqestra-sync-relay"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+[durable_objects]
+bindings = [
+  { name = "SYNC_ROOM", class_name = "SyncRoom" }
+]
+
+[[migrations]]
+tag = "v1"
+new_classes = ["SyncRoom"]
+
+[vars]
+MAX_PEERS_PER_ROOM = "20"
+MAX_DELTA_SIZE_MB = "1"
+MAX_SNAPSHOT_SIZE_MB = "10"

@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.0.0",
-    "tag": "v2.0.0",
+    "name": "Orqestra v2.1.0",
+    "tag": "v2.1.0",
     "channel": "public-beta",
-    "release_version": "2.0.0",
-    "app_version": "2.0.0",
+    "release_version": "2.1.0",
+    "app_version": "2.1.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.0.0_x64-setup.exe",
+      "name": "Orqestra_2.1.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "c094e16532462d8c0bb885322de7dc75fc8596c0b86363c66a8204f05397660c",
-      "size_bytes": 5137664,
+      "sha256": "747edd2a77d0380296a2b4dc79994a5035a7372d28730d4756a430dd98779d9c",
+      "size_bytes": 5149441,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_2.0.0_x64.AppImage",
+      "name": "Orqestra_2.1.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "527ee6c5838287cb94acd71610c5065a3e06f15528f4d13e573f432e39e1a9ff",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -499,6 +499,24 @@
         "code-intelligence.md",
         "DEMO_SCRIPT_v2.0.0.md"
       ]
+    },
+    "cloud_crdt_relay": {
+      "enabled": true,
+      "protocol_version": 1,
+      "relay_type": "cloudflare-durable-object",
+      "trust_boundary": "master-secret-worker-only",
+      "token_scoping": "workspace-scoped-read-write-admin",
+      "idempotency": "message_id-deduped",
+      "payload_bounds": {
+        "max_delta_mb": 1,
+        "max_snapshot_mb": 10,
+        "max_queued_deltas": 100,
+        "max_peers_per_room": 20
+      },
+      "sync_diagnostics_redacted": true,
+      "local_first_without_relay": true,
+      "dashboard_not_realtime": true,
+      "worker_test_suite": true
     }
   }
 }
