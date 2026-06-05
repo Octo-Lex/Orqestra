@@ -136,6 +136,49 @@ Post-v1.2.0 backlog items:
 6. Windows code signing
 7. macOS public artifact
 
+## v1.6.0: Git Provider Diagnostics
+
+v1.6.0 adds runtime provider diagnostics that make the Git substrate auditable:
+
+### Provider Enum
+
+Provider labels are enum-backed (`GitProvider`), not ad-hoc strings:
+
+| Value | Meaning |
+|-------|----------|
+| `gix` | Fully native via gix library |
+| `gix-hybrid` | Partial native (branch/HEAD via gix, other data via CLI) |
+| `git-cli-fallback` | CLI only — no native path exists or native failed |
+| `deterministic-heuristic` | Semantic commit prep engine (path-based, no AI) |
+| `not-implemented` | Operation exists in registry but no provider implemented |
+
+### Per-Operation Report
+
+`git_provider_diagnostics_cmd` returns a report showing:
+- Which provider serves each operation
+- Whether the operation is native, hybrid, or CLI-only
+- Whether the operation is read-only or mutating
+- Measured latency for executed operations
+- Mutating operations listed as registered but **never executed** during diagnostics
+
+### No-Mutation Guarantee
+
+Provider diagnostics never mutate the repository:
+- Only read-only operations are executed during diagnostics
+- Staging, commit creation, push, pull, and merge are reported from a static registry
+- A test verifies git status is identical before and after running diagnostics
+
+### Response Wrappers
+
+Operations that may return empty results use response wrappers that carry provider metadata:
+
+- `RecentCommitsResult` — provider + commits + fallback_used + latency_ms
+- `DiffStatResult` — provider + stat + latency_ms
+
+### Commit Creation Classification
+
+Commit creation is classified as `gix-hybrid` (not `gix`) because tree-from-index conversion uses `git write-tree` CLI. The commit object creation and reference update are native gix, but the tree step requires CLI.
+
 ## Troubleshooting
 
 ### "Provider: git-cli-fallback" on all operations

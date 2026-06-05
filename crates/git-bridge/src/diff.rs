@@ -105,7 +105,7 @@ pub fn diff_stat(project_root: &Path) -> Result<GitDiffStat, GitBridgeError> {
         }
     }
 
-    Ok(GitDiffStat {
+    let stat = GitDiffStat {
         files_changed: files.len() as u32,
         insertions: total_insertions,
         deletions: total_deletions,
@@ -113,5 +113,26 @@ pub fn diff_stat(project_root: &Path) -> Result<GitDiffStat, GitBridgeError> {
         provider: "git-cli-fallback".into(),
         fallback_used: true,
         parity_status: "not-tested".into(),
+    };
+    Ok(stat)
+}
+
+/// Response wrapper for diff/stat.
+/// Carries provider metadata and latency.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct DiffStatResult {
+    pub provider: String,
+    pub stat: GitDiffStat,
+    pub latency_ms: u64,
+}
+
+/// Read diff/stat with provider metadata.
+pub fn diff_stat_with_provider(project_root: &Path) -> Result<DiffStatResult, GitBridgeError> {
+    let start = std::time::Instant::now();
+    let stat = diff_stat(project_root)?;
+    Ok(DiffStatResult {
+        provider: "git-cli-fallback".into(),
+        stat,
+        latency_ms: start.elapsed().as_millis() as u64,
     })
 }
