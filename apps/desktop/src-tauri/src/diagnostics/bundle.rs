@@ -51,6 +51,7 @@ pub fn create_diagnostic_bundle(
     roadmap_status_json: &str,
     sync_status_json: &str,
     coherence_json: &str,
+    operational_risk_json: &str,
 ) -> Result<DiagnosticBundleResult, String> {
     let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     let bundle_name = format!("orqestra-diagnostics-{}", timestamp);
@@ -125,6 +126,12 @@ pub fn create_diagnostic_bundle(
             "coherence.json",
             coherence_json,
             "Dashboard/workspace/relay coherence (redacted)",
+        ),
+        // v2.4.0: Operational risk summary
+        (
+            "operational-risk.json",
+            operational_risk_json,
+            "Operational risk classification (redacted)",
         ),
     ];
 

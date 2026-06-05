@@ -558,6 +558,25 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.4.0: Dependency and Workflow Risk Intelligence
+  if ((pr as any).dependency_workflow_risk) {
+    const dw = (pr as any).dependency_workflow_risk;
+    if (dw.enabled !== true) fail('product_readiness.dependency_workflow_risk.enabled must be true');
+    if (dw.multi_risk_per_file !== true) fail('product_readiness.dependency_workflow_risk.multi_risk_per_file must be true');
+    if (dw.highest_severity_enforcement !== true) fail('product_readiness.dependency_workflow_risk.highest_severity_enforcement must be true');
+    if (dw.credential_reject_outright !== true) fail('product_readiness.dependency_workflow_risk.credential_reject_outright must be true');
+    if (dw.blocks_auto_apply_future_only !== true) fail('product_readiness.dependency_workflow_risk.blocks_auto_apply_future_only must be true');
+    if (dw.unknown_sensitive_escalation !== true) fail('product_readiness.dependency_workflow_risk.unknown_sensitive_escalation must be true');
+    if (dw.path_hashes_in_diagnostics !== true) fail('product_readiness.dependency_workflow_risk.path_hashes_in_diagnostics must be true');
+    if (dw.reason_codes_stable !== true) fail('product_readiness.dependency_workflow_risk.reason_codes_stable must be true');
+    if (dw.no_file_content_parsing !== true) fail('product_readiness.dependency_workflow_risk.no_file_content_parsing must be true');
+    if (dw.deterministic !== true) fail('product_readiness.dependency_workflow_risk.deterministic must be true');
+    if (dw.categories_count < 10) fail('product_readiness.dependency_workflow_risk.categories_count must be >= 10');
+    if (dw.reason_codes_count < 10) fail('product_readiness.dependency_workflow_risk.reason_codes_count must be >= 10');
+  } else {
+    warn('product_readiness.dependency_workflow_risk section missing (v2.4.0+)');
+  }
+
   // v2.3.0: Hunk-to-Symbol Impact Mapping
   if ((pr as any).hunk_to_symbol_mapping) {
     const hm = (pr as any).hunk_to_symbol_mapping;
