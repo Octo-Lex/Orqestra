@@ -78,39 +78,11 @@ export class AgentRunner {
 
     this.workspace.log(`Gate: ${gateAction.type} (confidence=${response.confidence})`);
 
-    // 4. Apply changes and commit if auto_commit
+    // 4. Return result — no auto-commit, no auto-apply
+    // v1.7.0: All patch application must go through apply_agent_patch_cmd
+    // which validates, writes atomically, and records audit trail.
+    // AgentRunner no longer writes files directly.
     let commitHash: string | null = null;
-
-    if (gateAction.type === 'auto_commit') {
-      // Write file changes
-      for (const change of response.changes) {
-        try {
-          await invoke('write_file_cmd', {
-            path: `${this.projectRoot}/${change.path}`,
-            content: change.content,
-          });
-          this.workspace.log(`Wrote: ${change.path} (${change.action})`);
-        } catch (e) {
-          this.workspace.log(`Write failed: ${change.path}: ${e}`);
-        }
-      }
-
-      // Semantic commit
-      try {
-        const commitResult = await invoke<{ hash: string; stub_path: string }>(
-          'semantic_commit_cmd',
-          {
-            projectRoot: this.projectRoot,
-            message: `${response.summary} [${task.frontmatter.id}]`,
-            taskId: task.frontmatter.id,
-          },
-        );
-        commitHash = commitResult.hash;
-        this.workspace.log(`Committed: ${commitHash}`);
-      } catch (e) {
-        this.workspace.log(`Commit failed: ${e}`);
-      }
-    }
 
     return {
       workspaceId: this.workspace.id,
