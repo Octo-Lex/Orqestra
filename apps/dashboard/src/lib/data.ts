@@ -33,6 +33,7 @@ export type Sprint = {
 
 export type RoadmapData = {
   generated_at: string;
+  coherence?: CoherenceMetadata;
   release?: {
     version: string;
     source_commit: string;
@@ -54,6 +55,14 @@ export type RoadmapData = {
   };
   sprints: Sprint[];
   tasks: Task[];
+};
+
+export type CoherenceMetadata = {
+  roadmap_state_hash: string;
+  relay_snapshot_hash?: string;
+  export_state: 'local-only' | 'relay-metadata-present' | 'unknown';
+  task_count: number;
+  index_version?: number;
 };
 
 export const STATUS_COLORS: Record<string, string> = {

@@ -64,3 +64,33 @@ All CRDT operations work without the relay. The relay is optional collaboration 
 - Deltas are queued locally (max 100)
 - Reconnection replays queued deltas with new message_ids
 - No data loss
+
+## Three-Layer State Model
+
+v2.2.0 added coherence observability across three state layers:
+
+| Layer | State Location | Update Mechanism |
+|-------|---------------|-----------------|
+| Local workspace | `.Orqestra/crdt/` | Loro CRDT per-file docs |
+| Cloudflare relay | SyncRoom DO storage | WebSocket protocol v1 |
+| Static dashboard | `orqestra-roadmap.json` on Cloudflare Pages | CI rebuild on master push |
+
+**Canonical roadmap state hash:**
+```
+roadmap_state_hash = SHA-256(canonical JSON of sorted task ID + status pairs)
+```
+
+Coherence is determined by comparing:
+- `local_roadmap_state_hash`
+- `dashboard_roadmap_state_hash`
+- `relay_roadmap_state_hash` (if available)
+
+**Freshness states (desktop-computed):**
+- **current** — dashboard export commit === local HEAD
+- **stale** — dashboard export commit is ancestor of local HEAD
+- **diverged** — dashboard export commit is NOT ancestor of local HEAD
+- **local-only** — no dashboard export exists
+- **relay-unavailable** — relay not reachable
+- **unknown** — cannot determine
+
+**Important:** The static dashboard only shows export-time metadata (source commit, generated_at, roadmap hash). It does NOT claim freshness relative to a viewer's local HEAD. That comparison is desktop-only.

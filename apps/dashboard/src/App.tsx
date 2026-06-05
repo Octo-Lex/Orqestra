@@ -8,6 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { PublicGantt } from './components/PublicGantt';
 import { PublicKanban } from './components/PublicKanban';
 import { TokenGate } from './components/TokenGate';
+import { SourceMetadata } from './components/SourceMetadata';
 import {
   fetchRoadmapData,
   STATUS_COLORS,
@@ -110,6 +111,14 @@ export function App() {
             </div>
           ))}
         </div>
+
+        {/* Source metadata */}
+        <SourceMetadata
+          source={data.source}
+          generatedAt={data.generated_at}
+          taskCount={data.summary.total_tasks}
+          coherence={data.coherence}
+        />
 
         {/* Token Gate */}
         <TokenGate onAuth={(_, scope) => setAuthScope(scope)} />
