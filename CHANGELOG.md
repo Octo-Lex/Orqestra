@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [1.7.0] - 2026-06-05
+
+### Added
+- `PatchProposal` typed DTO with `proposal_id`, before/after content and checksums
+- `PatchApplicationResult` typed DTO with durable statuses (proposed, rejected, apply_failed, applied)
+- `AgentType` enum (docs, bugfix) for server-side policy enforcement
+- `apply_agent_patch_cmd` Tauri command — validated, atomic, audited patch application
+- `reject_agent_patch_cmd` Tauri command — records rejection without file modification
+- `PatchApplicationGuard` in `security/patch_guard.rs` — governs all agent patch writes
+- Server-side agent path policy — frontend may narrow but not widen scope
+- Forbidden path enforcement: secret, workflow, binary, dependency locks, infrastructure config
+- Before-content verification — patches rejected if file changed since proposal
+- Atomic writes — temp-then-rename; failed writes leave original file unchanged
+- Append-only JSONL audit trail at `.Orqestra/agents/{agent_type}/audit.jsonl`
+- Post-apply checksum verification
+- 15 patch governance tests (forbidden paths, valid patches, no auto-commit, audit records, server policy)
+- Manifest `patch_governance` section with 16 validator gates
+- `orqestra_desktop` lib target for integration test access
+
+### Changed
+- `AgentRunner.run()` auto_commit path removed — no direct file writes from agent runner
+- Patch application must go through `apply_agent_patch_cmd`, never `write_file_cmd`
+- Docs agent server policy restricts writes to README.md, docs/, roadmap/, CHANGELOG.md
+- Bugfix agent server policy allows source files but enforces forbidden-path checks
+- `write_file_cmd` reserved for workspace state persistence only
+
+### Security
+- Agent patches cannot modify forbidden paths (secret, workflow, binary, locks, CI config)
+- Agent patches cannot silently alter files outside the proposal
+- Rejected proposals leave no working-tree changes (test-verified)
+- Failed validation leaves every file byte-identical to pre-command state
+- Before-content verification prevents stale patches
+- Frontend allowed_paths cannot widen server-side agent policy
+- No auto-commit during patch application (test-verified)
+
+### Known Limitations
+- Patch governance applies to docs-agent and bugfix-agent only
+- Architect agent not implemented
+- Checksum uses DefaultHasher (not cryptographic SHA-256)
+
 ## [1.6.0] - 2026-06-05
 
 ### Added

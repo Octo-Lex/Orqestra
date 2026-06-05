@@ -1,7 +1,11 @@
 [package]
 name = "orqestra-desktop"
-version = "1.6.0"
+version = "1.7.0"
 edition = "2021"
+
+[lib]
+name = "orqestra_desktop"
+path = "src/lib.rs"
 
 [dependencies]
 tauri      = { version = "2", features = [] }
