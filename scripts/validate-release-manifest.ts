@@ -558,6 +558,28 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v1.8.0: Code Intelligence
+  if ((pr as any).code_intelligence) {
+    const ci = (pr as any).code_intelligence;
+    if (ci.enabled !== true) fail('product_readiness.code_intelligence.enabled must be true');
+    if (!Array.isArray(ci.languages) || ci.languages.length < 2) fail('product_readiness.code_intelligence.languages must have at least 2 languages');
+    if (ci.symbol_extraction !== true) fail('product_readiness.code_intelligence.symbol_extraction must be true');
+    if (ci.content_safe !== true) fail('product_readiness.code_intelligence.content_safe must be true');
+    if (ci.read_only !== true) fail('product_readiness.code_intelligence.read_only must be true');
+    if (ci.deterministic !== true) fail('product_readiness.code_intelligence.deterministic must be true');
+    if (ci.no_source_bodies_in_output !== true) fail('product_readiness.code_intelligence.no_source_bodies_in_output must be true');
+    if (ci.zero_tauri_dependency !== true) fail('product_readiness.code_intelligence.zero_tauri_dependency must be true');
+    if (ci.zero_git_bridge_dependency !== true) fail('product_readiness.code_intelligence.zero_git_bridge_dependency must be true');
+    if (ci.excludes_binary !== true) fail('product_readiness.code_intelligence.excludes_binary must be true');
+    if (ci.excludes_secret_paths !== true) fail('product_readiness.code_intelligence.excludes_secret_paths must be true');
+    if (ci.attached_to_agents?.includes('docs-agent')) warn('product_readiness.code_intelligence.attached_to_agents includes docs-agent — should be disabled-by-default');
+    if (!ci.attached_to_agents?.includes('bugfix-agent')) fail('product_readiness.code_intelligence.attached_to_agents must include bugfix-agent');
+    if (ci.affected_symbols_scope !== 'file-level') fail('product_readiness.code_intelligence.affected_symbols_scope must be file-level');
+    if (typeof ci.max_file_size_bytes !== 'number') fail('product_readiness.code_intelligence.max_file_size_bytes must be a number');
+  } else {
+    warn('product_readiness.code_intelligence section missing (v1.8.0+)');
+  }
+
   // v1.7.0: Patch Governance
   if ((pr as any).patch_governance) {
     const pg = (pr as any).patch_governance;

@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.7.0",
-    "tag": "v1.7.0",
+    "name": "Orqestra v1.8.0",
+    "tag": "v1.8.0",
     "channel": "public-beta",
-    "release_version": "1.7.0",
-    "app_version": "1.7.0",
+    "release_version": "1.8.0",
+    "app_version": "1.8.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.7.0_x64-setup.exe",
+      "name": "Orqestra_1.8.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "39aceb523f255256b33bae2b4060d0ccf735a0e2092a873021e0bcf1af4cee2f",
-      "size_bytes": 4910671,
+      "sha256": "acd51457f6996117afe6035cd3f8409f29b4e446a0c5edd0707986986b97bed8",
+      "size_bytes": 5116812,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.7.0_x64.AppImage",
+      "name": "Orqestra_1.8.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "11982de3689ec161a8b242090a08c7ccd978f8cc1872b890e5ec491153f460f7",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -412,6 +412,41 @@
       "response_wrappers": [
         "PatchApplicationResult"
       ]
+    },
+    "code_intelligence": {
+      "enabled": true,
+      "languages": [
+        "rust",
+        "typescript"
+      ],
+      "symbol_extraction": true,
+      "content_safe": true,
+      "read_only": true,
+      "excludes_binary": true,
+      "excludes_secret_paths": true,
+      "excludes_generated_dirs": true,
+      "max_file_size_bytes": 262144,
+      "deterministic": true,
+      "deterministic_sort": [
+        "path",
+        "line_start",
+        "line_end",
+        "kind",
+        "name",
+        "parent"
+      ],
+      "attached_to_agents": [
+        "bugfix-agent"
+      ],
+      "docs_agent_symbol_context": "disabled-by-default",
+      "attached_to_semantic_commit_prep": true,
+      "affected_symbols_scope": "file-level",
+      "no_source_bodies_in_output": true,
+      "parse_error_threshold": "error_ratio_30pct",
+      "crate": "code-intel",
+      "zero_tauri_dependency": true,
+      "zero_git_bridge_dependency": true,
+      "test_coverage": "per-language-plus-exclusion"
     }
   }
 }
