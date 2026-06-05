@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.3.0",
-    "tag": "v2.3.0",
+    "name": "Orqestra v2.4.0",
+    "tag": "v2.4.0",
     "channel": "public-beta",
-    "release_version": "2.3.0",
-    "app_version": "2.3.0",
+    "release_version": "2.4.0",
+    "app_version": "2.4.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.3.0_x64-setup.exe",
+      "name": "Orqestra_2.4.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "be8c328ed1349d4e4b6101cbfaa0922d9ccf31b689545cb32b6feed2a28c4b1d",
-      "size_bytes": 5154088,
+      "sha256": "d67f73223d27f8b52121415a346ff56ed0634b55b12cab5bbaf3742af1dbdc10",
+      "size_bytes": 5156559,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_2.3.0_x64.AppImage",
+      "name": "Orqestra_2.4.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -555,6 +555,20 @@
       "no_source_bodies": true,
       "read_only": true,
       "deterministic": true
+    },
+    "dependency_workflow_risk": {
+      "enabled": true,
+      "multi_risk_per_file": true,
+      "highest_severity_enforcement": true,
+      "credential_reject_outright": true,
+      "blocks_auto_apply_future_only": true,
+      "unknown_sensitive_escalation": true,
+      "path_hashes_in_diagnostics": true,
+      "reason_codes_stable": true,
+      "no_file_content_parsing": true,
+      "deterministic": true,
+      "categories_count": 13,
+      "reason_codes_count": 13
     }
   }
 }

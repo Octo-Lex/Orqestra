@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.4.0] - 2026-06-06
+
+### Added
+- Operational risk classifier (path-based, deterministic)
+- 13 risk categories: DependencyManifest, DependencyLockfile, CiWorkflow, CloudflareConfig, TauriConfig, ReleaseManifest, CredentialOrSecretConfig, BuildConfig, RepoPolicyConfig, ToolchainConfig, PackageManagerConfig, ContainerConfig, UnknownSensitiveConfig
+- 5 severity levels: Critical, High, Medium, Low, Info
+- 13 stable reason codes
+- Multi-risk per file (classify_path returns Vec<OperationalRisk>)
+- Highest severity determines enforcement
+- CredentialOrSecretConfig rejects write outright (no human override)
+- blocks_auto_apply forbids future auto-apply, not human apply
+- UnknownSensitiveConfig escalated to Medium in sensitive directories
+- operational-risk.json in diagnostics bundle (17th file, path-hashed)
+- ArchitectRiskSummary DTO
+- operational_risks on AgentContextV2 and SemanticCommitContext
+- Patch governance integration: credential paths rejected, critical files flagged
+- 27 operational risk tests
+
+### Changed
+- Diagnostics bundle: 16 → 17 files (added operational-risk.json)
+
+### Security
+- Credential/secret config writes rejected outright
+- Diagnostics use path hashes, not raw paths
+- No file content parsing for classification
+
 ## [2.3.0] - 2026-06-05
 
 ### Added
