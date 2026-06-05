@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "27029545925",
+    "workflow_run_id": "27036260668",
     "status": "local-build"
   },
   "signing": {
@@ -42,12 +42,12 @@
       "name": "Orqestra_2.3.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "f125fdc7add6b41b7105f185fa34c0c748e07aa3e733d18591d8f95bb7993032",
+      "sha256": "be8c328ed1349d4e4b6101cbfaa0922d9ccf31b689545cb32b6feed2a28c4b1d",
       "size_bytes": 5154088,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "local-build"
+      "source": "ci-build"
     },
     {
       "name": "Orqestra_2.3.0_x64.AppImage",
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "27029545925",
+    "ci_run_id": "27036260668",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
