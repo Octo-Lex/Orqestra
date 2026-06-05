@@ -26,4 +26,4 @@ pub use semantic_prep::{
 };
 pub use snapshot::{GitRepositorySnapshot, GitChangedFile, GitHeadMetadata, repository_snapshot};
 pub use status::update_task_status;
-pub use gix_ops::{NativeGitStatus, native_git_status, GitProvider, GitProviderReport, GitOperationProvider, build_provider_report};
+pub use gix_ops::{NativeGitStatus, native_git_status, GitProvider, GitProviderReport, GitOperationProvider, build_provider_report, get_head_hash};

@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.2.0] - 2026-06-05
+
+### Added
+- Dashboard source metadata panel (export-time info, not viewer's local HEAD)
+- Desktop coherence check command (`check_dashboard_coherence_cmd`)
+- Canonical roadmap state hash (SHA-256 over sorted canonical JSON)
+- Freshness states: current, stale, diverged, local-only, relay-unavailable, unknown
+- `coherence.json` in diagnostics bundle (16th file, redacted)
+- `DashboardCoherencePanel.tsx` — desktop component for local-vs-dashboard comparison
+- `SourceMetadata.tsx` — static dashboard export metadata
+- Dashboard JSON backward-compatible optional `coherence` field
+- 12 coherence tests
+
+### Changed
+- Terminology: "coherence" consistently throughout
+- Diagnostics bundle: 15 → 16 files (added coherence.json)
+- `git_bridge::get_head_hash` now re-exported from lib
+
+### Security
+- coherence.json contains no secrets, source bodies, raw deltas, task titles, or unredacted workspace IDs
+- Static dashboard does not claim freshness relative to viewer's local HEAD
+- Desktop computes local-vs-dashboard freshness separately
+
 ## [2.1.0] - 2026-06-05
 
 ### Added

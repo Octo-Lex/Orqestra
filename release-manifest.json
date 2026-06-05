@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.1.0",
-    "tag": "v2.1.0",
+    "name": "Orqestra v2.2.0",
+    "tag": "v2.2.0",
     "channel": "public-beta",
-    "release_version": "2.1.0",
-    "app_version": "2.1.0",
+    "release_version": "2.2.0",
+    "app_version": "2.2.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -13,7 +13,7 @@
     "build_commit": "0000000000000000000000000000000000000000",
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
-    "workflow_run_id": "27027774836",
+    "workflow_run_id": "27029545925",
     "status": "local-build"
   },
   "signing": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.1.0_x64-setup.exe",
+      "name": "Orqestra_2.2.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "2a7b95a3a2821b6fce07d44b2d7cdd4b25a1d77b607ff6ac492b5201d98219d0",
-      "size_bytes": 5149441,
+      "sha256": "4ceec6cb47cb9977bdcb4795b359d0bca33cc9c14e40a39550d88c460d7e5daa",
+      "size_bytes": 5150404,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "ci-build"
     },
     {
-      "name": "Orqestra_2.1.0_x64.AppImage",
+      "name": "Orqestra_2.2.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "29853975073628224932980fce8bc9aa23c13cf495b44962c51f52cf11466478",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -108,7 +108,7 @@
     }
   },
   "platform_verification": {
-    "ci_run_id": "27027774836",
+    "ci_run_id": "27029545925",
     "ci_run_branch": "v1.0.12",
     "matrix_evidence": "demo/v1.0.12-platform-matrix.md",
     "windows": "demo/v1.0.12-windows-smoke.md",
@@ -517,6 +517,23 @@
       "local_first_without_relay": true,
       "dashboard_not_realtime": true,
       "worker_test_suite": true
+    },
+    "dashboard_sync_coherence": {
+      "enabled": true,
+      "canonical_hash": "sha256-over-canonical-roadmap-json",
+      "freshness_states": [
+        "current",
+        "stale",
+        "diverged",
+        "local-only",
+        "relay-unavailable",
+        "unknown"
+      ],
+      "static_dashboard_no_local_head": true,
+      "desktop_computes_freshness": true,
+      "relay_metadata_optional": true,
+      "coherence_diagnostics_redacted": true,
+      "dashboard_backward_compatible": true
     }
   }
 }
