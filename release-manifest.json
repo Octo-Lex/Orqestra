@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v1.9.0",
-    "tag": "v1.9.0",
+    "name": "Orqestra v2.0.0",
+    "tag": "v2.0.0",
     "channel": "public-beta",
-    "release_version": "1.9.0",
-    "app_version": "1.9.0",
+    "release_version": "2.0.0",
+    "app_version": "2.0.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,27 +39,27 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_1.9.0_x64-setup.exe",
+      "name": "Orqestra_2.0.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "10fc0515bd708ad23bbc61d8d7b099639a68c6e6c8a13fee462a3dba5d3b5be5",
-      "size_bytes": 5120437,
+      "sha256": "2d1da8a9954747816547113f64ae410038b43eac05fcbbaa8a4f6ac43eefc53e",
+      "size_bytes": 5137664,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_1.9.0_x64.AppImage",
+      "name": "Orqestra_2.0.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
-      "sha256": "ae99fb06f3c4ec29739c0880cad96155d672ebf67219fa60ee671c5830e53142",
+      "sha256": "PENDING_BUILD",
       "size_bytes": 0,
       "signed": false,
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "ci-build"
+      "source": "pending"
     }
   ],
   "platforms": {
@@ -480,6 +480,25 @@
       "adr_limit": 10,
       "no_runtime_mock": true,
       "test_coverage": "structure-and-no-mutation"
+    },
+    "beta_hardening": {
+      "enabled": true,
+      "first_run_checks": 10,
+      "first_run_non_mutating": true,
+      "diagnostic_bundle_files": 13,
+      "diagnostic_bundle_non_mutating": true,
+      "ai_service_optional": true,
+      "agent_endpoints_optional": true,
+      "redaction_machine_checked": true,
+      "redaction_tests": 8,
+      "readme_download_link": "v1.9.0 (pending v2.0.0 artifact)",
+      "classification": "governed AI-native development beta",
+      "new_docs": [
+        "patch-governance.md",
+        "architect-agent.md",
+        "code-intelligence.md",
+        "DEMO_SCRIPT_v2.0.0.md"
+      ]
     }
   }
 }

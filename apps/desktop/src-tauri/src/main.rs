@@ -95,6 +95,17 @@ fn main() {
             commands::diagnostics::export_diagnostics_cmd,
             commands::diagnostics::get_recovery_advice_cmd,
             commands::diagnostics::get_structured_error_cmd,
+            // v2.0.0: First-run probe commands (non-mutating)
+            commands::diagnostics::check_git_available_cmd,
+            commands::diagnostics::check_repo_selectable_cmd,
+            commands::diagnostics::check_roadmap_valid_cmd,
+            commands::diagnostics::check_ai_service_cmd,
+            commands::diagnostics::check_credential_provider_cmd,
+            commands::diagnostics::check_dashboard_status_cmd,
+            commands::diagnostics::check_agent_endpoints_cmd,
+            commands::diagnostics::check_patch_governance_cmd,
+            commands::diagnostics::check_code_intel_cmd,
+            commands::diagnostics::check_git_provider_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
