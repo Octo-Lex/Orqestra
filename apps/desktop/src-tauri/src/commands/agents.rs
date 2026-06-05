@@ -692,3 +692,18 @@ fn _find_existing_adrs(project_root: &std::path::PathBuf) -> Vec<serde_json::Val
     }
     adrs
 }
+
+// ---------------------------------------------------------------------------
+// v2.3.0: Hunk-to-Symbol Impact Mapping
+// ---------------------------------------------------------------------------
+
+/// Bounded symbol impact summary for architect agent context.
+/// Max 20 individual impacts; counts only beyond that.
+#[derive(Debug, serde::Serialize)]
+pub struct ArchitectSymbolSummary {
+    pub total_hunks: usize,
+    pub impacted_symbols: usize,
+    pub by_overlap_type: std::collections::HashMap<String, usize>,
+    pub high_confidence_count: usize,
+    pub truncated: bool,
+}
