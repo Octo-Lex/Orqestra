@@ -109,13 +109,13 @@ export class AgentRunner {
     let confidence: number;
 
     if (wsId === 'agent-architect') {
-      changes = [{
-        path: `roadmap/ADR-${taskId.replace('TASK-', '')}.md`,
-        action: 'create',
-        content: `---\nid: ADR-${taskId.replace('TASK-', '')}\ntitle: Architecture Decision for ${task.frontmatter.title}\nstatus: proposed\ndate: ${new Date().toISOString().split('T')[0]}\n---\n\n# ADR: ${task.frontmatter.title}\n\n## Context\n\n${task.frontmatter.title} requires an architectural decision.\n\n## Decision\n\nAdopt a modular approach with clear interfaces.\n\n## Consequences\n\n- Positive: Clear separation of concerns\n- Positive: Testable in isolation\n- Negative: More files to maintain\n`,
-      }];
-      summary = `Write ADR for ${taskId}`;
-      confidence = 0.97;
+      changes = [];
+      summary = `Architecture planning for ${taskId}`;
+      confidence = 0.0;
+      // v1.9.0: Architect agent is now a real endpoint.
+      // The UI should call run_architect_agent_cmd directly via the
+      // ArchitectAgentPanel component, not through AgentRunner.
+      // AgentRunner does not own endpoint construction or context building.
     } else if (wsId === 'agent-bugfix') {
       changes = [{
         path: 'src/lib/handler.rs',
