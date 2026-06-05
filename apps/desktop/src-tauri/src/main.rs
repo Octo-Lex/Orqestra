@@ -49,6 +49,9 @@ fn main() {
             // v1.7.0: Patch governance
             commands::agents::apply_agent_patch_cmd,
             commands::agents::reject_agent_patch_cmd,
+            // v1.8.0: Code intelligence
+            commands::code_intel::extract_symbols_cmd,
+            commands::code_intel::extract_symbols_batch_cmd,
             // Graph commands
             commands::graph::index_graph_cmd,
             commands::graph::query_graph_cmd,

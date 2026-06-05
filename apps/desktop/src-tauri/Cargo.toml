@@ -1,6 +1,6 @@
 [package]
 name = "orqestra-desktop"
-version = "1.7.0"
+version = "1.8.0"
 edition = "2021"
 
 [lib]
@@ -18,6 +18,7 @@ chrono     = { version = "0.4", features = ["serde"] }
 # Core crates — bridge between Tauri commands and business logic
 md-indexer = { path = "../../../crates/md-indexer" }
 git-bridge = { path = "../../../crates/git-bridge" }
+code-intel = { path = "../../../crates/code-intel" }
 graph-store = { path = "../../../crates/graph-store" }
 loro-engine = { path = "../../../crates/loro-engine" }
 

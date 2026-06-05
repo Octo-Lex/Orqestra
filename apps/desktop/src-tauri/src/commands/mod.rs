@@ -1,4 +1,5 @@
 pub mod agents;
+pub mod code_intel;
 pub mod commit;
 pub mod credentials;
 pub mod diagnostics;
