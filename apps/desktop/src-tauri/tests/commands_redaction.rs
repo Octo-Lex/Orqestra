@@ -198,10 +198,11 @@ fn bundle_export_produces_11_files() {
         "{}",  // patch-governance
         "{}",  // code-intel
         "{}",  // roadmap-status
+        "{}",  // sync-status
     ).expect("bundle creation must succeed");
 
-    // Must have exactly 14 files: 13 data entries + README.txt
-    assert_eq!(result.files.len(), 14, "Bundle must contain 13 data files + README.txt");
+    // Must have exactly 14 files: 13 data + project-validation + sync-status + README.txt
+    assert_eq!(result.files.len(), 15, "Bundle must contain 13 data + project-validation + sync-status + README.txt");
 
     // Verify expected file names
     let names: Vec<&str> = result.files.iter().map(|f| f.name.as_str()).collect();
@@ -218,6 +219,7 @@ fn bundle_export_produces_11_files() {
     assert!(names.contains(&"system.txt"), "Missing system.txt");
     assert!(names.contains(&"ai-health.json"), "Missing ai-health.json");
     assert!(names.contains(&"dashboard-status.json"), "Missing dashboard-status.json");
+    assert!(names.contains(&"sync-status.json"), "Missing sync-status.json");
     assert!(names.contains(&"README.txt"), "Missing README.txt");
 
     // Redaction summary must claim no raw secrets
@@ -248,6 +250,7 @@ fn bundle_export_does_not_mutate_repo() {
         "{}",
         "{}",
         "{}", "{}", "{}", "{}", "{}", "{}",
+        "{}",  // sync-status
     );
 
     let status_after = git_bridge::native_git_status(&root).expect("status after");

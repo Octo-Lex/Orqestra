@@ -412,6 +412,7 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         &patch_governance_json,
         &code_intel_json,
         &roadmap_status_json,
+        "{}",  // sync-status (populated when relay is active)
     )
     .map_err(|e| CommandError {
         code: "DIAGNOSTICS_EXPORT_FAILED",

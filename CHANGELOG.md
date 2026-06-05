@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.1.0] - 2026-06-05
+
+### Added
+- `services/sync-relay/` — Cloudflare Worker + Durable Object relay
+- Wire protocol v1 with message_id, sequence, ack/error, protocol_version
+- Payload bounds: 1 MiB delta, 10 MiB snapshot, 100 queued deltas, 20 peers per room
+- Token auth: Worker-only master secret, workspace-scoped read/write/admin tokens
+- `SyncRoom` Durable Object with peer tracking, dedupe, broadcast, snapshot persistence, GC
+- `crates/loro-engine/src/protocol.rs` — protocol types + validation (8 tests)
+- `crates/loro-engine/src/relay.rs` — RelayClient with queue, reconnect, ack handling (8 tests)
+- Worker/DO test suite (9 tests in `services/sync-relay/`)
+- Tauri commands: `connect_relay_cmd`, `disconnect_relay_cmd`, `relay_status_cmd`
+- `sync-status.json` in diagnostics bundle (redacted — no tokens, no workspace IDs)
+- `docs/cloud-crdt-relay.md`
+
+### Changed
+- Diagnostics bundle: 14 → 15 files (added sync-status.json)
+- SyncPanel now routes relay through Tauri commands
+
+### Security
+- Master secret lives only in Worker environment
+- Desktop stores only workspace-scoped tokens
+- Every message includes protocol_version
+- Duplicate message_id replay is idempotent
+- sync-status.json redacts workspace_id (SHA-256 hash) and relay URL (hostname only)
+- Dashboard docs do not imply real-time relay-backed updates
+
+### Known Limitations
+- Cloudflare Durable Objects requires paid Workers plan
+- Token HMAC uses simple keyed hash (not crypto.subtle in Worker)
+- WebSocket lifecycle managed by frontend (Tauri command stores state only)
+
 ## [2.0.0] - 2026-06-05
 
 ### Added
