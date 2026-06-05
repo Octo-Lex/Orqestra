@@ -230,6 +230,8 @@ pub struct AgentContextV2 {
     /// v2.3.0: Hunk-level symbol impacts (high-confidence only: InsideSymbol + TouchesSymbolBoundary).
     /// None if hunk mapping not yet computed.
     pub hunk_level_symbols: Option<Vec<code_intel::hunk_map::SymbolImpact>>,
+    /// v2.4.0: Operational risks for changed files.
+    pub operational_risks: Vec<crate::operational_risk::OperationalRisk>,
 }
 
 impl ContentPolicy {
@@ -274,6 +276,7 @@ pub fn build_agent_context_v2(
         content_policy: ContentPolicy::safe_default(),
         safe_diff_context: build_safe_diff_context(project_root, &input.changed_files)?,
         hunk_level_symbols: None, // Populated on demand by hunk mapping
+        operational_risks: vec![], // Populated by classifying changed file paths
     })
 }
 

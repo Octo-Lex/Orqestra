@@ -707,3 +707,13 @@ pub struct ArchitectSymbolSummary {
     pub high_confidence_count: usize,
     pub truncated: bool,
 }
+
+/// v2.4.0: Bounded operational risk summary for architect agent context.
+#[derive(Debug, serde::Serialize)]
+pub struct ArchitectRiskSummary {
+    pub total_risks: usize,
+    pub critical_count: usize,
+    pub high_count: usize,
+    pub by_category: std::collections::HashMap<String, usize>,
+    pub files_requiring_review: usize,
+}

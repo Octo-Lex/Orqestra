@@ -377,6 +377,32 @@ pub fn apply_agent_patch(
         }
     }
 
+    // 4.5 Operational risk check (v2.4.0)
+    {
+        use git_bridge::operational_risk::classify_path;
+        let risks = classify_path(&normalized);
+        // Reject outright for credential/secret files
+        if risks.iter().any(|r| r.reject_outright()) {
+            let result = PatchApplicationResult {
+                proposal_id: patch.proposal_id.clone(),
+                path: patch.path.clone(),
+                status: PatchStatus::ApplyFailed,
+                before_checksum: patch.before_checksum.clone(),
+                after_checksum: None,
+                verification: "operational-risk-reject".into(),
+                reason: Some("Credential or secret config file — write rejected outright".into()),
+            };
+            let record = make_audit_record(agent_type, &patch, allowed_paths, &result, "operational-risk-reject");
+            let _ = append_audit_record(project_root, &record);
+            return result;
+        }
+        // Flag for explicit human confirmation if blocks_auto_apply
+        if risks.iter().any(|r| r.blocks_auto_apply) {
+            // In review-only mode: flag but don't reject human-approved patches
+            // blocks_auto_apply means future auto-apply is forbidden
+        }
+    }
+
     // 5. Before-checksum verification
     let current_checksum = file_checksum(&full_path).unwrap_or_default();
     if current_checksum != patch.before_checksum {
