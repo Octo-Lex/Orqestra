@@ -31,6 +31,8 @@ pub struct RedactionSummary {
 }
 
 /// Create a diagnostic bundle at the given output directory.
+/// v2.0.0: 11 files total (5 existing + 6 new).
+/// All data is read from existing state. Non-mutating.
 pub fn create_diagnostic_bundle(
     output_dir: &std::path::Path,
     app_json: &str,
@@ -40,6 +42,13 @@ pub fn create_diagnostic_bundle(
     system_info: &str,
     ai_health_json: &str,
     dashboard_status_json: &str,
+    // v2.0.0: new diagnostic files
+    git_provider_json: &str,
+    credential_status_json: &str,
+    agent_matrix_json: &str,
+    patch_governance_json: &str,
+    code_intel_json: &str,
+    roadmap_status_json: &str,
 ) -> Result<DiagnosticBundleResult, String> {
     let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     let bundle_name = format!("orqestra-diagnostics-{}", timestamp);
@@ -71,6 +80,37 @@ pub fn create_diagnostic_bundle(
             "dashboard-status.json",
             dashboard_status_json,
             "Dashboard deployment status",
+        ),
+        // v2.0.0: 6 new diagnostic files
+        (
+            "git-provider.json",
+            git_provider_json,
+            "Git provider diagnostics per operation",
+        ),
+        (
+            "credential-status.json",
+            credential_status_json,
+            "Credential provider availability",
+        ),
+        (
+            "agent-matrix.json",
+            agent_matrix_json,
+            "Agent mode, endpoint, and availability",
+        ),
+        (
+            "patch-governance.json",
+            patch_governance_json,
+            "Patch governance policy and audit status",
+        ),
+        (
+            "code-intel.json",
+            code_intel_json,
+            "Code intelligence languages and parse status",
+        ),
+        (
+            "roadmap-status.json",
+            roadmap_status_json,
+            "Roadmap parse status and task count",
         ),
     ];
 

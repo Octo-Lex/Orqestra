@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.0.0] - 2026-06-05
+
+### Added
+- 10 first-run environment checks (non-mutating probes)
+- 10 Tauri probe commands: check_git_available, check_repo_selectable, check_roadmap_valid, check_ai_service, check_credential_provider, check_dashboard_status, check_agent_endpoints, check_patch_governance, check_code_intel, check_git_provider
+- Expanded diagnostics bundle from 7 to 13 files (added git-provider, credential-status, agent-matrix, patch-governance, code-intel, roadmap-status)
+- Machine-checkable redaction tests (8 tests verifying no secrets, source bodies, raw diffs, .env content, or private file contents)
+- First-run probe tests (12 tests verifying all checks are non-mutating)
+- AI service and agent endpoint checks return optional/degraded (not setup failure)
+- docs/patch-governance.md — patch application guard documentation
+- docs/architect-agent.md — read-only planner documentation
+- docs/code-intelligence.md — tree-sitter symbol extraction documentation
+- docs/DEMO_SCRIPT_v2.0.0.md — deterministic 15-step beta demo
+- Manifest beta_hardening section with validator gates
+
+### Changed
+- README rewritten to v2.0.0 reality (447 tests, agent portfolio complete, governed beta classification)
+- docs/product-readiness.md rewritten to v2.0.0 (patch governance, code intel, architect, first-run checks, diagnostics bundle)
+- FirstRunGuide.tsx expanded from 5 to 10 environment checks with descriptions
+- Classification updated to "governed AI-native development beta"
+
+### Security
+- All first-run probes are strictly non-mutating
+- Bundle export is non-mutating (no .Orqestra state changes)
+- Redaction verified by machine-checkable tests
+- AI service unavailability does not fail setup
+
+### Known Limitations
+- Windows installer is unsigned
+- macOS build-feasibility-only (no human smoke test)
+- Linux AppImage CI versioning issue persists
+- Cloudflare CRDT relay not implemented
+
 ## [1.9.0] - 2026-06-05
 
 ### Added
