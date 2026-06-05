@@ -49,6 +49,7 @@ pub fn create_diagnostic_bundle(
     patch_governance_json: &str,
     code_intel_json: &str,
     roadmap_status_json: &str,
+    sync_status_json: &str,
 ) -> Result<DiagnosticBundleResult, String> {
     let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     let bundle_name = format!("orqestra-diagnostics-{}", timestamp);
@@ -111,6 +112,12 @@ pub fn create_diagnostic_bundle(
             "roadmap-status.json",
             roadmap_status_json,
             "Roadmap parse status and task count",
+        ),
+        // v2.1.0: Sync relay status (redacted)
+        (
+            "sync-status.json",
+            sync_status_json,
+            "Sync relay connection status (redacted)",
         ),
     ];
 

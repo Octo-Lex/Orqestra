@@ -1,4 +1,4 @@
-use loro_engine::{LoroEngine, sync::{AuthResult, TokenManager, TokenScope}};
+use loro_engine::{LoroEngine, relay::RelayClient, sync::{AuthResult, TokenManager, TokenScope}};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::State;
@@ -6,6 +6,7 @@ use tauri::State;
 pub struct SyncState {
     pub engine: Mutex<Option<LoroEngine>>,
     pub token_manager: Mutex<TokenManager>,
+    pub relay_client: Mutex<Option<RelayClient>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -208,4 +209,74 @@ pub fn validate_token_cmd(
 ) -> Result<AuthResult, String> {
     let guard = state.token_manager.lock().unwrap();
     Ok(guard.validate(&request.token))
+}
+
+// ---------------------------------------------------------------------------
+// v2.1.0: Relay commands
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ConnectRelayRequest {
+    pub relay_url: String,
+    pub workspace_id: String,
+    pub token_scope: String,
+}
+
+/// Connect to a relay (stores client state, actual WebSocket managed by frontend).
+#[tauri::command]
+pub fn connect_relay_cmd(
+    state: State<'_, SyncState>,
+    request: ConnectRelayRequest,
+) -> Result<loro_engine::relay::RelayStatus, String> {
+    // Get peer_id from engine
+    let peer_id = {
+        let guard = state.engine.lock().unwrap();
+        guard.as_ref().map(|e| e.peer_id()).unwrap_or(0)
+    };
+
+    let client = RelayClient::new(
+        peer_id,
+        &request.workspace_id,
+        &request.token_scope,
+        &request.relay_url,
+    );
+
+    let status = client.status();
+    *state.relay_client.lock().unwrap() = Some(client);
+    Ok(status)
+}
+
+/// Disconnect from relay.
+#[tauri::command]
+pub fn disconnect_relay_cmd(
+    state: State<'_, SyncState>,
+) -> Result<(), String> {
+    let mut guard = state.relay_client.lock().unwrap();
+    if let Some(ref mut client) = *guard {
+        client.set_connected(false);
+    }
+    *guard = None;
+    Ok(())
+}
+
+/// Get relay status (redacted).
+#[tauri::command]
+pub fn relay_status_cmd(
+    state: State<'_, SyncState>,
+) -> Result<loro_engine::relay::RelayStatus, String> {
+    let guard = state.relay_client.lock().unwrap();
+    match guard.as_ref() {
+        Some(client) => Ok(client.status()),
+        None => Ok(loro_engine::relay::RelayStatus {
+            connected: false,
+            peer_id: 0,
+            workspace_id: String::new(),
+            relay_url_host: String::new(),
+            workspace_id_hash: String::new(),
+            queued_deltas: 0,
+            token_scope: "none".to_string(),
+            last_sync: None,
+            relay_available: false,
+        }),
+    }
 }
