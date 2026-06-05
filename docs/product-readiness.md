@@ -172,6 +172,13 @@ requires_review == true
 |------|-------|
 | `REPO_OPEN_FAILED` | Could not open repository |
 | `ROADMAP_PARSE_FAILED` | Roadmap could not be loaded |
+| `DASHBOARD_FETCH_FAILED` | Dashboard data could not be fetched or generated |
+| `GIT_OPERATION_FAILED` | Git operation (pull, push, commit) failed |
+| `CREDENTIAL_OPERATION_FAILED` | Credential save, load, or delete failed |
+| `AI_SERVICE_UNREACHABLE` | AI service not running or unreachable |
+| `AI_KEY_MISSING` | AI API key not configured |
+| `AGENT_PROPOSAL_FAILED` | AI agent could not generate a proposal |
+| `LINUX_RUNTIME_CAVEAT` | Linux AppImage runtime limitation |
 
 ---
 

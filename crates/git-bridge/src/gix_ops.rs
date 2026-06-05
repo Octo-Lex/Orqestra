@@ -281,6 +281,240 @@ pub fn git_status_porcelain_output(project_root: &Path) -> Result<String, GitBri
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+// ---------------------------------------------------------------------------
+// Git Provider Diagnostics (v1.6.0)
+//
+// Canonical provider enum and per-operation diagnostics.
+// Read-only diagnostics only — mutating operations are reported from
+// a static registry, never executed during diagnostics.
+// ---------------------------------------------------------------------------
+
+/// Canonical provider label — enum-backed to prevent drift.
+/// This is the sole source of provider strings; no ad-hoc labels allowed.
+#[derive(Debug, Clone, serde::Serialize, PartialEq)]
+#[serde(rename_all = "kebab-case")]
+pub enum GitProvider {
+    Gix,
+    GixHybrid,
+    GitCliFallback,
+    DeterministicHeuristic,
+    NotImplemented,
+}
+
+/// Per-operation provider metadata.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct GitOperationProvider {
+    pub operation: String,
+    pub provider: GitProvider,
+    pub native: bool,
+    pub fallback_available: bool,
+    pub read_only: bool,
+    pub mutates_repository: bool,
+    pub executed_in_diagnostics: bool,
+    pub latency_ms: Option<u64>,  // None for mutating ops not executed
+}
+
+/// Full provider diagnostics report.
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct GitProviderReport {
+    pub operations: Vec<GitOperationProvider>,
+    pub snapshot_time: String,
+    pub repository_valid: bool,
+}
+
+/// Static registry of all Git operations with their declared providers.
+/// Mutating operations are listed but never executed during diagnostics.
+fn static_provider_registry() -> Vec<GitOperationProvider> {
+    vec![
+        GitOperationProvider {
+            operation: "head_hash".into(),
+            provider: GitProvider::Gix,
+            native: true,
+            fallback_available: false,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "branch_name".into(),
+            provider: GitProvider::Gix,
+            native: true,
+            fallback_available: false,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "recent_commits".into(),
+            provider: GitProvider::Gix,
+            native: true,
+            fallback_available: true,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "repository_snapshot".into(),
+            provider: GitProvider::GixHybrid,
+            native: false,
+            fallback_available: true,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "changed_file_summary".into(),
+            provider: GitProvider::GixHybrid,
+            native: false,
+            fallback_available: true,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "diff_stat".into(),
+            provider: GitProvider::GitCliFallback,
+            native: false,
+            fallback_available: false,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "safe_diff_context".into(),
+            provider: GitProvider::GitCliFallback,
+            native: false,
+            fallback_available: false,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "semantic_commit_prep".into(),
+            provider: GitProvider::DeterministicHeuristic,
+            native: false,
+            fallback_available: false,
+            read_only: true,
+            mutates_repository: false,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        // Mutating operations — never executed in diagnostics
+        GitOperationProvider {
+            operation: "staging".into(),
+            provider: GitProvider::GitCliFallback,
+            native: false,
+            fallback_available: false,
+            read_only: false,
+            mutates_repository: true,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "commit_creation".into(),
+            provider: GitProvider::GixHybrid,
+            native: false,
+            fallback_available: false,
+            read_only: false,
+            mutates_repository: true,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "push".into(),
+            provider: GitProvider::NotImplemented,
+            native: false,
+            fallback_available: false,
+            read_only: false,
+            mutates_repository: true,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "pull".into(),
+            provider: GitProvider::NotImplemented,
+            native: false,
+            fallback_available: false,
+            read_only: false,
+            mutates_repository: true,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+        GitOperationProvider {
+            operation: "merge".into(),
+            provider: GitProvider::NotImplemented,
+            native: false,
+            fallback_available: false,
+            read_only: false,
+            mutates_repository: true,
+            executed_in_diagnostics: false,
+            latency_ms: None,
+        },
+    ]
+}
+
+/// Build a provider diagnostics report.
+///
+/// Executes only read-only operations to measure latency.
+/// Mutating operations are reported from the static registry only
+/// (executed_in_diagnostics: false, latency_ms: null).
+pub fn build_provider_report(project_root: &Path) -> Result<GitProviderReport, GitBridgeError> {
+    let snapshot_time = chrono::Utc::now().to_rfc3339();
+    let mut registry = static_provider_registry();
+
+    // Execute read-only operations and record latency
+    for op in &mut registry {
+        if op.mutates_repository {
+            // Never execute mutating operations
+            continue;
+        }
+
+        let start = std::time::Instant::now();
+        let succeeded = match op.operation.as_str() {
+            "head_hash" => get_head_hash(project_root).is_ok(),
+            "branch_name" => gix::open(project_root)
+                .ok()
+                .and_then(|repo| repo.head_name().ok().flatten())
+                .is_some(),
+            "recent_commits" => crate::commits::recent_commits(project_root, Some(1)).is_ok(),
+            "repository_snapshot" => crate::snapshot::repository_snapshot(project_root).is_ok(),
+            "changed_file_summary" => {
+                crate::snapshot::repository_snapshot(project_root)
+                    .map(|s| !s.changed_files.is_empty() || true) // empty is valid
+                    .unwrap_or(false)
+            }
+            "diff_stat" => crate::diff::diff_stat(project_root).is_ok(),
+            "safe_diff_context" => {
+                // Check env var — if not enabled, report as not executed but still available
+                std::env::var("ORQESTRA_SAFE_DIFF_CONTEXT").is_ok()
+            }
+            "semantic_commit_prep" => crate::semantic_prep::prepare_semantic_commit(project_root).is_ok(),
+            _ => false,
+        };
+
+        op.executed_in_diagnostics = true;
+        op.latency_ms = Some(start.elapsed().as_millis() as u64);
+
+        // If operation failed, report actual provider as cli-fallback if available
+        if !succeeded && op.fallback_available {
+            op.provider = GitProvider::GitCliFallback;
+        }
+    }
+
+    Ok(GitProviderReport {
+        operations: registry,
+        snapshot_time,
+        repository_valid: is_git_repo(project_root),
+    })
+}
+
 /// Recursively walk files in a directory (non-.git entries only).
 fn walkdir_files(root: &Path) -> Result<Vec<std::path::PathBuf>, std::io::Error> {
     let mut files = Vec::new();
