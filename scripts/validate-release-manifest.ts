@@ -558,6 +558,25 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.5.0: Native Git Write Expansion
+  if ((pr as any).native_git_write) {
+    const nw = (pr as any).native_git_write;
+    if (nw.enabled !== true) fail('product_readiness.native_git_write.enabled must be true');
+    if (nw.all_or_nothing_native_path !== true) fail('product_readiness.native_git_write.all_or_nothing_native_path must be true');
+    if (nw.no_mixing_native_and_cli !== true) fail('product_readiness.native_git_write.no_mixing_native_and_cli must be true');
+    if (nw.compare_and_swap_head !== true) fail('product_readiness.native_git_write.compare_and_swap_head must be true');
+    if (nw.reviewed_proposal_required !== true) fail('product_readiness.native_git_write.reviewed_proposal_required must be true');
+    if (nw.operational_risk_gate !== true) fail('product_readiness.native_git_write.operational_risk_gate must be true');
+    if (nw.provider_label_derived !== true) fail('product_readiness.native_git_write.provider_label_derived must be true');
+    if (nw.cli_fallback_available !== true) fail('product_readiness.native_git_write.cli_fallback_available must be true');
+    if (nw.index_consistency_after_commit !== true) fail('product_readiness.native_git_write.index_consistency_after_commit must be true');
+    if (nw.no_auto_commit !== true) fail('product_readiness.native_git_write.no_auto_commit must be true');
+    if (nw.no_push_pull_merge !== true) fail('product_readiness.native_git_write.no_push_pull_merge must be true');
+    if (nw.human_triggered_only !== true) fail('product_readiness.native_git_write.human_triggered_only must be true');
+  } else {
+    warn('product_readiness.native_git_write section missing (v2.5.0+)');
+  }
+
   // v2.4.0: Dependency and Workflow Risk Intelligence
   if ((pr as any).dependency_workflow_risk) {
     const dw = (pr as any).dependency_workflow_risk;
