@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.5.0] - 2026-06-06
+
+### Added
+- Native Git write: tree building from index (no CLI `git write-tree`)
+- Native commit creation via gix (no CLI)
+- Compare-and-swap HEAD update (aborts if HEAD changed mid-commit)
+- All-or-nothing native path (no mixing native + CLI in same commit)
+- CLI fallback path (`gix-hybrid-fallback`) always available
+- `CommitPathDiagnostic` DTO with tree/commit/head_update methods
+- `NativeWriteCommitResult` with provider label derivation
+- Reviewed proposal ID required for native commit
+- Operational-risk gate in commit proposal
+- `GitWriteMethod` enum (Native/CliFallback)
+- 18 native write tests
+
+### Changed
+- Provider label `gix` only when fully CLI-free
+- Any CLI fallback → `gix-hybrid-fallback`
+- Disk cleaned (26.1 GiB freed via cargo clean)
+
+### Security
+- Empty commit messages rejected
+- Empty proposal IDs rejected
+- HEAD race protection (compare-and-swap)
+- No auto-commit path introduced
+- Index consistency guaranteed after commit
+
 ## [2.4.0] - 2026-06-06
 
 ### Added

@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.4.0",
-    "tag": "v2.4.0",
+    "name": "Orqestra v2.5.0",
+    "tag": "v2.5.0",
     "channel": "public-beta",
-    "release_version": "2.4.0",
-    "app_version": "2.4.0",
+    "release_version": "2.5.0",
+    "app_version": "2.5.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.4.0_x64-setup.exe",
+      "name": "Orqestra_2.5.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "4179d6fa81d0adb365330a285cbb152d95251f1c6eea67873ba53a2de43f6ea0",
-      "size_bytes": 5156559,
+      "sha256": "78938e9c6a30ffac05f11ae61f49e43f7179642b814655a3907c0de676365444",
+      "size_bytes": 5157244,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "ci-build"
+      "source": "local-build"
     },
     {
-      "name": "Orqestra_2.4.0_x64.AppImage",
+      "name": "Orqestra_2.5.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -569,6 +569,20 @@
       "deterministic": true,
       "categories_count": 13,
       "reason_codes_count": 13
+    },
+    "native_git_write": {
+      "enabled": true,
+      "all_or_nothing_native_path": true,
+      "no_mixing_native_and_cli": true,
+      "compare_and_swap_head": true,
+      "reviewed_proposal_required": true,
+      "operational_risk_gate": true,
+      "provider_label_derived": true,
+      "cli_fallback_available": true,
+      "index_consistency_after_commit": true,
+      "no_auto_commit": true,
+      "no_push_pull_merge": true,
+      "human_triggered_only": true
     }
   }
 }
