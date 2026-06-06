@@ -1,4 +1,5 @@
 use crate::error::GitBridgeError;
+use serde::Serialize;
 use std::path::{Path, PathBuf};
 
 /// Stage files via git add (shell-out — staging API not high-level in gix).
@@ -84,7 +85,247 @@ pub fn create_commit_native(
     Ok(commit_id.detach().to_hex().to_string())
 }
 
-/// Get the unified diff for a commit (shell-out for diff formatting).
+// ---------------------------------------------------------------------------
+// v2.5.0: Fully native commit path (no CLI shell-outs)
+// ---------------------------------------------------------------------------
+
+/// Method used for each commit-path step.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GitWriteMethod {
+    Native,
+    CliFallback,
+}
+
+/// Diagnostic for the commit path used.
+#[derive(Debug, Clone, Serialize)]
+pub struct CommitPathDiagnostic {
+    pub tree_method: GitWriteMethod,
+    pub commit_method: GitWriteMethod,
+    pub head_update_method: GitWriteMethod,
+    pub provider_label: String,
+    pub fallback_reason: Option<String>,
+}
+
+/// Result of a fully native commit attempt.
+#[derive(Debug, Clone, Serialize)]
+pub struct NativeWriteCommitResult {
+    pub hash: String,
+    pub parent_hashes: Vec<String>,
+    pub diagnostic: CommitPathDiagnostic,
+    pub elapsed_ms: u64,
+}
+
+/// Build a tree object from the current index using gix (no shell-out).
+///
+/// Constructs tree entries from index entries, builds nested trees for
+/// subdirectories, and writes the root tree object to the ODB.
+fn native_write_tree_from_index(
+    repo: &gix::Repository,
+) -> Result<gix::ObjectId, GitBridgeError> {
+    let index = repo.open_index()
+        .map_err(|e| GitBridgeError::GitOperation(format!("Failed to open index: {e}")))?;
+
+    use std::collections::BTreeMap;
+    use gix::bstr::BString;
+    use gix::objs::tree::{Entry, EntryMode, EntryKind};
+
+    enum Node {
+        Leaf(EntryMode, gix::ObjectId),
+        Dir(BTreeMap<BString, Node>),
+    }
+
+    let mut root: BTreeMap<BString, Node> = BTreeMap::new();
+
+    for entry in index.entries() {
+        let path = entry.path_in(&index.path_backing());
+        let path_str = std::str::from_utf8(path)
+            .map_err(|e| GitBridgeError::GitOperation(format!("Invalid path in index: {e}")))?;
+        let parts: Vec<&str> = path_str.split('/').collect();
+
+        let mode = EntryMode::try_from(entry.mode.bits())
+            .unwrap_or(EntryKind::Blob.into());
+        let id = entry.id;
+
+        let mut current = &mut root;
+        for (i, part) in parts.iter().enumerate() {
+            let is_last = i == parts.len() - 1;
+            let key = BString::from(part.to_string());
+
+            if is_last {
+                current.insert(key, Node::Leaf(mode, id));
+                break;
+            } else {
+                let next = current.entry(key).or_insert_with(|| {
+                    Node::Dir(BTreeMap::new())
+                });
+                current = match next {
+                    Node::Dir(ref mut m) => m,
+                    Node::Leaf(_, _) => break,
+                };
+            }
+        }
+    }
+
+    fn write_tree(
+        repo: &gix::Repository,
+        nodes: &BTreeMap<BString, Node>,
+    ) -> Result<gix::ObjectId, GitBridgeError> {
+        let mut entries: Vec<Entry> = Vec::new();
+
+        for (name, node) in nodes {
+            match node {
+                Node::Leaf(mode, oid) => {
+                    entries.push(Entry {
+                        mode: *mode,
+                        filename: name.clone(),
+                        oid: *oid,
+                    });
+                }
+                Node::Dir(children) => {
+                    let subtree_id = write_tree(repo, children)?;
+                    entries.push(Entry {
+                        mode: EntryKind::Tree.into(),
+                        filename: name.clone(),
+                        oid: subtree_id,
+                    });
+                }
+            }
+        }
+
+        entries.sort_by(|a, b| a.filename.cmp(&b.filename));
+
+        let tree = gix::objs::Tree { entries };
+        let id = repo.write_object(tree)
+            .map_err(|e| GitBridgeError::GitOperation(format!("Failed to write tree: {e}")))?;
+
+        Ok(id.detach())
+    }
+
+    write_tree(repo, &root)
+}
+
+/// Fully native commit path. All-or-nothing: if any step fails,
+/// the caller must use the CLI fallback path instead.
+///
+/// Compare-and-swap HEAD: aborts if HEAD != expected_parent.
+pub fn native_commit_full(
+    project_root: &Path,
+    message: &str,
+    expected_parent: &str,
+    reviewed_proposal_id: &str,
+) -> Result<NativeWriteCommitResult, GitBridgeError> {
+    let start = std::time::Instant::now();
+
+    // Validate message
+    if message.trim().is_empty() {
+        return Err(GitBridgeError::GitOperation(
+            "GIT_COMMIT_ERROR: empty message".into(),
+        ));
+    }
+
+    // Validate reviewed proposal
+    if reviewed_proposal_id.trim().is_empty() {
+        return Err(GitBridgeError::GitOperation(
+            "GIT_COMMIT_ERROR: reviewed proposal ID required".into(),
+        ));
+    }
+
+    let repo = gix::open(project_root)
+        .map_err(|e| GitBridgeError::GitOperation(format!("Failed to open repository: {e}")))?;
+
+    // Compare-and-swap: verify HEAD matches expected_parent
+    let current_head = repo.head_id()
+        .map_err(|e| GitBridgeError::GitOperation(format!("Failed to get HEAD: {e}")))?
+        .detach();
+
+    let expected_oid = gix::ObjectId::from_hex(expected_parent.as_bytes())
+        .map_err(|e| GitBridgeError::GitOperation(format!("Invalid expected_parent: {e}")))?;
+
+    if current_head != expected_oid {
+        return Err(GitBridgeError::GitOperation(
+            format!("HEAD_CHANGED: expected {} but found {}",
+                expected_parent,
+                current_head.to_hex())
+        ));
+    }
+
+    // Step 1: Write tree from index (native)
+    let tree_id = native_write_tree_from_index(&repo)?;
+
+    // Step 2: Create commit (native)
+    let parents: Vec<gix::ObjectId> = vec![current_head];
+    let commit_id = repo.commit(
+        "HEAD",
+        message,
+        tree_id,
+        parents.iter().copied(),
+    )
+    .map_err(|e| GitBridgeError::GitOperation(format!("Failed to create commit: {e}")))?;
+
+    // Step 3: HEAD update is done by repo.commit() above (native)
+    // Verify HEAD now points to our commit
+    let new_head = repo.head_id()
+        .map_err(|e| GitBridgeError::GitOperation(format!("Failed to verify HEAD: {e}")))?
+        .detach();
+
+    if new_head != commit_id.detach() {
+        return Err(GitBridgeError::GitOperation(
+            format!("HEAD_RACE: commit created {} but HEAD is {}",
+                commit_id.detach().to_hex(),
+                new_head.to_hex())
+        ));
+    }
+
+    let elapsed = start.elapsed();
+
+    Ok(NativeWriteCommitResult {
+        hash: commit_id.detach().to_hex().to_string(),
+        parent_hashes: vec![current_head.to_hex().to_string()],
+        diagnostic: CommitPathDiagnostic {
+            tree_method: GitWriteMethod::Native,
+            commit_method: GitWriteMethod::Native,
+            head_update_method: GitWriteMethod::Native,
+            provider_label: "gix".to_string(),
+            fallback_reason: None,
+        },
+        elapsed_ms: elapsed.as_millis() as u64,
+    })
+}
+
+/// Fallback commit path using CLI (gix-hybrid-fallback).
+/// All-or-nothing: uses CLI for tree write, gix for commit creation if possible,
+/// or full CLI if needed.
+pub fn fallback_commit(
+    project_root: &Path,
+    message: &str,
+) -> Result<NativeWriteCommitResult, GitBridgeError> {
+    let start = std::time::Instant::now();
+
+    // Use existing hybrid path
+    let hash = create_commit_native(project_root, message, "orqestra", "orqestra@local")?;
+
+    let repo = gix::open(project_root)
+        .map_err(|e| GitBridgeError::GitOperation(format!("Failed to open repo: {e}")))?;
+
+    let parent_hashes = match repo.head_id() {
+        Ok(id) => vec![id.detach().to_hex().to_string()],
+        Err(_) => vec![],
+    };
+
+    Ok(NativeWriteCommitResult {
+        hash,
+        parent_hashes,
+        diagnostic: CommitPathDiagnostic {
+            tree_method: GitWriteMethod::CliFallback,
+            commit_method: GitWriteMethod::Native,
+            head_update_method: GitWriteMethod::Native,
+            provider_label: "gix-hybrid-fallback".to_string(),
+            fallback_reason: Some("write-tree uses CLI git write-tree".to_string()),
+        },
+        elapsed_ms: start.elapsed().as_millis() as u64,
+    })
+}
 /// gix provides tree diffing but not unified diff output formatting.
 pub fn get_commit_diff_native(
     project_root: &Path,
