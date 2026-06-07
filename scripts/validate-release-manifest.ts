@@ -558,6 +558,22 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.5.2: Real Desktop Relay Connection
+  if ((pr as any).real_relay_connection) {
+    const rc = (pr as any).real_relay_connection;
+    if (rc.rust_owns_relay_lifecycle !== true) fail('product_readiness.real_relay_connection.rust_owns_relay_lifecycle must be true');
+    if (rc.protocol_version !== 1) fail('product_readiness.real_relay_connection.protocol_version must be 1');
+    if (rc.channel_boundary_tauri_free !== true) fail('product_readiness.real_relay_connection.channel_boundary_tauri_free must be true');
+    if (rc.double_connect_guard !== true) fail('product_readiness.real_relay_connection.double_connect_guard must be true');
+    if (rc.deterministic_actor_cancellation !== true) fail('product_readiness.real_relay_connection.deterministic_actor_cancellation must be true');
+    if (rc.queue_preserved_on_disconnect !== true) fail('product_readiness.real_relay_connection.queue_preserved_on_disconnect must be true');
+    if (rc.redacted_tauri_events !== true) fail('product_readiness.real_relay_connection.redacted_tauri_events must be true');
+    if (rc.graceful_relay_down !== true) fail('product_readiness.real_relay_connection.graceful_relay_down must be true');
+    if (rc.no_master_secret_in_desktop !== true) fail('product_readiness.real_relay_connection.no_master_secret_in_desktop must be true');
+  } else {
+    warn('product_readiness.real_relay_connection section missing (v2.5.2+)');
+  }
+
   // v2.5.1: Security Boundary Stabilization
   if ((pr as any).security_stabilization) {
     const ss = (pr as any).security_stabilization;
