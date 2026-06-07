@@ -558,6 +558,25 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.5.1: Security Boundary Stabilization
+  if ((pr as any).security_stabilization) {
+    const ss = (pr as any).security_stabilization;
+    if (ss.sync_relay_hmac !== 'hmac-sha256') fail('product_readiness.security_stabilization.sync_relay_hmac must be hmac-sha256');
+    if (ss.legacy_hmac_tokens_rejected !== true) fail('product_readiness.security_stabilization.legacy_hmac_tokens_rejected must be true');
+    if (ss.desktop_master_secret_compiled_in !== false) fail('product_readiness.security_stabilization.desktop_master_secret_compiled_in must be false');
+    if (ss.tauri_csp_enabled !== true) fail('product_readiness.security_stabilization.tauri_csp_enabled must be true');
+    if (ss.patch_checksum !== 'sha256') fail('product_readiness.security_stabilization.patch_checksum must be sha256');
+    if (ss.legacy_16char_checksum_rejected !== true) fail('product_readiness.security_stabilization.legacy_16char_checksum_rejected must be true');
+    if (ss.askpass_predictable_path !== false) fail('product_readiness.security_stabilization.askpass_predictable_path must be false');
+    if (ss.askpass_raii_cleanup !== true) fail('product_readiness.security_stabilization.askpass_raii_cleanup must be true');
+    if (ss.askpass_create_new !== true) fail('product_readiness.security_stabilization.askpass_create_new must be true');
+    if (ss.secret_scanning_ci !== true) fail('product_readiness.security_stabilization.secret_scanning_ci must be true');
+    if (ss.constant_time_hmac_compare !== true) fail('product_readiness.security_stabilization.constant_time_hmac_compare must be true');
+    if (ss.token_version_v2 !== true) fail('product_readiness.security_stabilization.token_version_v2 must be true');
+  } else {
+    warn('product_readiness.security_stabilization section missing (v2.5.1+)');
+  }
+
   // v2.5.0: Native Git Write Expansion
   if ((pr as any).native_git_write) {
     const nw = (pr as any).native_git_write;

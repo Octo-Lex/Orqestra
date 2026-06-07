@@ -6,7 +6,6 @@
 
 use crate::commands::credentials;
 use serde::Serialize;
-use std::path::PathBuf;
 use tauri::command;
 use tauri_plugin_shell::ShellExt;
 
@@ -22,16 +21,53 @@ pub struct GitResult {
 }
 
 // ---------------------------------------------------------------------------
+use std::path::{Path, PathBuf};
+// ---------------------------------------------------------------------------
+// v2.5.1: RAII askpass guard — guaranteed cleanup
+// ---------------------------------------------------------------------------
+
+struct AskpassGuard {
+    dir: PathBuf,
+    path: PathBuf,
+}
+
+impl Drop for AskpassGuard {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.path);
+        let _ = std::fs::remove_dir(&self.dir);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Git helpers
 // ---------------------------------------------------------------------------
 
 /// Build a credential helper batch script for Windows.
-fn write_askpass_script(pat: &str) -> Result<PathBuf, String> {
-    let tmp_dir = std::env::temp_dir();
-    let script_path = tmp_dir.join("orqestra-git-askpass.bat");
-    std::fs::write(&script_path, format!("@echo {}\n", pat))
+/// v2.5.1: Uses unique temp directory, create_new, RAII cleanup.
+/// Interim mitigation — v2.5.2+ should use credential helper / stdin-safe flow.
+fn write_askpass_script(pat: &str) -> Result<AskpassGuard, String> {
+    let tmp_root = std::env::temp_dir();
+    let unique_id = uuid::Uuid::new_v4().to_string();
+    let dir = tmp_root.join(format!("orqestra-askpass-{}", unique_id));
+    std::fs::create_dir(&dir)
+        .map_err(|e| format!("failed to create askpass dir: {}", e))?;
+
+    let script_path = dir.join("askpass.bat");
+
+    // Use OpenOptions with create_new to never overwrite existing file
+    let mut opts = std::fs::OpenOptions::new();
+    opts.write(true).create_new(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        opts.mode(0o600); // Owner-only
+    }
+    let mut file = opts.open(&script_path)
+        .map_err(|e| format!("failed to create askpass script: {}", e))?;
+    std::io::Write::write_all(&mut file, format!("@echo {}\n", pat).as_bytes())
         .map_err(|e| format!("failed to write askpass script: {}", e))?;
-    Ok(script_path)
+
+    Ok(AskpassGuard { dir, path: script_path })
 }
 
 /// Run a git command in the project root with credential helper set.
@@ -42,13 +78,14 @@ async fn run_git(
     pat: &str,
 ) -> Result<GitResult, String> {
     let askpass = write_askpass_script(pat)?;
+    let askpass_path = askpass.path.clone(); // Copy path before moving guard
 
     let shell = app.shell();
     let cmd = shell
         .command("git")
         .args(args)
         .current_dir(PathBuf::from(project_root))
-        .env("GIT_ASKPASS", &askpass)
+        .env("GIT_ASKPASS", &askpass_path)
         .env("GIT_TERMINAL_PROMPT", "0");
 
     let output = cmd
@@ -56,8 +93,7 @@ async fn run_git(
         .await
         .map_err(|e| format!("failed to execute git: {}", e))?;
 
-    // Clean up askpass script
-    let _ = std::fs::remove_file(&askpass);
+    // RAII: askpass guard drops here, cleaning up temp dir and file
 
     let stdout = String::from_utf8_lossy(&output.stdout).to_string();
     let stderr = String::from_utf8_lossy(&output.stderr).to_string();
