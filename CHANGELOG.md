@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.5.1] - 2026-06-07
+
+### Security
+- **Critical:** Sync relay HMAC replaced with real HMAC-SHA256 (was djb2-like string hash)
+- **Critical:** Hardcoded `default-master-token` removed from desktop binary
+- **Critical:** Cloudflare and ZAI credentials rotated, stored only in provider secret stores
+- **High:** Tauri CSP enabled (was `null`) — no wildcards, no `unsafe-eval`
+- **High:** Patch checksum uses real SHA-256 (was `DefaultHasher` 16-char)
+- **High:** Legacy 16-char checksums rejected (`LEGACY_CHECKSUM_FORMAT`)
+- **High:** GitHub PAT temp file uses unique temp dir, `create_new`, RAII cleanup
+- Token format versioned: `ork_v2_` prefix, legacy v1 rejected (`UNSUPPORTED_TOKEN_VERSION`)
+- Constant-time HMAC comparison in relay auth
+- TokenManager without master secret cannot generate admin tokens
+- Secret scanning CI workflow added
+- 17 security boundary tests
+- 12 relay auth tests
+
+### Changed
+- `TokenManager::new` accepts `Option<&str>` (None = desktop mode, no admin)
+- `TokenManager::generate` returns `Result<String, String>` (error if no master secret + admin)
+- PAT askpath classified as interim mitigation (v2.5.2+ will use in-memory flow)
+
 ## [2.5.0] - 2026-06-06
 
 ### Added

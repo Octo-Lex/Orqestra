@@ -1,70 +1,147 @@
 /**
- * Token authentication for sync relay.
+ * Token authentication for sync relay (v2.5.1).
  *
  * Trust boundary:
  *   - Master secret lives ONLY in Worker environment (ORQESTRA_SYNC_MASTER).
  *   - Desktop stores only workspace-scoped tokens.
  *   - Desktop never stores or derives the master secret.
  *   - Tokens generated server-side via POST /token/generate.
+ *
+ * Token format v2:
+ *   ork_v2_{scope}_{workspace_id}_{timestamp_hex}_{hmac_sha256_hex}
+ *
+ * Legacy v1 tokens (djb2 hash) are rejected with UNSUPPORTED_TOKEN_VERSION.
  */
 
 import { TokenScope } from './protocol';
 
-interface TokenPayload {
+/** Current token version */
+const TOKEN_VERSION = 'v2';
+
+/** Token version prefix */
+const TOKEN_PREFIX = `ork_${TOKEN_VERSION}_`;
+
+/** Legacy v1 prefix (no version) */
+const LEGACY_PREFIX = 'ork_';
+
+export interface TokenPayload {
   scope: TokenScope;
   workspace_id: string;
   timestamp: number;
   hmac: string;
+  version: string;
+}
+
+/**
+ * Constant-time hex string comparison.
+ * XORs all byte pairs, accumulates differences, returns true only if zero diff.
+ */
+function timingSafeEqualHex(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
+ * Compute HMAC-SHA256 using Web Crypto API (available in Cloudflare Workers).
+ * Returns hex-encoded digest.
+ */
+async function computeHmac(secret: string, payload: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload));
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 /**
  * Validate a token against the master secret.
- * Token format: ork_{scope}_{workspace_id}_{timestamp}_{hmac}
+ * Token format v2: ork_v2_{scope}_{workspace_id}_{timestamp_hex}_{hmac_sha256_hex}
+ *
+ * Returns null for:
+ *   - Legacy v1 tokens → UNSUPPORTED_TOKEN_VERSION error thrown
+ *   - Invalid format
+ *   - Wrong HMAC
+ *   - Expired tokens (older than 24h)
  */
-export function validateToken(token: string, masterSecret: string): TokenPayload | null {
-  // Master token is admin (checked first, before ork_ prefix check)
-  if (token === masterSecret) {
-    return { scope: 'admin', workspace_id: '*', timestamp: 0, hmac: '' };
+export async function validateToken(
+  token: string,
+  masterSecret: string,
+): Promise<TokenPayload | null> {
+  // Master token is admin (checked first, before prefix check)
+  if (timingSafeEqualHex(token, masterSecret) && token.length === masterSecret.length) {
+    return { scope: 'admin', workspace_id: '*', timestamp: 0, hmac: '', version: 'master' };
   }
 
-  if (!token.startsWith('ork_')) return null;
+  // Reject legacy v1 tokens (ork_ without v2)
+  if (token.startsWith(LEGACY_PREFIX) && !token.startsWith(TOKEN_PREFIX)) {
+    throw new Error('UNSUPPORTED_TOKEN_VERSION: Legacy v1 tokens are no longer accepted');
+  }
 
-  const parts = token.split('_');
-  // ork_{scope}_{workspace_id}_{timestamp}_{hmac...}
-  // scope can be "write" or "read" (single segment) or "admin" (shouldn't reach here)
-  if (parts.length < 5) return null;
+  if (!token.startsWith(TOKEN_PREFIX)) return null;
 
-  const scope = parts[1] as TokenScope;
-  if (scope !== 'write' && scope !== 'read') return null;
+  // Strip prefix: ork_v2_
+  const body = token.slice(TOKEN_PREFIX.length);
+  const parts = body.split('_');
 
-  // workspace_id may contain dashes, so take from index 2 to -2
+  // {scope}_{workspace_id_parts...}_{timestamp_hex}_{hmac_hex}
+  // hmac is 64 chars (SHA-256), timestamp is hex
+  // Need at least: scope, one workspace part, timestamp, hmac = 4 parts
+  if (parts.length < 4) return null;
+
   const hmacPart = parts[parts.length - 1];
   const timestampStr = parts[parts.length - 2];
-  const workspaceParts = parts.slice(2, parts.length - 2);
+
+  // HMAC must be 64 hex chars (SHA-256)
+  if (hmacPart.length !== 64 || !/^[0-9a-f]+$/.test(hmacPart)) return null;
+
+  const scope = parts[0] as TokenScope;
+  if (scope !== 'write' && scope !== 'read') return null;
+
+  const workspaceParts = parts.slice(1, parts.length - 2);
   const workspace_id = workspaceParts.join('_');
+  if (!workspace_id) return null;
 
   const timestamp = parseInt(timestampStr, 16);
   if (isNaN(timestamp)) return null;
 
-  // Verify HMAC
-  const expectedHmac = computeHmac(masterSecret, `${scope}_${workspace_id}_${timestamp}`);
-  if (hmacPart !== expectedHmac) return null;
+  // Token expiry: 24 hours
+  const age = Date.now() - timestamp;
+  if (age < 0 || age > 24 * 60 * 60 * 1000) {
+    return null; // Expired or future-dated
+  }
 
-  return { scope, workspace_id, timestamp, hmac: hmacPart };
+  // Verify HMAC with constant-time comparison
+  const payload = `${TOKEN_VERSION}_${scope}_${workspace_id}_${timestamp}`;
+  const expectedHmac = await computeHmac(masterSecret, payload);
+  if (!timingSafeEqualHex(expectedHmac, hmacPart)) return null;
+
+  return { scope, workspace_id, timestamp, hmac: hmacPart, version: TOKEN_VERSION };
 }
 
 /**
- * Generate a workspace-scoped token.
+ * Generate a workspace-scoped token (v2).
  * Called server-side only (POST /token/generate).
  */
-export function generateToken(
+export async function generateToken(
   scope: TokenScope,
   workspaceId: string,
   masterSecret: string,
-): string {
+): Promise<string> {
   const timestamp = Date.now();
-  const hmac = computeHmac(masterSecret, `${scope}_${workspaceId}_${timestamp}`);
-  return `ork_${scope}_${workspaceId}_${timestamp.toString(16)}_${hmac}`;
+  const payload = `${TOKEN_VERSION}_${scope}_${workspaceId}_${timestamp}`;
+  const hmac = await computeHmac(masterSecret, payload);
+  return `ork_${TOKEN_VERSION}_${scope}_${workspaceId}_${timestamp.toString(16)}_${hmac}`;
 }
 
 /**
@@ -72,24 +149,4 @@ export function generateToken(
  */
 export function canWrite(scope: TokenScope): boolean {
   return scope === 'write' || scope === 'admin';
-}
-
-/**
- * Simple HMAC-like function using SubtleCrypto.
- * In production, this would use proper HMAC-SHA256.
- * For the Worker, we use a deterministic hash for token verification.
- */
-function computeHmac(secret: string, payload: string): string {
-  // Simple keyed hash — in production use crypto.subtle.sign
-  // For now, use a deterministic concatenation hash
-  const input = `${secret}:${payload}`;
-  let hash = 0;
-  for (let i = 0; i < input.length; i++) {
-    const char = input.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash |= 0; // Convert to 32-bit integer
-  }
-  // Produce a hex-like string
-  return Math.abs(hash).toString(16).padStart(8, '0') +
-    Math.abs(hash * 31).toString(16).padStart(8, '0');
 }

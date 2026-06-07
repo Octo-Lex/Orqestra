@@ -60,7 +60,7 @@ pub fn init_sync_cmd(
     let peer_id = engine.peer_id();
 
     *state.engine.lock().unwrap() = Some(engine);
-    *state.token_manager.lock().unwrap() = TokenManager::new(&master_token);
+    *state.token_manager.lock().unwrap() = TokenManager::new(Some(&master_token));
 
     Ok(SyncStatus {
         peer_id,
@@ -198,7 +198,7 @@ pub fn generate_token_cmd(
         "read" => TokenScope::Read,
         _ => return Err("Invalid scope. Use: admin, write, read".to_string()),
     };
-    Ok(guard.generate(scope, &request.label))
+    Ok(guard.generate(scope, &request.label)?)
 }
 
 /// Validate an access token.

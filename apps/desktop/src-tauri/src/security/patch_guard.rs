@@ -183,12 +183,11 @@ fn is_forbidden_path(path: &str) -> (bool, Option<String>) {
 // ---------------------------------------------------------------------------
 
 fn sha256_hex(data: &str) -> String {
-    // Use std::collections::hash_map::DefaultHasher as a stable checksum.
-    // Not cryptographic but sufficient for before/after content matching.
-    use std::hash::{Hash, Hasher};
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    data.hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
+    use sha2::{Sha256, Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(data.as_bytes());
+    let result = hasher.finalize();
+    format!("{:x}", result)
 }
 
 fn file_checksum(path: &Path) -> Option<String> {
@@ -401,6 +400,22 @@ pub fn apply_agent_patch(
             // In review-only mode: flag but don't reject human-approved patches
             // blocks_auto_apply means future auto-apply is forbidden
         }
+    }
+
+    // 4.5 Reject legacy 16-char checksum format
+    if patch.before_checksum.len() == 16 {
+        let result = PatchApplicationResult {
+            proposal_id: patch.proposal_id.clone(),
+            path: patch.path.clone(),
+            status: PatchStatus::ApplyFailed,
+            before_checksum: patch.before_checksum.clone(),
+            after_checksum: None,
+            verification: "legacy-checksum-format".into(),
+            reason: Some("LEGACY_CHECKSUM_FORMAT: Patch uses 16-char non-cryptographic checksum. Regenerate patch.".into()),
+        };
+        let record = make_audit_record(agent_type, &patch, allowed_paths, &result, "legacy-checksum-format");
+        let _ = append_audit_record(project_root, &record);
+        return result;
     }
 
     // 5. Before-checksum verification
