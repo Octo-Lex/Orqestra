@@ -17,7 +17,7 @@ fn main() {
         .manage(commands::sync::SyncState {
             engine: Mutex::new(None),
             token_manager: Mutex::new(
-                loro_engine::sync::TokenManager::new("default-master-token")
+                loro_engine::sync::TokenManager::new(None)
             ),
             relay_client: Mutex::new(None),
         })

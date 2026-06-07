@@ -20,10 +20,10 @@ use orqestra_desktop::security::patch_guard::{
 
 /// Helper: compute checksum matching patch_guard's hasher.
 fn checksum(content: &str) -> String {
-    use std::hash::{Hash, Hasher};
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    content.hash(&mut hasher);
-    format!("{:016x}", hasher.finish())
+    use sha2::{Sha256, Digest};
+    let mut hasher = Sha256::new();
+    hasher.update(content.as_bytes());
+    format!("{:x}", hasher.finalize())
 }
 
 /// Helper: create a temp repo with a file.
