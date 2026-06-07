@@ -107,7 +107,10 @@ fn test_no_hardcoded_master_token() {
     let root = find_repo_root();
     let main_rs = std::fs::read_to_string(root.join("apps/desktop/src-tauri/src/main.rs"))
         .expect("main.rs must be readable");
-    assert!(!main_rs.contains("default-master-token"), "No hardcoded master token in main.rs");
+    let forbidden = ["default-master-token", "master-key", "secret-key"];
+    for token in forbidden {
+        assert!(!main_rs.contains(token), "No hardcoded master token '{}' in main.rs", token);
+    }
 }
 
 #[test]
