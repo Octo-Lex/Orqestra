@@ -277,6 +277,8 @@ pub fn relay_status_cmd(
             token_scope: "none".to_string(),
             last_sync: None,
             relay_available: false,
+            reconnect_attempt: 0,
+            last_error: None,
         }),
     }
 }
