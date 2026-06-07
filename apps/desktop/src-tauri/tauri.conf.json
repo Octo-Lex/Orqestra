@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/nicegui/tauri/feat/dynamic-json-schema/core/tauri-config-schema/schema.json",
   "productName": "Orqestra",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "identifier": "com.orqestra.desktop",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -19,7 +19,15 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' asset: https://asset.localhost",
+        "connect-src": "'self' https://api.github.com https://ampify.ampify-cloud.workers.dev wss://ampify.ampify-cloud.workers.dev http://localhost:8787 http://localhost:1420",
+        "font-src": "'self'",
+        "object-src": "'none'"
+      }
     }
   },
   "bundle": {

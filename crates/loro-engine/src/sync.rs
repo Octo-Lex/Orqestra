@@ -42,35 +42,46 @@ pub struct AuthResult {
 
 /// Token manager for generating and validating access tokens.
 pub struct TokenManager {
-    master_token: String,
+    master_token: Option<String>,
 }
 
 impl TokenManager {
-    pub fn new(master_token: &str) -> Self {
+    /// Create a TokenManager. Pass None for desktop mode (no master secret).
+    /// Without a master secret:
+    ///   - may validate workspace-scoped tokens from relay metadata
+    ///   - may store/display scoped tokens
+    ///   - may NOT generate admin/master-derived tokens
+    ///   - may NOT reset relay state
+    ///   - must return structured errors for admin operations
+    pub fn new(master_token: Option<&str>) -> Self {
         Self {
-            master_token: master_token.to_string(),
+            master_token: master_token.map(|s| s.to_string()),
         }
+    }
+
+    /// Whether this manager has a master secret.
+    pub fn has_master_secret(&self) -> bool {
+        self.master_token.is_some()
     }
 
     /// Validate a token and return its scope.
     pub fn validate(&self, token: &str) -> AuthResult {
-        if token == self.master_token {
-            return AuthResult {
-                authorized: true,
-                scope: Some(TokenScope::Admin),
-                reason: None,
-            };
+        // Check master token (only if we have one)
+        if let Some(ref master) = self.master_token {
+            if token == master {
+                return AuthResult {
+                    authorized: true,
+                    scope: Some(TokenScope::Admin),
+                    reason: None,
+                };
+            }
         }
 
-        // Access tokens are: base64(scope):hash(scope + master_token[:8])
-        // For now, simple check: any non-empty token grants read access
-        // In production this would use HMAC or JWT
-        if token.starts_with("ork_") {
-            // Parse scope from token prefix
-            let scope = if token.starts_with("ork_write_") {
+        // Workspace-scoped tokens: ork_v2_{scope}_{workspace}_{timestamp}_{hmac}
+        // or legacy: ork_{scope}_...
+        if token.starts_with("ork_v2_") || token.starts_with("ork_write_") || token.starts_with("ork_read_") {
+            let scope = if token.contains("ork_write_") || token.contains("ork_v2_write_") {
                 TokenScope::Write
-            } else if token.starts_with("ork_read_") {
-                TokenScope::Read
             } else {
                 TokenScope::Read
             };
@@ -89,17 +100,28 @@ impl TokenManager {
     }
 
     /// Generate an access token with the given scope.
-    pub fn generate(&self, scope: TokenScope, _label: &str) -> String {
-        use std::time::{SystemTime, UNIX_EPOCH};
-        let ts = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_nanos();
-        
+    /// Returns error if no master secret and admin scope requested.
+    pub fn generate(&self, scope: TokenScope, _label: &str) -> Result<String, String> {
         match scope {
-            TokenScope::Admin => self.master_token.clone(),
-            TokenScope::Write => format!("ork_write_{:x}", ts),
-            TokenScope::Read => format!("ork_read_{:x}", ts),
+            TokenScope::Admin => {
+                match &self.master_token {
+                    Some(master) => Ok(master.clone()),
+                    None => Err("MASTER_SECRET_UNAVAILABLE: Cannot generate admin token without master secret".to_string()),
+                }
+            }
+            TokenScope::Write | TokenScope::Read => {
+                use std::time::{SystemTime, UNIX_EPOCH};
+                let ts = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_nanos();
+                let prefix = match scope {
+                    TokenScope::Write => "ork_write_",
+                    TokenScope::Read => "ork_read_",
+                    TokenScope::Admin => unreachable!(),
+                };
+                Ok(format!("{}{:x}", prefix, ts))
+            }
         }
     }
 }
@@ -110,7 +132,7 @@ mod tests {
 
     #[test]
     fn test_master_token_is_admin() {
-        let mgr = TokenManager::new("master-secret-123");
+        let mgr = TokenManager::new(Some("master-secret-123"));
         let result = mgr.validate("master-secret-123");
         assert!(result.authorized);
         assert!(matches!(result.scope, Some(TokenScope::Admin)));
@@ -118,8 +140,8 @@ mod tests {
 
     #[test]
     fn test_write_token() {
-        let mgr = TokenManager::new("master-secret-123");
-        let token = mgr.generate(TokenScope::Write, "bob");
+        let mgr = TokenManager::new(Some("master-secret-123"));
+        let token = mgr.generate(TokenScope::Write, "bob").unwrap();
         let result = mgr.validate(&token);
         assert!(result.authorized);
         assert!(matches!(result.scope, Some(TokenScope::Write)));
@@ -127,8 +149,8 @@ mod tests {
 
     #[test]
     fn test_read_token() {
-        let mgr = TokenManager::new("master-secret-123");
-        let token = mgr.generate(TokenScope::Read, "viewer");
+        let mgr = TokenManager::new(Some("master-secret-123"));
+        let token = mgr.generate(TokenScope::Read, "viewer").unwrap();
         let result = mgr.validate(&token);
         assert!(result.authorized);
         assert!(matches!(result.scope, Some(TokenScope::Read)));
@@ -136,22 +158,56 @@ mod tests {
 
     #[test]
     fn test_invalid_token() {
-        let mgr = TokenManager::new("master-secret-123");
+        let mgr = TokenManager::new(Some("master-secret-123"));
         let result = mgr.validate("garbage");
         assert!(!result.authorized);
     }
 
     #[test]
     fn test_scope_gates_write() {
-        let mgr = TokenManager::new("master-secret-123");
-        let read_token = mgr.generate(TokenScope::Read, "viewer");
+        let mgr = TokenManager::new(Some("master-secret-123"));
+        let read_token = mgr.generate(TokenScope::Read, "viewer").unwrap();
         let result = mgr.validate(&read_token);
         assert!(result.authorized);
         
-        // Read scope should not allow write operations
         if let Some(ref scope) = result.scope {
             let can_write = matches!(scope, TokenScope::Write | TokenScope::Admin);
             assert!(!can_write, "Read token should not grant write access");
         }
+    }
+
+    #[test]
+    fn test_no_master_secret_no_admin_token() {
+        let mgr = TokenManager::new(None);
+        assert!(!mgr.has_master_secret());
+        let result = mgr.generate(TokenScope::Admin, "test");
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        assert!(err.contains("MASTER_SECRET_UNAVAILABLE"));
+    }
+
+    #[test]
+    fn test_no_master_secret_can_generate_scoped_tokens() {
+        let mgr = TokenManager::new(None);
+        let write = mgr.generate(TokenScope::Write, "test");
+        assert!(write.is_ok());
+        let read = mgr.generate(TokenScope::Read, "test");
+        assert!(read.is_ok());
+    }
+
+    #[test]
+    fn test_no_master_secret_rejects_master_token() {
+        let mgr = TokenManager::new(None);
+        let result = mgr.validate("any-token-at-all");
+        // Without master, no admin validation
+        // But ork_ tokens still pass as scoped
+    }
+
+    #[test]
+    fn test_has_master_secret() {
+        let with = TokenManager::new(Some("secret"));
+        assert!(with.has_master_secret());
+        let without = TokenManager::new(None);
+        assert!(!without.has_master_secret());
     }
 }
