@@ -92,6 +92,10 @@ fn main() {
             commands::onboarding::set_onboarding_state_cmd,
             commands::onboarding::reset_onboarding_cmd,
             commands::onboarding::record_project_access_cmd,
+            // v2.6.0: Autonomy commands
+            commands::agents::set_autonomy_settings_cmd,
+            commands::agents::get_autonomy_settings_cmd,
+            commands::agents::auto_apply_patch_cmd,
             // v1.0.3: Project validation and sample project
             commands::project_validation::validate_project_cmd,
             commands::project_validation::create_sample_project_cmd,

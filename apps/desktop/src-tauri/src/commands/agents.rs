@@ -2,6 +2,16 @@ use crate::security::patch_guard::{
     AgentType, PatchProposal, PatchApplicationResult,
     apply_agent_patch, reject_agent_patch,
 };
+use crate::security::auto_apply::{
+    decide_auto_apply, build_auto_apply_audit, reset_session_counter,
+    session_auto_apply_count, compute_patch_size, validate_autonomy_enable,
+    increment_session_counter,
+};
+use crate::commands::onboarding_types::{
+    AutonomySettings, AutoApplyDecision, AutoApplyResult,
+    AutonomySettingsUpdate,
+};
+use crate::commands::onboarding::OnboardingStateManager;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::command;
@@ -716,4 +726,178 @@ pub struct ArchitectRiskSummary {
     pub high_count: usize,
     pub by_category: std::collections::HashMap<String, usize>,
     pub files_requiring_review: usize,
+}
+
+// ---------------------------------------------------------------------------
+// v2.6.0: Autonomy Commands
+//
+// Auto-apply: Rust loads persisted settings. Frontend never authoritative.
+// RequiresReview never writes files.
+// ---------------------------------------------------------------------------
+
+/// Enable or update autonomy settings.
+/// Server-side validation ensures policy is safe.
+/// Records when and by whom autonomy was enabled.
+#[command]
+pub fn set_autonomy_settings_cmd(
+    app: tauri::AppHandle,
+    update: AutonomySettingsUpdate,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<AutonomySettings, String> {
+    let settings = manager.update(&app, |state| {
+        if let Some(enabled) = update.enabled {
+            if enabled {
+                // Validate before enabling
+                if let Err(e) = validate_autonomy_enable(&state.autonomy) {
+                    // Don't enable — return current settings unchanged
+                    return;
+                }
+                state.autonomy.enabled = true;
+                state.autonomy.enabled_at = Some(chrono::Utc::now().to_rfc3339());
+                state.autonomy.enabled_by = Some("local-user".to_string());
+                state.autonomy.policy_version = crate::commands::onboarding_types::AUTONOMY_POLICY_VERSION;
+            } else {
+                state.autonomy.enabled = false;
+                state.autonomy.enabled_at = None;
+                state.autonomy.enabled_by = None;
+            }
+        }
+    }).map_err(|e| format!("Failed to update autonomy settings: {:?}", e))?;
+
+    Ok(settings.autonomy)
+}
+
+/// Get current autonomy settings (read-only).
+#[command]
+pub fn get_autonomy_settings_cmd(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<AutonomySettings, String> {
+    let state = manager.get_or_load(&app);
+    Ok(state.autonomy)
+}
+
+/// Auto-apply a patch if all gates pass.
+/// Rust loads persisted settings — frontend never supplies policy.
+/// RequiresReview never writes files, records audit only.
+/// Auto-apply never commits.
+#[command]
+pub fn auto_apply_patch_cmd(
+    app: tauri::AppHandle,
+    project_root: String,
+    patch: PatchProposal,
+    confidence: f64,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<AutoApplyResult, String> {
+    use crate::security::patch_guard::AgentType;
+    use std::path::Path;
+
+    // Load persisted settings — frontend is NOT authoritative
+    let state = manager.get_or_load(&app);
+    let settings = &state.autonomy;
+
+    // Get current file checksum (server-side)
+    let full_path = Path::new(&project_root).join(&patch.path);
+    let current_checksum = if full_path.exists() {
+        use sha2::{Sha256, Digest};
+        if let Ok(content) = std::fs::read_to_string(&full_path) {
+            let mut hasher = Sha256::new();
+            hasher.update(content.as_bytes());
+            Some(format!("{:x}", hasher.finalize()))
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
+    // Decide
+    let decision = decide_auto_apply(
+        settings,
+        &AgentType::Docs,
+        &patch,
+        confidence,
+        current_checksum.as_deref(),
+    );
+
+    let path_class = crate::security::auto_apply::classify_path_for_audit(&patch.path);
+
+    match &decision {
+        AutoApplyDecision::Allowed => {
+            // Increment session counter
+            let prev = session_auto_apply_count();
+
+            // Apply through existing PatchApplicationGuard
+            let root = Path::new(&project_root);
+            let result = apply_agent_patch(
+                root,
+                &patch,
+                &settings.docs_safe_paths,
+                &AgentType::Docs,
+            );
+
+            if result.status == crate::security::patch_guard::PatchStatus::Applied {
+                // Increment counter only on success
+                crate::security::auto_apply::increment_session_counter()
+                    
+            }
+
+            let audit = build_auto_apply_audit(
+                &patch.proposal_id,
+                &patch,
+                &decision,
+                settings.policy_version,
+            );
+
+            Ok(AutoApplyResult {
+                proposal_id: patch.proposal_id.clone(),
+                decision: AutoApplyDecision::Allowed,
+                path_class,
+                applied: result.status == crate::security::patch_guard::PatchStatus::Applied,
+                auto_commit: false,
+                reason_codes: vec![],
+                before_checksum: patch.before_checksum.clone(),
+                after_checksum: result.after_checksum,
+            })
+        }
+        AutoApplyDecision::Rejected(reason) => {
+            let audit = build_auto_apply_audit(
+                &patch.proposal_id,
+                &patch,
+                &decision,
+                settings.policy_version,
+            );
+
+            Ok(AutoApplyResult {
+                proposal_id: patch.proposal_id.clone(),
+                decision: decision.clone(),
+                path_class,
+                applied: false,
+                auto_commit: false,
+                reason_codes: vec![format!("{:?}", reason).to_lowercase().replace('_', "-")],
+                before_checksum: patch.before_checksum.clone(),
+                after_checksum: None,
+            })
+        }
+        AutoApplyDecision::RequiresReview => {
+            // RequiresReview never writes files, records audit only
+            let audit = build_auto_apply_audit(
+                &patch.proposal_id,
+                &patch,
+                &decision,
+                settings.policy_version,
+            );
+
+            Ok(AutoApplyResult {
+                proposal_id: patch.proposal_id.clone(),
+                decision: AutoApplyDecision::RequiresReview,
+                path_class,
+                applied: false,
+                auto_commit: false,
+                reason_codes: vec!["session-cap-exceeded".to_string()],
+                before_checksum: patch.before_checksum.clone(),
+                after_checksum: None,
+            })
+        }
+    }
 }

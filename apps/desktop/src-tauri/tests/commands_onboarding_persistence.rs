@@ -126,6 +126,7 @@ fn test_app_state_json_roundtrip() {
             last_known_relay_status: RelayConnectionStatus::Connected,
         }],
         last_opened_at: Some("2026-06-08T00:00:00Z".to_string()),
+        autonomy: orqestra_desktop::commands::onboarding_types::AutonomySettings::default(),
     };
     let json = serde_json::to_string_pretty(&state).unwrap();
     let parsed: AppState = serde_json::from_str(&json).unwrap();
@@ -210,6 +211,7 @@ fn test_app_state_paths_not_in_diagnostics_format() {
         last_project_id: Some("proj-abc".to_string()),
         recent_projects: vec![],
         last_opened_at: Some("2026-06-08T00:00:00Z".to_string()),
+        autonomy: orqestra_desktop::commands::onboarding_types::AutonomySettings::default(),
     };
     // For diagnostics, project_id is safe (it's already a hash)
     // raw paths must be hashed before export
