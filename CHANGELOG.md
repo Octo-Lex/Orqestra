@@ -4,6 +4,36 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.6.0] - 2026-06-08
+
+### Added
+- Controlled low-risk autonomy pilot: docs-only auto-apply
+- `AutonomySettings` DTO persisted in AppState, disabled by default
+- 12-gate auto-apply decision engine (`security/auto_apply.rs`)
+- Docs-safe allowlist: `docs/` and `README.md` only
+- `CHANGELOG.md` and `roadmap/` explicitly excluded
+- README.md uses stricter confidence threshold (0.90 vs 0.80)
+- `set_autonomy_settings_cmd` — server-side validation, no frontend policy widening
+- `auto_apply_patch_cmd` — Rust loads persisted settings, never trusts caller
+- Per-session auto-apply cap (default 5)
+- `RequiresReview` decision — never writes, records audit only
+- Patch size computed server-side from actual content
+- Path canonicalization and traversal detection before allowlist checks
+- Redacted auto-apply audit records (path class, not raw path)
+- `get_autonomy_settings_cmd` — read-only settings access
+- 33 new auto_apply unit tests + 17 onboarding persistence tests
+
+### Changed
+- Diagnostics report autonomy as `pilot` mode with policy metadata
+- `AutonomySettings` stored in `app-state.json` alongside AppState
+
+### Security
+- Frontend never authoritative for autonomy policy
+- Auto-apply never commits
+- All existing PatchApplicationGuard checks still apply
+- Traversal and symlink escape attempts fail closed
+- Audit records contain no source bodies, tokens, or raw paths
+
 ## [2.5.3] - 2026-06-08
 
 ### Added
