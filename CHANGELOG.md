@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.7.0] - 2026-06-09
+
+### Added
+- Autonomy observability: audit persistence, metrics, and pilot evaluation
+- `append_auto_apply_audit()` — append-only JSONL, one record per line
+- `read_auto_apply_audit()` — malformed-line-tolerant reader
+- `AutonomyMetrics` — session and audit-derived metrics separately
+- `get_autonomy_summary_cmd` — policy + session + audit metrics + safety report
+- `export_autonomy_audit_cmd` — read all persisted JSONL records
+- `get_autonomy_diagnostics_cmd` — aggregate counts only, hashed proposal IDs
+- `record_manual_commit_after_auto_apply_cmd` — gated by known applied proposal_id
+- `PilotSafetyReport` — rejection rate, audit completeness, session cap hits
+- `verify_audit_redaction()` — recursive scan of values, not keys
+- `audit_schema_version` in all audit records
+- 28 new tests
+
+### Changed
+- `auto_apply_patch_cmd` now persists audit to JSONL on every decision
+- `RequiresReview` decision persisted to audit (no write, just record)
+- Diagnostics report aggregate autonomy metrics by default
+
+### Security
+- Diagnostics hash proposal IDs, no raw recent decisions
+- Redaction scan checks values and secret-shaped patterns, not field names
+- Manual follow-up only accepts known applied proposal IDs
+- Audit JSONL malformed lines skipped and counted, never fatal
+
 ## [2.6.0] - 2026-06-08
 
 ### Added

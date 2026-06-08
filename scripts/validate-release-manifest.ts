@@ -558,6 +558,20 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.7.0: Autonomy Observability
+  if ((pr as any).autonomy_observability) {
+    const ao = (pr as any).autonomy_observability;
+    if (ao.audit_records_persist_to_disk !== true) fail('product_readiness.autonomy_observability.audit_records_persist_to_disk must be true');
+    if (ao.summary_distinguishes_session_and_audit_metrics !== true) fail('product_readiness.autonomy_observability.summary_distinguishes_session_and_audit_metrics must be true');
+    if (ao.manual_follow_up_gated_by_known_applied_proposal !== true) fail('product_readiness.autonomy_observability.manual_follow_up_gated_by_known_applied_proposal must be true');
+    if (ao.diagnostics_aggregate_counts_only !== true) fail('product_readiness.autonomy_observability.diagnostics_aggregate_counts_only must be true');
+    if (ao.redaction_scan_values_not_keys !== true) fail('product_readiness.autonomy_observability.redaction_scan_values_not_keys must be true');
+    if (ao.audit_schema_version_included !== true) fail('product_readiness.autonomy_observability.audit_schema_version_included must be true');
+    if (ao.no_secrets_in_audit_records !== true) fail('product_readiness.autonomy_observability.no_secrets_in_audit_records must be true');
+  } else {
+    warn('product_readiness.autonomy_observability section missing (v2.7.0+)');
+  }
+
   // v2.6.0: Controlled Autonomy Pilot
   if ((pr as any).controlled_autonomy_pilot) {
     const ca = (pr as any).controlled_autonomy_pilot;
