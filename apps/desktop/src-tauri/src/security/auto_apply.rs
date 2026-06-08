@@ -356,6 +356,20 @@ pub fn validate_autonomy_enable(settings: &AutonomySettings) -> Result<(), Strin
         return Err("min_confidence_readme must be >= min_confidence_docs".to_string());
     }
 
+    // Cap must be within Rust-enforced bounds
+    if settings.max_auto_apply_per_session < MIN_AUTO_APPLY_PER_SESSION {
+        return Err(format!(
+            "max_auto_apply_per_session must be >= {}",
+            MIN_AUTO_APPLY_PER_SESSION
+        ));
+    }
+    if settings.max_auto_apply_per_session > MAX_AUTO_APPLY_PER_SESSION {
+        return Err(format!(
+            "max_auto_apply_per_session must be <= {}",
+            MAX_AUTO_APPLY_PER_SESSION
+        ));
+    }
+
     Ok(())
 }
 
@@ -684,6 +698,18 @@ pub fn increment_manual_commit_counter() {
     update_session_metrics(|m| {
         m.manual_commits_after_auto_apply += 1;
     });
+}
+
+/// Build explanation for RequiresReview due to cap hit.
+pub fn build_requires_review_explanation(settings: &AutonomySettings) -> RequiresReviewExplanation {
+    let applied = session_auto_apply_count();
+    RequiresReviewExplanation {
+        reason: "Session auto-apply cap reached".to_string(),
+        session_applied: applied,
+        configured_cap: settings.max_auto_apply_per_session,
+        remaining: 0,
+        reset_behavior: "Cap resets on app restart".to_string(),
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -1188,5 +1214,95 @@ mod tests {
         let settings = AutonomySettings::default();
         let report = generate_pilot_safety_report(&metrics, &settings, &[]);
         assert!(report.no_auto_commits);
+    }
+
+    // -----------------------------------------------------------------------
+    // v2.8.0: Configurable cap tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_default_cap_is_5() {
+        assert_eq!(AutonomySettings::default().max_auto_apply_per_session, 5);
+    }
+
+    #[test]
+    fn test_min_cap_is_1() {
+        assert_eq!(crate::commands::onboarding_types::MIN_AUTO_APPLY_PER_SESSION, 1);
+    }
+
+    #[test]
+    fn test_max_cap_is_10() {
+        assert_eq!(crate::commands::onboarding_types::MAX_AUTO_APPLY_PER_SESSION, 10);
+    }
+
+    #[test]
+    fn test_validate_rejects_cap_below_min() {
+        let mut s = AutonomySettings::default();
+        s.max_auto_apply_per_session = 0;
+        assert!(validate_autonomy_enable(&s).is_err());
+    }
+
+    #[test]
+    fn test_validate_rejects_cap_above_max() {
+        let mut s = AutonomySettings::default();
+        s.max_auto_apply_per_session = 20;
+        assert!(validate_autonomy_enable(&s).is_err());
+    }
+
+    #[test]
+    fn test_validate_accepts_cap_10() {
+        let mut s = AutonomySettings::default();
+        s.enabled = true;
+        s.max_auto_apply_per_session = 10;
+        assert!(validate_autonomy_enable(&s).is_ok());
+    }
+
+    #[test]
+    fn test_cap_exceeded_routes_to_requires_review() {
+        let mut settings = default_settings();
+        settings.max_auto_apply_per_session = 1;
+        // First apply succeeds
+        let patch1 = make_patch("docs/guide.md");
+        let d1 = decide_auto_apply(&settings, &AgentType::Docs, &patch1, 0.95, None);
+        assert!(matches!(d1, AutoApplyDecision::Allowed));
+
+        // Simulate incrementing counter
+        increment_session_counter();
+
+        // Second apply hits cap → RequiresReview
+        let patch2 = make_patch("docs/other.md");
+        let d2 = decide_auto_apply(&settings, &AgentType::Docs, &patch2, 0.95, None);
+        assert!(matches!(d2, AutoApplyDecision::RequiresReview));
+
+        reset_session_metrics();
+    }
+
+    #[test]
+    fn test_requires_review_explanation() {
+        let mut settings = default_settings();
+        settings.max_auto_apply_per_session = 3;
+        increment_session_counter();
+        increment_session_counter();
+        increment_session_counter();
+
+        let explanation = build_requires_review_explanation(&settings);
+        assert_eq!(explanation.configured_cap, 3);
+        assert_eq!(explanation.remaining, 0);
+        assert!(!explanation.reset_behavior.is_empty());
+
+        reset_session_metrics();
+    }
+
+    #[test]
+    fn test_cap_change_does_not_affect_paths_or_thresholds() {
+        let mut s = AutonomySettings::default();
+        s.max_auto_apply_per_session = 10;
+        // Paths unchanged
+        assert_eq!(s.docs_safe_paths, vec!["docs/".to_string(), "README.md".to_string()]);
+        // Thresholds unchanged
+        assert_eq!(s.min_confidence_docs, 0.80);
+        assert_eq!(s.min_confidence_readme, 0.90);
+        // Auto-commit still false
+        assert!(!s.auto_commit);
     }
 }

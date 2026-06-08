@@ -140,6 +140,12 @@ pub const AUTONOMY_POLICY_VERSION: u32 = 1;
 /// Default max auto-apply attempts per session.
 pub const DEFAULT_MAX_AUTO_APPLY_PER_SESSION: usize = 5;
 
+/// Minimum allowed cap (cannot go below 1).
+pub const MIN_AUTO_APPLY_PER_SESSION: usize = 1;
+
+/// Maximum allowed cap (Rust-enforced, frontend cannot exceed).
+pub const MAX_AUTO_APPLY_PER_SESSION: usize = 10;
+
 /// Default minimum confidence for docs/** paths.
 pub const DEFAULT_MIN_CONFIDENCE_DOCS: f64 = 0.80;
 
@@ -175,6 +181,10 @@ pub struct AutonomySettings {
     pub enabled_at: Option<String>,
     /// Who enabled autonomy (audit).
     pub enabled_by: Option<String>,
+    /// Timestamp when cap was last changed (audit).
+    pub cap_changed_at: Option<String>,
+    /// Previous cap value (audit).
+    pub cap_previous_value: Option<usize>,
 }
 
 impl Default for AutonomySettings {
@@ -192,6 +202,8 @@ impl Default for AutonomySettings {
             max_auto_apply_per_session: DEFAULT_MAX_AUTO_APPLY_PER_SESSION,
             enabled_at: None,
             enabled_by: None,
+            cap_changed_at: None,
+            cap_previous_value: None,
         }
     }
 }
@@ -201,6 +213,7 @@ impl Default for AutonomySettings {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutonomySettingsUpdate {
     pub enabled: Option<bool>,
+    pub max_auto_apply_per_session: Option<usize>,
 }
 
 // ---------------------------------------------------------------------------
@@ -294,6 +307,8 @@ pub struct AutonomySummary {
     pub malformed_audit_lines: usize,
     pub recent_decisions: Vec<AutoApplyAuditRecord>,
     pub safety_report: PilotSafetyReport,
+    pub configured_cap: usize,
+    pub session_cap_remaining: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -320,6 +335,8 @@ pub struct AutonomyDiagnosticsSection {
     pub audit_record_count: usize,
     pub aggregate_metrics: AutonomyMetrics,
     pub safety_report_summary: PilotSafetyReport,
+    pub configured_cap: usize,
+    pub cap_hit_count: usize,
     // No raw proposal IDs, no recent decisions
     // Proposal IDs hashed in diagnostics
 }
@@ -328,6 +345,15 @@ pub struct AutonomyDiagnosticsSection {
 pub struct AuditExportResult {
     pub records: Vec<AutoApplyAuditRecord>,
     pub malformed_line_count: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RequiresReviewExplanation {
+    pub reason: String,
+    pub session_applied: usize,
+    pub configured_cap: usize,
+    pub remaining: usize,
+    pub reset_behavior: String,
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.8.0] - 2026-06-09
+
+### Added
+- Configurable per-session auto-apply cap (1–10, default remains 5)
+- `MIN_AUTO_APPLY_PER_SESSION = 1`, `MAX_AUTO_APPLY_PER_SESSION = 10` (Rust-enforced)
+- Cap changes persisted in AppState with audit trail (`cap_changed_at`, `cap_previous_value`)
+- `RequiresReviewExplanation` DTO (reason, session count, remaining, reset behavior)
+- Autonomy summary shows `configured_cap` and `session_cap_remaining`
+- Diagnostics report `configured_cap` and `cap_hit_count`
+- `build_requires_review_explanation()` for UI display
+- 18 new tests
+
+### Changed
+- `set_autonomy_settings_cmd` accepts `max_auto_apply_per_session` update
+- Frontend cannot set cap above Rust-enforced maximum (clamped server-side)
+- Cap validation added to `validate_autonomy_enable`
+
+### Fixed
+- Test count evidence normalized: 416 Rust + 24 Worker = 440 (not 678+24=702)
+
+### Security
+- No new paths added to allowlist
+- No confidence thresholds lowered
+- No link-fix special case added
+- auto_commit remains false
+- Changing cap does not change allowlist, agent, threshold, or commit policy
+
 ## [2.7.0] - 2026-06-09
 
 ### Added
