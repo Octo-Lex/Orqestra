@@ -25,6 +25,8 @@ pub struct RelayStatus {
     pub token_scope: String,
     pub last_sync: Option<String>,
     pub relay_available: bool,
+    pub reconnect_attempt: u32,
+    pub last_error: Option<String>,
 }
 
 /// A queued delta waiting to be sent to the relay.
@@ -91,6 +93,8 @@ impl RelayClient {
             token_scope: self.token_scope.clone(),
             last_sync: self.last_sync.clone(),
             relay_available: true, // Updated on connection attempt
+            reconnect_attempt: 0,
+            last_error: None,
         }
     }
 
@@ -148,7 +152,7 @@ impl RelayClient {
     }
 
     /// Generate a new UUID-like message ID.
-    fn new_message_id() -> String {
+    pub fn new_message_id() -> String {
         use std::time::{SystemTime, UNIX_EPOCH};
         let ts = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -160,6 +164,16 @@ impl RelayClient {
     /// Check if an ack was received for a message_id.
     pub fn is_acked(&self, message_id: &str) -> bool {
         self.seen_ack_ids.contains(message_id)
+    }
+
+    /// Get the number of queued deltas.
+    pub fn queued_delta_count(&self) -> usize {
+        self.queued_deltas.len()
+    }
+
+    /// Generate a new UUID-like message ID (static version for external use).
+    pub fn new_message_id_static() -> String {
+        Self::new_message_id()
     }
 }
 
