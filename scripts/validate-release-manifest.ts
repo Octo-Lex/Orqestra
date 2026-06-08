@@ -558,6 +558,19 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.8.0: Docs Autonomy Expansion
+  if ((pr as any).docs_autonomy_expansion) {
+    const de = (pr as any).docs_autonomy_expansion;
+    if (de.default_cap_remains_5 !== true) fail('product_readiness.docs_autonomy_expansion.default_cap_remains_5 must be true');
+    if (de.cap_configurable_1_to_10 !== true) fail('product_readiness.docs_autonomy_expansion.cap_configurable_1_to_10 must be true');
+    if (de.frontend_cannot_exceed_rust_max !== true) fail('product_readiness.docs_autonomy_expansion.frontend_cannot_exceed_rust_max must be true');
+    if (de.no_new_paths_added !== true) fail('product_readiness.docs_autonomy_expansion.no_new_paths_added must be true');
+    if (de.no_thresholds_lowered !== true) fail('product_readiness.docs_autonomy_expansion.no_thresholds_lowered must be true');
+    if (de.auto_commit_remains_false !== true) fail('product_readiness.docs_autonomy_expansion.auto_commit_remains_false must be true');
+  } else {
+    warn('product_readiness.docs_autonomy_expansion section missing (v2.8.0+)');
+  }
+
   // v2.7.0: Autonomy Observability
   if ((pr as any).autonomy_observability) {
     const ao = (pr as any).autonomy_observability;
