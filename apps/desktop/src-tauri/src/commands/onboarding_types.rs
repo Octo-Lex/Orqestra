@@ -249,8 +249,12 @@ pub struct AutoApplyResult {
     pub after_checksum: Option<String>,
 }
 
+/// Current audit schema version.
+pub const AUDIT_SCHEMA_VERSION: u32 = 1;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AutoApplyAuditRecord {
+    pub audit_schema_version: u32,
     pub timestamp: String,
     pub proposal_id: String,
     pub agent: String,
@@ -262,6 +266,68 @@ pub struct AutoApplyAuditRecord {
     pub applied: bool,
     pub auto_commit: bool,
     pub policy_version: u32,
+}
+
+// ---------------------------------------------------------------------------
+// Autonomy Observability DTOs (v2.7.0)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct AutonomyMetrics {
+    pub total_decisions: usize,
+    pub allowed_count: usize,
+    pub rejected_count: usize,
+    pub requires_review_count: usize,
+    pub rejection_reasons: std::collections::HashMap<String, usize>,
+    pub path_classes_allowed: std::collections::HashMap<String, usize>,
+    pub path_classes_rejected: std::collections::HashMap<String, usize>,
+    pub manual_commits_after_auto_apply: usize,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutonomySummary {
+    pub enabled: bool,
+    pub policy_version: u32,
+    pub session_metrics: AutonomyMetrics,
+    pub audit_metrics: AutonomyMetrics,
+    pub audit_record_count: usize,
+    pub malformed_audit_lines: usize,
+    pub recent_decisions: Vec<AutoApplyAuditRecord>,
+    pub safety_report: PilotSafetyReport,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct PilotSafetyReport {
+    pub report_timestamp: String,
+    pub pilot_duration: Option<String>,
+    pub total_auto_applied: usize,
+    pub total_rejected: usize,
+    pub total_requires_review: usize,
+    pub rejection_rate: f64,
+    pub top_rejection_reasons: Vec<(String, usize)>,
+    pub no_secrets_in_audit: bool,
+    pub no_auto_commits: bool,
+    pub no_source_files_touched: bool,
+    pub audit_completeness: f64,
+    pub session_cap_hit_count: usize,
+    pub manual_follow_up_rate: Option<f64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutonomyDiagnosticsSection {
+    pub enabled: bool,
+    pub policy_version: u32,
+    pub audit_record_count: usize,
+    pub aggregate_metrics: AutonomyMetrics,
+    pub safety_report_summary: PilotSafetyReport,
+    // No raw proposal IDs, no recent decisions
+    // Proposal IDs hashed in diagnostics
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AuditExportResult {
+    pub records: Vec<AutoApplyAuditRecord>,
+    pub malformed_line_count: usize,
 }
 
 // ---------------------------------------------------------------------------
