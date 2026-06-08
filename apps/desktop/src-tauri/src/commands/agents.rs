@@ -6,12 +6,17 @@ use crate::security::auto_apply::{
     decide_auto_apply, build_auto_apply_audit, reset_session_counter,
     session_auto_apply_count, compute_patch_size, validate_autonomy_enable,
     increment_session_counter,
+    append_auto_apply_audit, read_auto_apply_audit, compute_audit_metrics,
+    generate_pilot_safety_report, verify_audit_redaction, hash_proposal_id,
+    is_known_applied_proposal, increment_manual_commit_counter, get_session_metrics,
 };
 use crate::commands::onboarding_types::{
     AutonomySettings, AutoApplyDecision, AutoApplyResult,
-    AutonomySettingsUpdate,
+    AutonomySettingsUpdate, AutonomySummary, AuditExportResult,
+    PilotSafetyReport, AutonomyDiagnosticsSection,
 };
 use crate::commands::onboarding::OnboardingStateManager;
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::command;
@@ -848,6 +853,8 @@ pub fn auto_apply_patch_cmd(
                 &decision,
                 settings.policy_version,
             );
+            // Persist audit to JSONL
+            let _ = append_auto_apply_audit(Path::new(&project_root), &audit);
 
             Ok(AutoApplyResult {
                 proposal_id: patch.proposal_id.clone(),
@@ -867,6 +874,8 @@ pub fn auto_apply_patch_cmd(
                 &decision,
                 settings.policy_version,
             );
+            // Persist audit to JSONL
+            let _ = append_auto_apply_audit(Path::new(&project_root), &audit);
 
             Ok(AutoApplyResult {
                 proposal_id: patch.proposal_id.clone(),
@@ -887,6 +896,8 @@ pub fn auto_apply_patch_cmd(
                 &decision,
                 settings.policy_version,
             );
+            // Persist audit to JSONL (no write, just decision record)
+            let _ = append_auto_apply_audit(Path::new(&project_root), &audit);
 
             Ok(AutoApplyResult {
                 proposal_id: patch.proposal_id.clone(),
@@ -900,4 +911,97 @@ pub fn auto_apply_patch_cmd(
             })
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// v2.7.0: Autonomy Observability Commands
+// ---------------------------------------------------------------------------
+
+/// Get autonomy summary with session and audit-derived metrics.
+/// Returns last 20 redacted decisions for local UI only.
+#[command]
+pub fn get_autonomy_summary_cmd(
+    app: tauri::AppHandle,
+    project_root: String,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<AutonomySummary, String> {
+    let state = manager.get_or_load(&app);
+    let settings = &state.autonomy;
+
+    let root = Path::new(&project_root);
+    let (audit_metrics, audit_count) = compute_audit_metrics(root);
+    let session_metrics = get_session_metrics();
+
+    let export = read_auto_apply_audit(root);
+    let recent: Vec<_> = export.records.iter().rev().take(20).cloned().collect();
+
+    let safety_report = generate_pilot_safety_report(
+        &audit_metrics,
+        settings,
+        &export.records,
+    );
+
+    Ok(AutonomySummary {
+        enabled: settings.enabled,
+        policy_version: settings.policy_version,
+        session_metrics,
+        audit_metrics,
+        audit_record_count: audit_count,
+        malformed_audit_lines: export.malformed_line_count,
+        recent_decisions: recent,
+        safety_report,
+    })
+}
+
+/// Export all autonomy audit records.
+/// Reads from persisted JSONL, skips malformed lines.
+#[command]
+pub fn export_autonomy_audit_cmd(
+    project_root: String,
+) -> Result<AuditExportResult, String> {
+    let root = Path::new(&project_root);
+    Ok(read_auto_apply_audit(root))
+}
+
+/// Record that user manually committed after auto-apply.
+/// Only accepts known applied proposal IDs.
+#[command]
+pub fn record_manual_commit_after_auto_apply_cmd(
+    proposal_id: String,
+) -> Result<(), String> {
+    if !is_known_applied_proposal(&proposal_id) {
+        return Err("Unknown or non-applied proposal_id. Manual follow-up can only be recorded for known applied auto-apply proposals.".to_string());
+    }
+    increment_manual_commit_counter();
+    Ok(())
+}
+
+/// Get autonomy diagnostics section (aggregate counts, hashed IDs, no raw decisions).
+#[command]
+pub fn get_autonomy_diagnostics_cmd(
+    app: tauri::AppHandle,
+    project_root: String,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<AutonomyDiagnosticsSection, String> {
+    let state = manager.get_or_load(&app);
+    let settings = &state.autonomy;
+
+    let root = Path::new(&project_root);
+    let (audit_metrics, audit_count) = compute_audit_metrics(root);
+
+    let export = read_auto_apply_audit(root);
+    let safety_report = generate_pilot_safety_report(
+        &audit_metrics,
+        settings,
+        &export.records,
+    );
+
+    Ok(AutonomyDiagnosticsSection {
+        enabled: settings.enabled,
+        policy_version: settings.policy_version,
+        audit_record_count: audit_count,
+        aggregate_metrics: audit_metrics,
+        safety_report_summary: safety_report,
+        // No raw proposal IDs, no recent decisions
+    })
 }
