@@ -1,6 +1,6 @@
-//! Persistent app state DTOs (v2.5.3).
+//! Persistent app state DTOs (v2.5.3) + Autonomy settings (v2.6.0).
 //!
-//! Onboarding state, project records, and recent projects.
+//! Onboarding state, project records, recent projects, and autonomy policy.
 //! Stored in `{app_data_dir}/app-state.json`.
 //!
 //! Boundaries:
@@ -8,6 +8,9 @@
 //!   diagnostic bundles: must hash/redact all paths
 //!
 //! No secrets, tokens, PATs, or CRDT data in this file.
+//!
+//! Autonomy correction: Rust loads persisted autonomy settings;
+//! frontend may request auto-apply but may not define policy.
 
 use serde::{Deserialize, Serialize};
 
@@ -22,6 +25,8 @@ pub struct AppState {
     pub last_project_id: Option<String>,
     pub recent_projects: Vec<ProjectRecord>,
     pub last_opened_at: Option<String>,
+    /// v2.6.0: Autonomy settings (persisted, loaded server-side)
+    pub autonomy: AutonomySettings,
 }
 
 impl Default for AppState {
@@ -32,6 +37,7 @@ impl Default for AppState {
             last_project_id: None,
             recent_projects: Vec::new(),
             last_opened_at: None,
+            autonomy: AutonomySettings::default(),
         }
     }
 }
@@ -116,6 +122,146 @@ pub struct ResetOnboardingRequest {
     pub clear_project_history: bool,
     // NOTE: OS-keychain credentials are NEVER cleared here.
     // Use a separate credential command for secret deletion.
+}
+
+// ---------------------------------------------------------------------------
+// Autonomy Settings (v2.6.0)
+//
+// Stored in AppState, loaded server-side. Frontend never authoritative.
+// ---------------------------------------------------------------------------
+
+/// Docs-safe auto-apply paths. Narrower than server-side agent policy.
+/// CHANGELOG.md and roadmap/ excluded.
+pub const DOCS_AUTO_APPLY_PATHS: &[&str] = &["docs/", "README.md"];
+
+/// Current autonomy policy version.
+pub const AUTONOMY_POLICY_VERSION: u32 = 1;
+
+/// Default max auto-apply attempts per session.
+pub const DEFAULT_MAX_AUTO_APPLY_PER_SESSION: usize = 5;
+
+/// Default minimum confidence for docs/** paths.
+pub const DEFAULT_MIN_CONFIDENCE_DOCS: f64 = 0.80;
+
+/// Minimum confidence for README.md (stricter — public-facing, release-adjacent).
+pub const MIN_CONFIDENCE_README: f64 = 0.90;
+
+/// Default max patch bytes (applies to after.len()).
+pub const DEFAULT_MAX_PATCH_BYTES: usize = 32_768;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutonomySettings {
+    /// Autonomy disabled by default. User must explicitly enable.
+    pub enabled: bool,
+    /// Policy version for audit trail.
+    pub policy_version: u32,
+    /// Only "docs" agent allowed in pilot.
+    pub allowed_agent: String,
+    /// Only "auto-apply" operation allowed.
+    pub allowed_operation: String,
+    /// Always false. Auto-apply never commits.
+    pub auto_commit: bool,
+    /// Docs-safe path allowlist. Must be exactly ["docs/", "README.md"] or narrower.
+    pub docs_safe_paths: Vec<String>,
+    /// Max patch size in bytes (computed server-side from after content).
+    pub max_patch_bytes: usize,
+    /// Min confidence for docs/** paths.
+    pub min_confidence_docs: f64,
+    /// Min confidence for README.md (>= min_confidence_docs).
+    pub min_confidence_readme: f64,
+    /// Max auto-apply attempts per session.
+    pub max_auto_apply_per_session: usize,
+    /// Timestamp when autonomy was enabled (audit).
+    pub enabled_at: Option<String>,
+    /// Who enabled autonomy (audit).
+    pub enabled_by: Option<String>,
+}
+
+impl Default for AutonomySettings {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            policy_version: AUTONOMY_POLICY_VERSION,
+            allowed_agent: "docs".to_string(),
+            allowed_operation: "auto-apply".to_string(),
+            auto_commit: false,
+            docs_safe_paths: DOCS_AUTO_APPLY_PATHS.iter().map(|s| s.to_string()).collect(),
+            max_patch_bytes: DEFAULT_MAX_PATCH_BYTES,
+            min_confidence_docs: DEFAULT_MIN_CONFIDENCE_DOCS,
+            min_confidence_readme: MIN_CONFIDENCE_README,
+            max_auto_apply_per_session: DEFAULT_MAX_AUTO_APPLY_PER_SESSION,
+            enabled_at: None,
+            enabled_by: None,
+        }
+    }
+}
+
+/// Update request for autonomy settings (frontend may request changes,
+/// but Rust validates server-side).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutonomySettingsUpdate {
+    pub enabled: Option<bool>,
+}
+
+// ---------------------------------------------------------------------------
+// Autonomy decision types
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum AutoApplyDecision {
+    Allowed,
+    Rejected(AutoApplyRejectReason),
+    RequiresReview,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum AutoApplyRejectReason {
+    AutonomyDisabled,
+    WrongAgent,
+    WrongOperation,
+    AutoCommitNotFalse,
+    PathForbidden,
+    PathNotInAllowlist,
+    PathExcluded,
+    OperationalRiskBlocked,
+    CredentialSecretRisk,
+    WorkflowRisk,
+    DependencyRisk,
+    PatchTooLarge,
+    ConfidenceBelowThreshold,
+    BeforeChecksumMismatch,
+    SessionCapExceeded,
+    TraversalAttempt,
+    BinaryFile,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoApplyResult {
+    pub proposal_id: String,
+    pub decision: AutoApplyDecision,
+    pub path_class: String,
+    pub applied: bool,
+    pub auto_commit: bool,
+    pub reason_codes: Vec<String>,
+    pub before_checksum: String,
+    pub after_checksum: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AutoApplyAuditRecord {
+    pub timestamp: String,
+    pub proposal_id: String,
+    pub agent: String,
+    pub path_class: String,
+    pub policy_decision: String,
+    pub reason_codes: Vec<String>,
+    pub before_checksum: String,
+    pub after_checksum: Option<String>,
+    pub applied: bool,
+    pub auto_commit: bool,
+    pub policy_version: u32,
 }
 
 // ---------------------------------------------------------------------------

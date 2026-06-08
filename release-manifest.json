@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.5.3",
-    "tag": "v2.5.3",
+    "name": "Orqestra v2.6.0",
+    "tag": "v2.6.0",
     "channel": "public-beta",
-    "release_version": "2.5.3",
-    "app_version": "2.5.3",
+    "release_version": "2.6.0",
+    "app_version": "2.6.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.5.3_x64-setup.exe",
+      "name": "Orqestra_2.6.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "5cfa3c3f4b82f15eee45281e80cd0fd52b054263aa70520a0bbeb38dc67aa1e1",
-      "size_bytes": 5185797,
+      "sha256": "1e6b90417da4485b530cc086d5a553133d85ecc246c534387fe35029c5bcddbd",
+      "size_bytes": 5201856,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_2.5.3_x64.AppImage",
+      "name": "Orqestra_2.6.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -627,6 +627,28 @@
       "no_secrets_in_app_state": true,
       "paths_not_in_diagnostics": true,
       "project_switch_disconnects_relay": true
+    },
+    "controlled_autonomy_pilot": {
+      "autonomy_disabled_by_default": true,
+      "explicit_opt_in_required": true,
+      "only_docs_agent_can_auto_apply": true,
+      "only_docs_safe_paths_allowed": true,
+      "changelog_excluded": true,
+      "roadmap_excluded": true,
+      "source_files_rejected": true,
+      "workflow_files_rejected": true,
+      "dependency_files_rejected": true,
+      "secret_files_rejected": true,
+      "auto_apply_never_commits": true,
+      "patch_size_computed_server_side": true,
+      "confidence_threshold_enforced": true,
+      "readme_stricter_threshold": true,
+      "per_session_cap_enforced": true,
+      "requires_review_never_writes": true,
+      "audit_records_redacted": true,
+      "frontend_not_authoritative": true,
+      "path_canonicalization_before_checks": true,
+      "traversal_attempts_fail_closed": true
     }
   }
 }

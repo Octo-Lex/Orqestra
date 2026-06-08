@@ -333,7 +333,7 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
             {"name": "docs-agent", "mode": "review-only", "endpoint": "/agent/docs", "writes": false, "patch_governed": true},
             {"name": "bugfix-agent", "mode": "review-only", "endpoint": "/agent/bugfix", "writes": false, "patch_governed": true},
             {"name": "architect-agent", "mode": "read-only-planner", "endpoint": "/agent/architect", "writes": false, "patch_governed": false},
-            {"name": "autonomy", "mode": "disabled", "endpoint": null, "writes": false, "patch_governed": false},
+            {"name": "autonomy", "mode": "pilot", "endpoint": null, "writes": false, "patch_governed": true, "policy_version": 1, "auto_commit": false, "allowlist": ["docs/**", "README.md"]},
         ]
     }).to_string();
 
