@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.5.2] - 2026-06-08
+
+### Added
+- Real desktop relay connection via Rust-owned WebSocket lifecycle (`tokio-tungstenite`)
+- `RelayActor`: async tokio task managing connect/reconnect/send/receive
+- `RelayActorHandle`: deterministic shutdown via `watch` channel
+- `RelayEvent`: channel-based events (Tauri-free, `loro-engine` has no tauri dep)
+- Double-connect guard: returns `ALREADY_CONNECTED` instead of spawning duplicate actor
+- Client-side remote delta deduplication (capped `seen_remote_ids`)
+- Offline queue preservation on disconnect (deltas replayed on reconnect)
+- Exponential backoff reconnect (1s → 30s)
+- Redacted Tauri events: `relay:connected`, `relay:disconnected`, `relay:delta-received` (no raw paths/data/tokens)
+- `RelayStatus` gains `reconnect_attempt` and `last_error` fields
+- 12 relay actor unit tests + 13 desktop relay connection tests
+
+### Changed
+- `RelayClient.status()` includes `reconnect_attempt`, `last_error`
+- `RelayClient.new_message_id()` made public
+- Worker `sync_relay.test.ts` updated for async `validateToken`/`generateToken`
+- Module split: `relay.rs` (state machine) vs `relay_actor.rs` (WebSocket lifecycle)
+
 ## [2.5.1] - 2026-06-07
 
 ### Security

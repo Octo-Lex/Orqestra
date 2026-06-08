@@ -82,39 +82,39 @@ describe('Protocol validation', () => {
 // ---------------------------------------------------------------------------
 
 describe('Token auth', () => {
-  it('validates master token as admin', () => {
-    const result = validateToken(MASTER_SECRET, MASTER_SECRET);
+  it('validates master token as admin', async () => {
+    const result = await validateToken(MASTER_SECRET, MASTER_SECRET);
     expect(result).not.toBeNull();
     expect(result!.scope).toBe('admin');
   });
 
-  it('rejects invalid token format', () => {
-    const result = validateToken('garbage-token', MASTER_SECRET);
+  it('rejects invalid token format', async () => {
+    const result = await validateToken('garbage-token', MASTER_SECRET);
     expect(result).toBeNull();
   });
 
-  it('generates and validates write token', () => {
-    const token = generateToken('write', 'ws-test-1', MASTER_SECRET);
-    expect(token.startsWith('ork_write_')).toBe(true);
+  it('generates and validates write token', async () => {
+    const token = await generateToken('write', 'ws-test-1', MASTER_SECRET);
+    expect(token.startsWith('ork_v2_write_')).toBe(true);
 
-    const result = validateToken(token, MASTER_SECRET);
+    const result = await validateToken(token, MASTER_SECRET);
     expect(result).not.toBeNull();
     expect(result!.scope).toBe('write');
     expect(result!.workspace_id).toBe('ws-test-1');
   });
 
-  it('generates and validates read token', () => {
-    const token = generateToken('read', 'ws-test-1', MASTER_SECRET);
-    expect(token.startsWith('ork_read_')).toBe(true);
+  it('generates and validates read token', async () => {
+    const token = await generateToken('read', 'ws-test-1', MASTER_SECRET);
+    expect(token.startsWith('ork_v2_read_')).toBe(true);
 
-    const result = validateToken(token, MASTER_SECRET);
+    const result = await validateToken(token, MASTER_SECRET);
     expect(result).not.toBeNull();
     expect(result!.scope).toBe('read');
   });
 
-  it('rejects token with wrong master secret', () => {
-    const token = generateToken('write', 'ws-test-1', MASTER_SECRET);
-    const result = validateToken(token, 'wrong-secret');
+  it('rejects token with wrong master secret', async () => {
+    const token = await generateToken('write', 'ws-test-1', MASTER_SECRET);
+    const result = await validateToken(token, 'wrong-secret');
     expect(result).toBeNull();
   });
 
@@ -124,13 +124,11 @@ describe('Token auth', () => {
     expect(canWrite('admin')).toBe(true);
   });
 
-  it('token with wrong workspace is rejected for different workspace', () => {
-    const token = generateToken('write', 'ws-correct', MASTER_SECRET);
-    const result = validateToken(token, MASTER_SECRET);
+  it('token with wrong workspace is rejected for different workspace', async () => {
+    const token = await generateToken('write', 'ws-correct', MASTER_SECRET);
+    const result = await validateToken(token, MASTER_SECRET);
     expect(result).not.toBeNull();
     expect(result!.workspace_id).toBe('ws-correct');
-    // A token for ws-correct would fail workspace check against ws-wrong
-    // (this is tested at the DO level)
   });
 });
 
