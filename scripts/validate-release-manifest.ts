@@ -558,6 +558,23 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.6.0: Controlled Autonomy Pilot
+  if ((pr as any).controlled_autonomy_pilot) {
+    const ca = (pr as any).controlled_autonomy_pilot;
+    if (ca.autonomy_disabled_by_default !== true) fail('product_readiness.controlled_autonomy_pilot.autonomy_disabled_by_default must be true');
+    if (ca.explicit_opt_in_required !== true) fail('product_readiness.controlled_autonomy_pilot.explicit_opt_in_required must be true');
+    if (ca.only_docs_agent_can_auto_apply !== true) fail('product_readiness.controlled_autonomy_pilot.only_docs_agent_can_auto_apply must be true');
+    if (ca.only_docs_safe_paths_allowed !== true) fail('product_readiness.controlled_autonomy_pilot.only_docs_safe_paths_allowed must be true');
+    if (ca.auto_apply_never_commits !== true) fail('product_readiness.controlled_autonomy_pilot.auto_apply_never_commits must be true');
+    if (ca.patch_size_computed_server_side !== true) fail('product_readiness.controlled_autonomy_pilot.patch_size_computed_server_side must be true');
+    if (ca.frontend_not_authoritative !== true) fail('product_readiness.controlled_autonomy_pilot.frontend_not_authoritative must be true');
+    if (ca.requires_review_never_writes !== true) fail('product_readiness.controlled_autonomy_pilot.requires_review_never_writes must be true');
+    if (ca.audit_records_redacted !== true) fail('product_readiness.controlled_autonomy_pilot.audit_records_redacted must be true');
+    if (ca.traversal_attempts_fail_closed !== true) fail('product_readiness.controlled_autonomy_pilot.traversal_attempts_fail_closed must be true');
+  } else {
+    fail('product_readiness.controlled_autonomy_pilot section missing (v2.6.0+)');
+  }
+
   // v2.5.3: Persistent Onboarding + Project Switching
   if ((pr as any).persistent_onboarding) {
     const po = (pr as any).persistent_onboarding;
