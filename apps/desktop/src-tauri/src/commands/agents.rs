@@ -767,6 +767,14 @@ pub fn set_autonomy_settings_cmd(
                 state.autonomy.enabled_by = None;
             }
         }
+        if let Some(new_cap) = update.max_auto_apply_per_session {
+            // Enforce Rust-side bounds — frontend cannot widen beyond max
+            use crate::commands::onboarding_types::{MIN_AUTO_APPLY_PER_SESSION, MAX_AUTO_APPLY_PER_SESSION};
+            let clamped = new_cap.clamp(MIN_AUTO_APPLY_PER_SESSION, MAX_AUTO_APPLY_PER_SESSION);
+            state.autonomy.cap_previous_value = Some(state.autonomy.max_auto_apply_per_session);
+            state.autonomy.cap_changed_at = Some(chrono::Utc::now().to_rfc3339());
+            state.autonomy.max_auto_apply_per_session = clamped;
+        }
     }).map_err(|e| format!("Failed to update autonomy settings: {:?}", e))?;
 
     Ok(settings.autonomy)
@@ -950,6 +958,8 @@ pub fn get_autonomy_summary_cmd(
         malformed_audit_lines: export.malformed_line_count,
         recent_decisions: recent,
         safety_report,
+        configured_cap: settings.max_auto_apply_per_session,
+        session_cap_remaining: settings.max_auto_apply_per_session.saturating_sub(session_auto_apply_count()),
     })
 }
 
@@ -988,6 +998,7 @@ pub fn get_autonomy_diagnostics_cmd(
 
     let root = Path::new(&project_root);
     let (audit_metrics, audit_count) = compute_audit_metrics(root);
+    let cap_hit_count = audit_metrics.requires_review_count;
 
     let export = read_auto_apply_audit(root);
     let safety_report = generate_pilot_safety_report(
@@ -1002,6 +1013,7 @@ pub fn get_autonomy_diagnostics_cmd(
         audit_record_count: audit_count,
         aggregate_metrics: audit_metrics,
         safety_report_summary: safety_report,
-        // No raw proposal IDs, no recent decisions
+        configured_cap: settings.max_auto_apply_per_session,
+        cap_hit_count,
     })
 }
