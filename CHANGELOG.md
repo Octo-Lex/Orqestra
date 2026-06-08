@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.5.3] - 2026-06-08
+
+### Added
+- Persistent onboarding state (`app-state.json` in Tauri app data dir)
+- Atomic write (tmp + rename) with corruption recovery (backup + default)
+- `ProjectRecord` with stable `project_id` (SHA-256 of canonical root)
+- Recent projects list (max 10, deduped by project_id)
+- `switch_project_cmd` — updates last project, triggers relay reconnect
+- `record_project_access_cmd` — updates status metadata per project
+- `reset_onboarding_cmd(clear_metadata, clear_project_history)` — never clears OS keychain
+- `CredentialStatus` and `RelayConnectionStatus` as metadata-only enums
+- 9 onboarding_types unit tests + 8 persistence integration tests
+
+### Changed
+- `OnboardingStateManager` loads from disk on first access, saves on every mutation
+- `last_known_relay_status` — metadata only, recomputed on project open
+- `last_known_credential_status` — metadata only, global credential availability
+
+### Security
+- No secrets, tokens, PATs, or CRDT data in `app-state.json`
+- Reset onboarding never clears OS-keychain credentials
+- Corrupt file backed up as `app-state.corrupt.{timestamp}.json`
+
 ## [2.5.2] - 2026-06-08
 
 ### Added

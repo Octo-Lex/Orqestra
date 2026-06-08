@@ -6,6 +6,7 @@ pub mod diagnostics;
 pub mod git;
 pub mod graph;
 pub mod onboarding;
+pub mod onboarding_types;
 pub mod project_validation;
 pub mod readiness;
 pub mod roadmap;

@@ -558,6 +558,25 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.5.3: Persistent Onboarding + Project Switching
+  if ((pr as any).persistent_onboarding) {
+    const po = (pr as any).persistent_onboarding;
+    if (po.app_state_persists_to_disk !== true) fail('product_readiness.persistent_onboarding.app_state_persists_to_disk must be true');
+    if (po.onboarding_survives_restart !== true) fail('product_readiness.persistent_onboarding.onboarding_survives_restart must be true');
+    if (po.last_project_persists !== true) fail('product_readiness.persistent_onboarding.last_project_persists must be true');
+    if (po.recent_projects_capped_10 !== true) fail('product_readiness.persistent_onboarding.recent_projects_capped_10 must be true');
+    if (po.project_id_stable !== true) fail('product_readiness.persistent_onboarding.project_id_stable must be true');
+    if (po.credential_status_metadata_only !== true) fail('product_readiness.persistent_onboarding.credential_status_metadata_only must be true');
+    if (po.relay_status_last_known_metadata !== true) fail('product_readiness.persistent_onboarding.relay_status_last_known_metadata must be true');
+    if (po.reset_never_clears_keychain !== true) fail('product_readiness.persistent_onboarding.reset_never_clears_keychain must be true');
+    if (po.corrupt_file_backup_recovery !== true) fail('product_readiness.persistent_onboarding.corrupt_file_backup_recovery must be true');
+    if (po.no_secrets_in_app_state !== true) fail('product_readiness.persistent_onboarding.no_secrets_in_app_state must be true');
+    if (po.paths_not_in_diagnostics !== true) fail('product_readiness.persistent_onboarding.paths_not_in_diagnostics must be true');
+    if (po.project_switch_disconnects_relay !== true) fail('product_readiness.persistent_onboarding.project_switch_disconnects_relay must be true');
+  } else {
+    warn('product_readiness.persistent_onboarding section missing (v2.5.3+)');
+  }
+
   // v2.5.2: Real Desktop Relay Connection
   if ((pr as any).real_relay_connection) {
     const rc = (pr as any).real_relay_connection;
