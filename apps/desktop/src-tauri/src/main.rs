@@ -91,6 +91,7 @@ fn main() {
             commands::onboarding::get_onboarding_state_cmd,
             commands::onboarding::set_onboarding_state_cmd,
             commands::onboarding::reset_onboarding_cmd,
+            commands::onboarding::record_project_access_cmd,
             // v1.0.3: Project validation and sample project
             commands::project_validation::validate_project_cmd,
             commands::project_validation::create_sample_project_cmd,

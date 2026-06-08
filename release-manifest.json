@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.5.2",
-    "tag": "v2.5.2",
+    "name": "Orqestra v2.5.3",
+    "tag": "v2.5.3",
     "channel": "public-beta",
-    "release_version": "2.5.2",
-    "app_version": "2.5.2",
+    "release_version": "2.5.3",
+    "app_version": "2.5.3",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.5.2_x64-setup.exe",
+      "name": "Orqestra_2.5.3_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "28d46c85db6a1c948d4afe2bbd372e1c8b4a217c5e54391d54b2e9f4ce0c349e",
-      "size_bytes": 5165714,
+      "sha256": "5cfa3c3f4b82f15eee45281e80cd0fd52b054263aa70520a0bbeb38dc67aa1e1",
+      "size_bytes": 5185797,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_2.5.2_x64.AppImage",
+      "name": "Orqestra_2.5.3_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -612,6 +612,21 @@
       "graceful_relay_down": true,
       "local_first_crdt_without_relay": true,
       "no_master_secret_in_desktop": true
+    },
+    "persistent_onboarding": {
+      "app_state_persists_to_disk": true,
+      "onboarding_survives_restart": true,
+      "last_project_persists": true,
+      "recent_projects_capped_10": true,
+      "project_id_stable": true,
+      "credential_status_metadata_only": true,
+      "relay_status_last_known_metadata": true,
+      "reset_never_clears_keychain": true,
+      "corrupt_file_backup_recovery": true,
+      "atomic_write_tmp_rename": true,
+      "no_secrets_in_app_state": true,
+      "paths_not_in_diagnostics": true,
+      "project_switch_disconnects_relay": true
     }
   }
 }
