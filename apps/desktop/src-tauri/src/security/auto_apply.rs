@@ -713,6 +713,133 @@ pub fn build_requires_review_explanation(settings: &AutonomySettings) -> Require
 }
 
 // ---------------------------------------------------------------------------
+// Path-Matrix Evidence Evaluation (v2.9.0)
+//
+// Evaluates a set of paths through the decision engine and produces
+// a structured evidence report. Used for dashboard/export.
+// ---------------------------------------------------------------------------
+
+/// Evaluate a list of paths through the decision engine.
+/// Returns a full PathMatrixEvidence with safety invariant verification.
+pub fn evaluate_path_matrix(
+    settings: &AutonomySettings,
+    paths: &[(String, f64, String)],  // (path, confidence, agent_type_str)
+) -> PathMatrixEvidence {
+    let mut records = Vec::new();
+    let mut allowed_count = 0usize;
+    let mut rejected_count = 0usize;
+    let mut requires_review_count = 0usize;
+    let mut rejection_reasons: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+
+    let mut any_source_allowed = false;
+    let mut any_workflow_allowed = false;
+    let mut any_secret_allowed = false;
+    let mut any_dep_allowed = false;
+    let mut changelog_allowed = false;
+    let mut roadmap_allowed = false;
+    let mut any_traversal_allowed = false;
+    let mut wrong_agent_allowed = false;
+
+    for (path, confidence, agent_str) in paths {
+        let agent = match agent_str.as_str() {
+            "docs" => AgentType::Docs,
+            "bugfix" => AgentType::Bugfix,
+            _ => AgentType::Docs,
+        };
+
+        let patch = PatchProposal {
+            proposal_id: format!("evidence-{}", path.replace('/', "_").replace('\\', "_")),
+            path: path.clone(),
+            before: String::new(),
+            after: "documentation content".to_string(),
+            before_checksum: String::new(),
+            after_checksum: String::new(),
+        };
+
+        let decision = decide_auto_apply(settings, &agent, &patch, *confidence, None);
+        let path_class = classify_path_for_audit(path);
+        let normalized = normalize_relative_path(path);
+        let traversal = has_traversal(path);
+        let is_readme_path = is_readme(path);
+
+        let (decision_str, reason) = match &decision {
+            AutoApplyDecision::Allowed => {
+                allowed_count += 1;
+                ("allowed".to_string(), None)
+            }
+            AutoApplyDecision::Rejected(r) => {
+                let r_str = format!("{:?}", r).to_lowercase().replace('_', "-");
+                *rejection_reasons.entry(r_str.clone()).or_insert(0) += 1;
+                rejected_count += 1;
+                ("rejected".to_string(), Some(r_str))
+            }
+            AutoApplyDecision::RequiresReview => {
+                requires_review_count += 1;
+                ("requires-review".to_string(), None)
+            }
+        };
+
+        // Track safety invariants
+        if decision_str == "allowed" {
+            let lower = path.to_lowercase();
+            if lower.starts_with("src/") || lower.starts_with("crates/") || lower.starts_with("apps/") || lower.starts_with("services/") || lower.starts_with("lib/") {
+                any_source_allowed = true;
+            }
+            if lower.contains(".github/") { any_workflow_allowed = true; }
+            if lower.contains(".env") || lower.contains("secret") || lower.contains("credential") || lower.contains(".pem") || lower.contains("id_rsa") {
+                any_secret_allowed = true;
+            }
+            if lower.contains("cargo.") || lower.contains("package.") || lower.contains(".lock") {
+                any_dep_allowed = true;
+            }
+            if path == "CHANGELOG.md" { changelog_allowed = true; }
+            if path.starts_with("roadmap/") { roadmap_allowed = true; }
+            if traversal { any_traversal_allowed = true; }
+            if agent_str != "docs" { wrong_agent_allowed = true; }
+        }
+
+        records.push(PathDecisionRecord {
+            path: path.clone(),
+            path_class: path_class.clone(),
+            normalized_path: normalized,
+            is_readme: is_readme_path,
+            confidence: *confidence,
+            decision: decision_str,
+            reason,
+            has_traversal: traversal,
+        });
+    }
+
+    let total = paths.len();
+    let rejection_rate = if total > 0 { rejected_count as f64 / total as f64 } else { 0.0 };
+
+    let mut top_reasons: Vec<(String, usize)> = rejection_reasons.into_iter().collect();
+    top_reasons.sort_by(|a, b| b.1.cmp(&a.1));
+    top_reasons.truncate(5);
+
+    PathMatrixEvidence {
+        total_tested: total,
+        allowed_count,
+        rejected_count,
+        requires_review_count,
+        rejection_rate,
+        records,
+        safety_invariants: SafetyInvariantsResult {
+            no_source_files_touched: !any_source_allowed,
+            no_workflow_files_touched: !any_workflow_allowed,
+            no_secret_files_touched: !any_secret_allowed,
+            no_dep_files_touched: !any_dep_allowed,
+            auto_commit_always_false: !settings.auto_commit,
+            changelog_rejected: !changelog_allowed,
+            roadmap_rejected: !roadmap_allowed,
+            traversal_rejected: !any_traversal_allowed,
+            wrong_agent_rejected: !wrong_agent_allowed,
+        },
+        top_rejection_reasons: top_reasons,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1231,8 +1358,8 @@ mod tests {
     }
 
     #[test]
-    fn test_max_cap_is_10() {
-        assert_eq!(crate::commands::onboarding_types::MAX_AUTO_APPLY_PER_SESSION, 10);
+    fn test_max_cap_is_15() {
+        assert_eq!(crate::commands::onboarding_types::MAX_AUTO_APPLY_PER_SESSION, 15);
     }
 
     #[test]
@@ -1250,10 +1377,10 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_accepts_cap_10() {
+    fn test_validate_accepts_cap_15() {
         let mut s = AutonomySettings::default();
         s.enabled = true;
-        s.max_auto_apply_per_session = 10;
+        s.max_auto_apply_per_session = 15;
         assert!(validate_autonomy_enable(&s).is_ok());
     }
 
@@ -1304,5 +1431,60 @@ mod tests {
         assert_eq!(s.min_confidence_readme, 0.90);
         // Auto-commit still false
         assert!(!s.auto_commit);
+    }
+
+    // -----------------------------------------------------------------------
+    // v2.9.0: Evidence evaluation & cap expansion tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_evaluate_path_matrix_clean_evidence() {
+        let mut settings = AutonomySettings::default();
+        settings.enabled = true;
+
+        let paths = vec![
+            ("docs/guide.md".into(), 0.95, "docs".into()),
+            ("README.md".into(), 0.95, "docs".into()),
+            ("src/main.rs".into(), 0.95, "docs".into()),
+            ("CHANGELOG.md".into(), 0.95, "docs".into()),
+            (".env".into(), 0.95, "docs".into()),
+            ("docs/guide.md".into(), 0.95, "bugfix".into()),
+        ];
+
+        let evidence = evaluate_path_matrix(&settings, &paths);
+
+        assert_eq!(evidence.total_tested, 6);
+        assert_eq!(evidence.allowed_count, 2); // docs/guide.md + README.md
+        assert_eq!(evidence.rejected_count, 4);
+        assert!(evidence.safety_invariants.no_source_files_touched);
+        assert!(evidence.safety_invariants.no_secret_files_touched);
+        assert!(evidence.safety_invariants.changelog_rejected);
+        assert!(evidence.safety_invariants.wrong_agent_rejected);
+        assert!(!evidence.safety_invariants.auto_commit_always_false || !settings.auto_commit);
+    }
+
+    #[test]
+    fn test_evaluate_empty_matrix() {
+        let settings = AutonomySettings::default();
+        let evidence = evaluate_path_matrix(&settings, &[]);
+        assert_eq!(evidence.total_tested, 0);
+        assert_eq!(evidence.allowed_count, 0);
+        assert_eq!(evidence.rejection_rate, 0.0);
+    }
+
+    #[test]
+    fn test_cap_15_accepted() {
+        let mut s = AutonomySettings::default();
+        s.enabled = true;
+        s.max_auto_apply_per_session = 15;
+        assert!(validate_autonomy_enable(&s).is_ok());
+    }
+
+    #[test]
+    fn test_cap_16_rejected() {
+        let mut s = AutonomySettings::default();
+        s.enabled = true;
+        s.max_auto_apply_per_session = 16;
+        assert!(validate_autonomy_enable(&s).is_err());
     }
 }

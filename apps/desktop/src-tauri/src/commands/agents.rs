@@ -9,11 +9,13 @@ use crate::security::auto_apply::{
     append_auto_apply_audit, read_auto_apply_audit, compute_audit_metrics,
     generate_pilot_safety_report, verify_audit_redaction, hash_proposal_id,
     is_known_applied_proposal, increment_manual_commit_counter, get_session_metrics,
+    evaluate_path_matrix,
 };
 use crate::commands::onboarding_types::{
     AutonomySettings, AutoApplyDecision, AutoApplyResult,
     AutonomySettingsUpdate, AutonomySummary, AuditExportResult,
     PilotSafetyReport, AutonomyDiagnosticsSection,
+    PathMatrixEvidence, RequiresReviewExplanation,
 };
 use crate::commands::onboarding::OnboardingStateManager;
 use std::path::Path;
@@ -1016,4 +1018,57 @@ pub fn get_autonomy_diagnostics_cmd(
         configured_cap: settings.max_auto_apply_per_session,
         cap_hit_count,
     })
+}
+
+// ---------------------------------------------------------------------------
+// v2.9.0: Runtime Evidence Dashboard & Export Commands
+// ---------------------------------------------------------------------------
+
+/// Evaluate a set of paths through the decision engine for evidence export.
+/// Used by the evidence dashboard to show how the policy behaves.
+#[command]
+pub fn evaluate_path_matrix_cmd(
+    app: tauri::AppHandle,
+    paths: Vec<(String, f64, String)>,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<PathMatrixEvidence, String> {
+    let state = manager.get_or_load(&app);
+    let settings = &state.autonomy;
+    Ok(evaluate_path_matrix(settings, &paths))
+}
+
+/// Get the standard evidence matrix using built-in test paths.
+/// Returns a pre-built evidence report from the standard path matrix.
+#[command]
+pub fn get_evidence_dashboard_cmd(
+    app: tauri::AppHandle,
+    manager: tauri::State<'_, OnboardingStateManager>,
+) -> Result<PathMatrixEvidence, String> {
+    let state = manager.get_or_load(&app);
+    let settings = &state.autonomy;
+
+    // Standard path matrix for evidence dashboard
+    let standard_paths: Vec<(String, f64, String)> = vec![
+        ("docs/guide.md".into(), 0.95, "docs".into()),
+        ("docs/README.md".into(), 0.95, "docs".into()),
+        ("README.md".into(), 0.95, "docs".into()),
+        ("CHANGELOG.md".into(), 0.95, "docs".into()),
+        ("roadmap/tasks.md".into(), 0.95, "docs".into()),
+        ("src/main.rs".into(), 0.95, "docs".into()),
+        ("crates/lib.rs".into(), 0.95, "docs".into()),
+        (".github/workflows/ci.yml".into(), 0.95, "docs".into()),
+        ("Cargo.toml".into(), 0.95, "docs".into()),
+        ("package.json".into(), 0.95, "docs".into()),
+        (".env".into(), 0.95, "docs".into()),
+        ("secrets.yaml".into(), 0.95, "docs".into()),
+        ("image.png".into(), 0.95, "docs".into()),
+        ("release-manifest.json".into(), 0.95, "docs".into()),
+        ("docs/../src/main.rs".into(), 0.95, "docs".into()),
+        ("docs/guide.md".into(), 0.95, "bugfix".into()),
+        ("README.md".into(), 0.85, "docs".into()),
+        ("docs/guide.md".into(), 0.79, "docs".into()),
+        ("docs/guide.md".into(), 0.80, "docs".into()),
+    ];
+
+    Ok(evaluate_path_matrix(settings, &standard_paths))
 }

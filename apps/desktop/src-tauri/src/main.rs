@@ -101,6 +101,9 @@ fn main() {
             commands::agents::export_autonomy_audit_cmd,
             commands::agents::record_manual_commit_after_auto_apply_cmd,
             commands::agents::get_autonomy_diagnostics_cmd,
+            // v2.9.0: Evidence dashboard commands
+            commands::agents::evaluate_path_matrix_cmd,
+            commands::agents::get_evidence_dashboard_cmd,
             // v1.0.3: Project validation and sample project
             commands::project_validation::validate_project_cmd,
             commands::project_validation::create_sample_project_cmd,

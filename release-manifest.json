@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.8.0",
-    "tag": "v2.8.0",
+    "name": "Orqestra v2.9.0",
+    "tag": "v2.9.0",
     "channel": "public-beta",
-    "release_version": "2.8.0",
-    "app_version": "2.8.0",
+    "release_version": "2.9.0",
+    "app_version": "2.9.0",
     "date": "2026-06-04"
   },
   "provenance": {
@@ -39,18 +39,18 @@
   },
   "artifacts": [
     {
-      "name": "Orqestra_2.8.0_x64-setup.exe",
+      "name": "Orqestra_2.9.0_x64-setup.exe",
       "platform": "windows-x64",
       "type": "nsis-installer",
-      "sha256": "2209ec70ba839e50c330c865f5a883499aa83c8f9d536928634e493c0db08b0d",
-      "size_bytes": 5230865,
+      "sha256": "0bc817d48966842c829ab95cd5fee7b4e575fe19521c0d6bb1368a655dc78d99",
+      "size_bytes": 5235384,
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
       "source": "local-build"
     },
     {
-      "name": "Orqestra_2.8.0_x64.AppImage",
+      "name": "Orqestra_2.9.0_x64.AppImage",
       "platform": "linux-x64",
       "type": "appimage",
       "sha256": "PENDING_BUILD",
@@ -678,6 +678,20 @@
       "no_link_fix_special_case": true,
       "auto_commit_remains_false": true,
       "v2_6_0_and_v2_7_0_tests_remain_green": true
+    },
+    "runtime_evidence_dashboard": {
+      "max_cap_raised_to_15": true,
+      "default_cap_remains_5": true,
+      "evidence_dashboard_command": true,
+      "path_matrix_export_command": true,
+      "safety_invariants_verified": true,
+      "no_auto_commit": true,
+      "no_new_agent_types": true,
+      "no_source_code_auto_apply": true,
+      "no_threshold_changes": true,
+      "no_path_allowlist_changes": true,
+      "no_link_fix_special_case": true,
+      "v2_6_0_v2_7_0_v2_8_0_tests_green": true
     }
   }
 }

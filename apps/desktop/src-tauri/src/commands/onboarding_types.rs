@@ -144,7 +144,7 @@ pub const DEFAULT_MAX_AUTO_APPLY_PER_SESSION: usize = 5;
 pub const MIN_AUTO_APPLY_PER_SESSION: usize = 1;
 
 /// Maximum allowed cap (Rust-enforced, frontend cannot exceed).
-pub const MAX_AUTO_APPLY_PER_SESSION: usize = 10;
+pub const MAX_AUTO_APPLY_PER_SESSION: usize = 15;
 
 /// Default minimum confidence for docs/** paths.
 pub const DEFAULT_MIN_CONFIDENCE_DOCS: f64 = 0.80;
@@ -354,6 +354,46 @@ pub struct RequiresReviewExplanation {
     pub configured_cap: usize,
     pub remaining: usize,
     pub reset_behavior: String,
+}
+
+/// Result of a single path evaluated through the decision matrix.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathDecisionRecord {
+    pub path: String,
+    pub path_class: String,
+    pub normalized_path: String,
+    pub is_readme: bool,
+    pub confidence: f64,
+    pub decision: String,
+    pub reason: Option<String>,
+    pub has_traversal: bool,
+}
+
+/// Evidence matrix export from decision engine evaluation.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PathMatrixEvidence {
+    pub total_tested: usize,
+    pub allowed_count: usize,
+    pub rejected_count: usize,
+    pub requires_review_count: usize,
+    pub rejection_rate: f64,
+    pub records: Vec<PathDecisionRecord>,
+    pub safety_invariants: SafetyInvariantsResult,
+    pub top_rejection_reasons: Vec<(String, usize)>,
+}
+
+/// Safety invariants verification result.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SafetyInvariantsResult {
+    pub no_source_files_touched: bool,
+    pub no_workflow_files_touched: bool,
+    pub no_secret_files_touched: bool,
+    pub no_dep_files_touched: bool,
+    pub auto_commit_always_false: bool,
+    pub changelog_rejected: bool,
+    pub roadmap_rejected: bool,
+    pub traversal_rejected: bool,
+    pub wrong_agent_rejected: bool,
 }
 
 // ---------------------------------------------------------------------------
