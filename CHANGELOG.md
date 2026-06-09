@@ -4,6 +4,38 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.9.0] - 2026-06-09
+
+### Added
+- Runtime Evidence Dashboard & Cap Expansion
+- Max session cap raised from 10 to 15 (default remains 5)
+- `PathMatrixEvidence` DTO — structured evidence from decision matrix evaluation
+- `SafetyInvariantsResult` DTO — 9 invariant checks in structured form
+- `PathDecisionRecord` DTO — individual path decision with class, confidence, reason
+- `evaluate_path_matrix()` — evaluates arbitrary paths through decision engine
+- `evaluate_path_matrix_cmd` — Tauri command for custom path evaluation
+- `get_evidence_dashboard_cmd` — pre-built evidence dashboard with standard 19-path matrix
+- 8 new tests (evidence evaluation, cap bounds, path matrix)
+
+### Changed
+- `MAX_AUTO_APPLY_PER_SESSION` raised from 10 to 15
+- Existing cap tests updated for new maximum
+
+### Evidence
+- 50-path runtime decision matrix exercise: 13 allowed, 37 rejected, 9/9 safety invariants pass
+- 74% rejection rate (correct — narrow allowlist working as designed)
+- Structural runtime evidence clean
+- External beta user evidence still pending
+
+### Security
+- No new agent types
+- No source-code auto-apply
+- No threshold changes
+- No path allowlist changes
+- No link-fix special case
+- auto_commit remains false
+- All v2.6.0/v2.7.0/v2.8.0 tests remain green
+
 ## [2.8.0] - 2026-06-09
 
 ### Added

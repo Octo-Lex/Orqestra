@@ -558,6 +558,20 @@ if (manifest.product_readiness) {
     warn('product_readiness.git_provider_diagnostics section missing (v1.6.0+)');
   }
 
+  // v2.9.0: Runtime Evidence Dashboard & Cap Expansion
+  if ((pr as any).runtime_evidence_dashboard) {
+    const rd = (pr as any).runtime_evidence_dashboard;
+    if (rd.max_cap_raised_to_15 !== true) fail('product_readiness.runtime_evidence_dashboard.max_cap_raised_to_15 must be true');
+    if (rd.default_cap_remains_5 !== true) fail('product_readiness.runtime_evidence_dashboard.default_cap_remains_5 must be true');
+    if (rd.safety_invariants_verified !== true) fail('product_readiness.runtime_evidence_dashboard.safety_invariants_verified must be true');
+    if (rd.no_auto_commit !== true) fail('product_readiness.runtime_evidence_dashboard.no_auto_commit must be true');
+    if (rd.no_threshold_changes !== true) fail('product_readiness.runtime_evidence_dashboard.no_threshold_changes must be true');
+    if (rd.no_path_allowlist_changes !== true) fail('product_readiness.runtime_evidence_dashboard.no_path_allowlist_changes must be true');
+    if (rd.no_link_fix_special_case !== true) fail('product_readiness.runtime_evidence_dashboard.no_link_fix_special_case must be true');
+  } else {
+    warn('product_readiness.runtime_evidence_dashboard section missing (v2.9.0+)');
+  }
+
   // v2.8.0: Docs Autonomy Expansion
   if ((pr as any).docs_autonomy_expansion) {
     const de = (pr as any).docs_autonomy_expansion;
