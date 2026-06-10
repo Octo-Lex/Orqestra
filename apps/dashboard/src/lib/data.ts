@@ -65,11 +65,80 @@ export type EvidenceSection = {
     commit: string;
     generated_at: string;
   };
-  release_history: any;
-  test_counts: any;
-  security_boundaries: any;
-  autonomy_policy: any;
-  runtime_evidence: any;
+  release_history: ReleaseHistoryEvidence;
+  test_counts: TestCountEvidence;
+  security_boundaries: SecurityBoundariesEvidence;
+  autonomy_policy: AutonomyPolicyEvidence;
+  runtime_evidence: RuntimeEvidence;
+};
+
+export type ReleaseHistoryEvidence = {
+  schema_version: number;
+  releases: Record<string, ReleaseEntry>;
+};
+
+export type ReleaseEntry = {
+  date: string;
+  type: string;
+  label: string;
+};
+
+export type TestCountEvidence = {
+  schema_version: number;
+  history: TestCountEntry[];
+};
+
+export type TestCountEntry = {
+  version: string;
+  rust: number;
+  worker: number;
+  dashboard: number;
+  total: number;
+};
+
+export type SecurityBoundariesEvidence = {
+  schema_version: number;
+  provenance?: string;
+  boundaries: Record<string, SecurityBoundaryEntry>;
+};
+
+export type SecurityBoundaryEntry = {
+  algorithm?: string;
+  status?: string;
+  location?: string;
+  version?: string;
+  description?: string;
+  accepted_tokens?: string[];
+  scopes?: string[];
+  rejected?: string[];
+};
+
+export type AutonomyPolicyEvidence = {
+  schema_version: number;
+  status: string;
+  allowed_paths: string[];
+  excluded_paths?: string[];
+  confidence_threshold_docs: number;
+  confidence_threshold_readme: number;
+  max_session_cap: number;
+  default_cap: number;
+  auto_commit: boolean;
+  audit_schema_version?: number;
+  rejection_reasons?: number;
+  disallowed_operations?: string[];
+};
+
+export type RuntimeEvidence = {
+  schema_version: number;
+  evidence_type: string;
+  external_beta_user_data: boolean;
+  path_matrix_evaluated: number;
+  paths_allowed: number;
+  paths_rejected: number;
+  rejection_rate: string;
+  safety_invariants_total?: number;
+  safety_invariants_passing?: number;
+  disclaimer?: string;
 };
 
 export type CoherenceMetadata = {

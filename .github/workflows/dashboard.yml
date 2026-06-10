@@ -79,6 +79,41 @@ jobs:
       - name: Verify generated JSON exists
         run: test -f apps/dashboard/public/orqestra-roadmap.json && echo "JSON export verified"
 
+      - name: Validate evidence schema in generated JSON
+        run: |
+          python3 -c "
+          import json, sys
+          with open('apps/dashboard/public/orqestra-roadmap.json') as f:
+              d = json.load(f)
+          e = d.get('evidence')
+          if e is None:
+              print('FAIL: evidence section missing from generated dashboard export')
+              sys.exit(1)
+          sv = e.get('schema_version')
+          if sv != 1:
+              print(f'FAIL: evidence.schema_version is {sv}, expected 1')
+              sys.exit(1)
+          for field in ['release_history', 'test_counts', 'security_boundaries', 'autonomy_policy', 'runtime_evidence']:
+              if field not in e:
+                  print(f'FAIL: evidence missing field: {field}')
+                  sys.exit(1)
+          rt = e.get('runtime_evidence', {})
+          if rt.get('evidence_type') != 'structural-runtime-decision-matrix':
+              print(f'FAIL: runtime evidence_type is {rt.get("evidence_type")}')
+              sys.exit(1)
+          if rt.get('external_beta_user_data') != False:
+              print('FAIL: runtime external_beta_user_data must be false')
+              sys.exit(1)
+          ap = e.get('autonomy_policy', {})
+          if ap.get('max_session_cap') != 10:
+              print(f'FAIL: autonomy max_session_cap is {ap.get("max_session_cap")}, expected 10')
+              sys.exit(1)
+          if ap.get('auto_commit') != False:
+              print('FAIL: autonomy auto_commit must be false')
+              sys.exit(1)
+          print('PASS: Evidence schema validated')
+          "
+
       - name: Upload dashboard artifact
         uses: actions/upload-artifact@v4
         with:
