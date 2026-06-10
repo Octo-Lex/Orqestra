@@ -130,10 +130,13 @@ export function App() {
         <TokenGate onAuth={(_, scope) => setAuthScope(scope)} />
 
         {/* View switcher */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
+        <div role="tablist" aria-label="Dashboard views" style={{ display: 'flex', gap: 4, marginBottom: 16, flexWrap: 'wrap' }}>
           {(['kanban', 'gantt', 'table', 'evidence'] as View[]).map(v => (
             <button
               key={v}
+              role="tab"
+              aria-selected={view === v}
+              aria-controls={`panel-${v}`}
               onClick={() => setView(v)}
               style={{
                 padding: '6px 16px', border: 'none', borderRadius: 6,
@@ -149,16 +152,17 @@ export function App() {
       </div>
 
       {/* Content */}
-      {view === 'gantt' && <PublicGantt tasks={tasks} />}
-      {view === 'kanban' && <PublicKanban tasks={tasks} />}
+      {view === 'gantt' && <div role="tabpanel" id="panel-gantt"><PublicGantt tasks={tasks} /></div>}
+      {view === 'kanban' && <div role="tabpanel" id="panel-kanban"><PublicKanban tasks={tasks} /></div>}
       {view === 'evidence' && (
-        <div>
+        <div role="tabpanel" id="panel-evidence">
           <DataFreshnessPanel
             generatedAt={data.generated_at}
             source={data.source}
             evidenceGeneratedFrom={data.evidence?.generated_from}
           />
           {data.evidence ? (
+            data.evidence.schema_version === 1 ? (
             <>
               <ReleaseHistoryPanel releaseHistory={data.evidence.release_history} />
               <TestCountTrendPanel testCounts={data.evidence.test_counts} />
@@ -166,6 +170,12 @@ export function App() {
               <AutonomyPolicyPanel autonomyPolicy={data.evidence.autonomy_policy} />
               <RuntimeEvidencePanel runtimeEvidence={data.evidence.runtime_evidence} />
             </>
+          ) : (
+            <div style={{ padding: 24, backgroundColor: '#0f172a', borderRadius: 8, textAlign: 'center', color: '#f59e0b' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Unsupported Evidence Schema</div>
+              <div style={{ fontSize: 13 }}>Evidence data uses schema version {data.evidence.schema_version}, but this dashboard only supports schema version 1. Evidence data is unavailable or incompatible with this dashboard version.</div>
+            </div>
+          )
           ) : (
             <div style={{ padding: 24, backgroundColor: '#0f172a', borderRadius: 8, textAlign: 'center', color: '#64748b' }}>
               <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Evidence Unavailable</div>

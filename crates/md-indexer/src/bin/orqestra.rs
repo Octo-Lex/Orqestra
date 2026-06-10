@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use std::process;
 
 use md_indexer::coordinator::parse_coordinator;
+use md_indexer::evidence_schema::validate_evidence_dir;
 use md_indexer::graph::render_dot;
 use md_indexer::index_roadmap;
 use md_indexer::types::TaskStatus;
@@ -354,17 +355,23 @@ fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &st
         return None;
     }
 
+    // Validate evidence schema before embedding
+    let validation = validate_evidence_dir(&evidence_dir);
+    if !validation.valid {
+        eprintln!("warning: evidence schema validation failed:");
+        for err in &validation.errors {
+            eprintln!("  - {}", err);
+        }
+        eprintln!("note: skipping evidence section due to validation errors");
+        return None;
+    }
+
+    // Validation passed, read the files
     let release_history = read_json_file(&evidence_dir.join("release-history.json"));
     let test_counts = read_json_file(&evidence_dir.join("test-count-history.json"));
     let security_boundaries = read_json_file(&evidence_dir.join("security-boundaries.json"));
     let autonomy_policy = read_json_file(&evidence_dir.join("autonomy-policy.json"));
     let runtime_evidence = read_json_file(&evidence_dir.join("runtime-decision-matrix.json"));
-
-    // All five files must be present for evidence section
-    if release_history.is_none() || test_counts.is_none() || security_boundaries.is_none() || autonomy_policy.is_none() || runtime_evidence.is_none() {
-        eprintln!("note: one or more evidence files missing, skipping evidence section");
-        return None;
-    }
 
     Some(ExportEvidence {
         schema_version: 1,
@@ -412,7 +419,7 @@ mod evidence_export_tests {
         let release_history = r#"{"schema_version":1,"releases":{"2.9.1":{"date":"2026-06-10","type":"security-patch","label":"Test"}}}"#;
         let test_counts = r#"{"schema_version":1,"history":[{"version":"2.9.1","rust":442,"worker":24,"dashboard":12,"total":478}]}"#;
         let security_boundaries = r#"{"schema_version":1,"boundaries":{"relay_auth":{"algorithm":"HMAC-SHA256"}}}"#;
-        let autonomy_policy = r#"{"schema_version":1,"max_session_cap":10,"default_cap":5,"auto_commit":false}"#;
+        let autonomy_policy = r#"{"schema_version":1,"status":"docs-only pilot","max_session_cap":10,"default_cap":5,"auto_commit":false,"allowed_paths":["docs/**","README.md"]}"#;
         let runtime_evidence = r#"{"schema_version":1,"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":false,"path_matrix_evaluated":50}"#;
 
         fs::write(dir.join("release-history.json"), release_history).unwrap();

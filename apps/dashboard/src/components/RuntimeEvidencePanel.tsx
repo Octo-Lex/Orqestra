@@ -5,8 +5,10 @@
  */
 import React from 'react';
 
+import type { RuntimeEvidence as RuntimeEvidenceType } from '../lib/data';
+
 type Props = {
-  runtimeEvidence: any;
+  runtimeEvidence: RuntimeEvidenceType;
 };
 
 export const RuntimeEvidencePanel: React.FC<Props> = ({ runtimeEvidence }) => {

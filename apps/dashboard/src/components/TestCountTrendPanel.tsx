@@ -4,8 +4,10 @@
  */
 import React from 'react';
 
+import type { TestCountEvidence } from '../lib/data';
+
 type Props = {
-  testCounts: any;
+  testCounts: TestCountEvidence;
 };
 
 export const TestCountTrendPanel: React.FC<Props> = ({ testCounts }) => {
@@ -13,8 +15,8 @@ export const TestCountTrendPanel: React.FC<Props> = ({ testCounts }) => {
     return <div style={styles.empty}>Test count history unavailable in this export.</div>;
   }
 
-  const history: any[] = testCounts.history;
-  const maxTotal = Math.max(...history.map((h: any) => h.total));
+  const history: TestCountEvidence['history'] = testCounts.history;
+  const maxTotal = Math.max(...history.map((h) => h.total));
 
   return (
     <div style={styles.panel}>
@@ -23,7 +25,7 @@ export const TestCountTrendPanel: React.FC<Props> = ({ testCounts }) => {
         <span style={styles.provenance}>Source: docs/evidence/test-count-history.json</span>
       </div>
       <div style={styles.chart}>
-        {history.map((h: any) => {
+        {history.map((h) => {
           const barWidth = maxTotal > 0 ? (h.total / maxTotal) * 100 : 0;
           return (
             <div key={h.version} style={styles.barRow}>

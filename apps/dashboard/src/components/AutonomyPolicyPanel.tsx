@@ -4,8 +4,10 @@
  */
 import React from 'react';
 
+import type { AutonomyPolicyEvidence } from '../lib/data';
+
 type Props = {
-  autonomyPolicy: any;
+  autonomyPolicy: AutonomyPolicyEvidence;
 };
 
 export const AutonomyPolicyPanel: React.FC<Props> = ({ autonomyPolicy }) => {

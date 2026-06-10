@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.10.1] - 2026-06-11
+
+### Added
+- Evidence schema validation module (`evidence_schema.rs`) — validates all 5 evidence files
+- 8 new Rust evidence schema validation tests (schema version, type checks, cap enforcement, structural labeling, malformed data)
+- CI evidence validation gate in `dashboard.yml` — validates generated JSON evidence section
+- Malformed/unsupported evidence fallback in dashboard UI
+- Explicit TypeScript evidence types replacing `any` (6 new types)
+- Accessible view switcher (tablist/tab/tabpanel roles, aria-selected, aria-controls)
+- 8 new dashboard fallback tests (malformed data, accessibility, security regression, label correctness)
+- Live site smoke checklist (`docs/evidence/live-smoke-checklist.md`)
+
+### Changed
+- CLI export validates evidence schema before embedding — warns and omits on validation failure
+- Dashboard version bumped: 0.2.0 → 0.2.1
+- Former token literal removed from evidence descriptions (was `"Removed admin/master-secret"`, now `"Removed former hardcoded admin-token literal"`)
+- Full `dist/` scan restored (not just `dist/assets/`)
+
+### Design Principles
+- Evidence integrity is CI-gated: schema version, structural labeling, cap values, beta flag
+- Dashboard never crashes on malformed evidence
+- Every evidence type is explicitly typed in TypeScript
+- Public output never contains the exact former hardcoded token literal
+
 ## [2.10.0] - 2026-06-11
 
 ### Added

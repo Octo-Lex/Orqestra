@@ -13,8 +13,10 @@ const TYPE_COLORS: Record<string, { bg: string; text: string }> = {
   'structural-evidence': { bg: '#f59e0b22', text: '#f59e0b' },
 };
 
+import type { ReleaseHistoryEvidence } from '../lib/data';
+
 type Props = {
-  releaseHistory: any;
+  releaseHistory: ReleaseHistoryEvidence;
 };
 
 export const ReleaseHistoryPanel: React.FC<Props> = ({ releaseHistory }) => {
@@ -22,7 +24,7 @@ export const ReleaseHistoryPanel: React.FC<Props> = ({ releaseHistory }) => {
     return <div style={styles.empty}>Release history unavailable in this export.</div>;
   }
 
-  const releases = Object.entries(releaseHistory.releases as Record<string, any>)
+  const releases = Object.entries(releaseHistory.releases)
     .reverse(); // newest first
 
   return (
