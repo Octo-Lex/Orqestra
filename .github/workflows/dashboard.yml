@@ -51,11 +51,30 @@ jobs:
       - name: Install dashboard dependencies
         run: cd apps/dashboard && npm ci
 
+      - name: Run dashboard tests
+        run: cd apps/dashboard && npx vitest run
+
       - name: Export roadmap JSON from roadmap/
         run: cargo run --bin orqestra -- export --project-root . --format=json --out apps/dashboard/public/orqestra-roadmap.json
 
       - name: Build dashboard
         run: cd apps/dashboard && npm run build
+
+      - name: Scan built bundle for forbidden strings
+        run: |
+          if grep -R 'master-secret' apps/dashboard/dist/ 2>/dev/null; then
+            echo "FAIL: master-secret found in built dashboard bundle"
+            exit 1
+          fi
+          if grep -R 'Authenticated (admin)' apps/dashboard/dist/ 2>/dev/null; then
+            echo "FAIL: admin auth badge found in built dashboard bundle"
+            exit 1
+          fi
+          if grep -R 'Authenticated (write)' apps/dashboard/dist/ 2>/dev/null; then
+            echo "FAIL: write auth badge found in built dashboard bundle"
+            exit 1
+          fi
+          echo "PASS: Built dashboard bundle is clean"
 
       - name: Verify generated JSON exists
         run: test -f apps/dashboard/public/orqestra-roadmap.json && echo "JSON export verified"
