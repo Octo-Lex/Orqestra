@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "description": "Current security boundary posture. Sourced from v2.5.1 and v2.9.1 release records.",
+  "provenance": "Security boundary evidence derived from release manifest and v2.5.1/v2.9.1 release records.",
+  "boundaries": {
+    "relay_auth": {
+      "algorithm": "HMAC-SHA256",
+      "description": "Token generation and verification via Cloudflare Worker"
+    },
+    "content_security_policy": {
+      "status": "restrictive",
+      "wildcards": false,
+      "description": "Tauri CSP with no unsafe-eval, no wildcards"
+    },
+    "patch_checksum": {
+      "algorithm": "SHA-256",
+      "description": "Before and after checksums for all patches"
+    },
+    "credential_storage": {
+      "location": "OS keychain",
+      "description": "GitHub PATs stored in platform credential provider, never plaintext"
+    },
+    "token_format": {
+      "version": "v2",
+      "pattern": "ork_v2_{scope}_{workspace}_{timestamp}_{hmac}",
+      "legacy_v1_rejected": true
+    },
+    "master_secret": {
+      "location": "Cloudflare Worker only",
+      "description": "Never in desktop client, never in dashboard client",
+      "v2_5_1_fix": "Removed hardcoded default-master-token from desktop",
+      "v2_9_1_fix": "Removed former hardcoded admin-token literal from public dashboard"
+    },
+    "dashboard_authority": {
+      "status": "read-only evidence surface",
+      "accepted_tokens": "ork_read_* only",
+      "scopes": ["private"],
+      "rejected": ["admin scope", "write scope", "former hardcoded token", "ork_write_*"],
+      "description": "Dashboard is not the authority plane. Desktop remains the governed control plane."
+    }
+  }
+}

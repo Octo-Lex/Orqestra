@@ -9,6 +9,12 @@ import { PublicGantt } from './components/PublicGantt';
 import { PublicKanban } from './components/PublicKanban';
 import { TokenGate } from './components/TokenGate';
 import { SourceMetadata } from './components/SourceMetadata';
+import { ReleaseHistoryPanel } from './components/ReleaseHistoryPanel';
+import { TestCountTrendPanel } from './components/TestCountTrendPanel';
+import { SecurityBoundaryPanel } from './components/SecurityBoundaryPanel';
+import { AutonomyPolicyPanel } from './components/AutonomyPolicyPanel';
+import { RuntimeEvidencePanel } from './components/RuntimeEvidencePanel';
+import { DataFreshnessPanel } from './components/DataFreshnessPanel';
 import {
   fetchRoadmapData,
   STATUS_COLORS,
@@ -17,7 +23,7 @@ import {
   type Sprint,
 } from './lib/data';
 
-type View = 'gantt' | 'kanban' | 'table';
+type View = 'gantt' | 'kanban' | 'table' | 'evidence';
 type LoadState = 'loading' | 'loaded' | 'error';
 
 export function App() {
@@ -125,7 +131,7 @@ export function App() {
 
         {/* View switcher */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 16 }}>
-          {(['kanban', 'gantt', 'table'] as View[]).map(v => (
+          {(['kanban', 'gantt', 'table', 'evidence'] as View[]).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -145,6 +151,29 @@ export function App() {
       {/* Content */}
       {view === 'gantt' && <PublicGantt tasks={tasks} />}
       {view === 'kanban' && <PublicKanban tasks={tasks} />}
+      {view === 'evidence' && (
+        <div>
+          <DataFreshnessPanel
+            generatedAt={data.generated_at}
+            source={data.source}
+            evidenceGeneratedFrom={data.evidence?.generated_from}
+          />
+          {data.evidence ? (
+            <>
+              <ReleaseHistoryPanel releaseHistory={data.evidence.release_history} />
+              <TestCountTrendPanel testCounts={data.evidence.test_counts} />
+              <SecurityBoundaryPanel securityBoundaries={data.evidence.security_boundaries} />
+              <AutonomyPolicyPanel autonomyPolicy={data.evidence.autonomy_policy} />
+              <RuntimeEvidencePanel runtimeEvidence={data.evidence.runtime_evidence} />
+            </>
+          ) : (
+            <div style={{ padding: 24, backgroundColor: '#0f172a', borderRadius: 8, textAlign: 'center', color: '#64748b' }}>
+              <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>Evidence Unavailable</div>
+              <div style={{ fontSize: 13 }}>Evidence data was not included in this export. Run the CLI with docs/evidence/ present to generate the full evidence surface.</div>
+            </div>
+          )}
+        </div>
+      )}
       {view === 'table' && (
         <div style={{ overflowX: 'auto' }}>
           <table style={{

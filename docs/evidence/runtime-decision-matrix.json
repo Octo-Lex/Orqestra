@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "description": "50-path runtime decision matrix exercise. Structural evidence — exercises the policy engine against real repository paths.",
+  "evidence_type": "structural-runtime-decision-matrix",
+  "external_beta_user_data": false,
+  "disclaimer": "This evidence exercises the policy engine against real repository paths. It does not yet represent external beta user behavior.",
+  "path_matrix_evaluated": 50,
+  "paths_allowed": 13,
+  "paths_rejected": 37,
+  "rejection_rate": "74%",
+  "rejection_rate_note": "74% rejection rate is correct — narrow allowlist working as designed.",
+  "safety_invariants_total": 9,
+  "safety_invariants_passing": 9,
+  "safety_invariants": [
+    "auto_commit_always_false",
+    "no_source_code_auto_apply",
+    "no_workflow_mutation",
+    "docs_only_allowlist",
+    "readme_stricter_threshold",
+    "session_cap_enforced",
+    "before_checksum_verified",
+    "audit_trail_written",
+    "no_traversal_paths"
+  ]
+}
