@@ -6,6 +6,7 @@
 pub mod coordinator;
 pub mod duration;
 pub mod error;
+pub mod evidence_schema;
 pub mod graph;
 pub mod indexer;
 pub mod parser;

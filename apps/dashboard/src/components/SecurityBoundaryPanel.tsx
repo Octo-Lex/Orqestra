@@ -4,8 +4,10 @@
  */
 import React from 'react';
 
+import type { SecurityBoundariesEvidence } from '../lib/data';
+
 type Props = {
-  securityBoundaries: any;
+  securityBoundaries: SecurityBoundariesEvidence;
 };
 
 export const SecurityBoundaryPanel: React.FC<Props> = ({ securityBoundaries }) => {
