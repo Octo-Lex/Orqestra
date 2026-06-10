@@ -53,8 +53,23 @@ export type RoadmapData = {
     blocked: number;
     ready: number;
   };
+  evidence?: EvidenceSection;
   sprints: Sprint[];
   tasks: Task[];
+};
+
+export type EvidenceSection = {
+  schema_version: number;
+  generated_from: {
+    source: string;
+    commit: string;
+    generated_at: string;
+  };
+  release_history: any;
+  test_counts: any;
+  security_boundaries: any;
+  autonomy_policy: any;
+  runtime_evidence: any;
 };
 
 export type CoherenceMetadata = {

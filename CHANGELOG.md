@@ -4,6 +4,43 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.10.0] - 2026-06-11
+
+### Added
+- Public Evidence Surface — new "Evidence" tab on the dashboard
+- Evidence data embedded from `docs/evidence/*.json` at build time via CLI export
+- `ReleaseHistoryPanel` — version timeline with type badges (feature, security, observability, etc.)
+- `TestCountTrendPanel` — test count growth across releases (v2.3.0–v2.9.1)
+- `SecurityBoundaryPanel` — security posture summary (relay auth, CSP, checksums, keychain, tokens)
+- `AutonomyPolicyPanel` — governance status (docs-only pilot, thresholds, cap, audit)
+- `RuntimeEvidencePanel` — 50-path decision matrix results (13 allowed, 37 rejected, 9/9 invariants)
+- `DataFreshnessPanel` — generation timestamp, source commit, static-export label
+- Evidence schema versioning (`schema_version: 1`)
+- Evidence provenance displayed on every panel
+- Graceful fallback when evidence data is missing
+- 5 new Rust exporter tests (schema, evidence type, cap values, missing directory)
+- 10 new dashboard tests (evidence rendering, fallback, security regression)
+- Release type mapping from `docs/evidence/release-history.json` (not inferred from headings)
+- Runtime evidence explicitly labeled structural (`external_beta_user_data: false`)
+
+### Changed
+- CLI export (`orqestra export`) now embeds evidence section from `docs/evidence/` files
+- Dashboard version bumped: 0.1.1 → 0.2.0
+- `data.ts` updated with `EvidenceSection` type
+
+### Evidence Files Added
+- `docs/evidence/release-history.json` — curated release metadata
+- `docs/evidence/test-count-history.json` — test count per version
+- `docs/evidence/security-boundaries.json` — security posture
+- `docs/evidence/autonomy-policy.json` — autonomy governance status
+- `docs/evidence/runtime-decision-matrix.json` — 50-path decision matrix
+
+### Design Principles
+- All evidence is build-time static — no live API calls
+- Evidence panels are fully public — no token required
+- Every claim tied to provenance or explicitly labeled curated metadata
+- Runtime evidence labeled structural, not external beta usage
+
 ## [2.9.1] - 2026-06-10
 
 ### Security
