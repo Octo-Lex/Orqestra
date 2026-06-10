@@ -6,6 +6,7 @@
 
 use clap::{Parser, Subcommand};
 use serde::Serialize;
+use serde_json::Value;
 use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process;
@@ -68,8 +69,28 @@ struct RoadmapExport {
     release: ExportRelease,
     source: ExportSource,
     summary: ExportSummary,
+    evidence: Option<ExportEvidence>,
     sprints: Vec<ExportSprint>,
     tasks: Vec<ExportTask>,
+}
+
+/// Evidence section embedded from docs/evidence/*.json files.
+#[derive(Serialize)]
+struct ExportEvidence {
+    schema_version: u32,
+    generated_from: EvidenceGeneratedFrom,
+    release_history: Value,
+    test_counts: Value,
+    security_boundaries: Value,
+    autonomy_policy: Value,
+    runtime_evidence: Value,
+}
+
+#[derive(Serialize)]
+struct EvidenceGeneratedFrom {
+    source: String,
+    commit: String,
+    generated_at: String,
 }
 
 #[derive(Serialize)]
@@ -293,11 +314,14 @@ fn build_export(
 
     let generated_at = chrono::Utc::now().to_rfc3339();
 
+    // Load evidence files from docs/evidence/
+    let evidence = load_evidence(project_root, &full_commit, &generated_at);
+
     RoadmapExport {
         generated_at: generated_at.clone(),
         release: ExportRelease {
             version: env!("CARGO_PKG_VERSION").to_string(),
-            source_commit: full_commit,
+            source_commit: full_commit.clone(),
             generated_at: generated_at.clone(),
             generated_by: "orqestra roadmap export".to_string(),
         },
@@ -314,7 +338,209 @@ fn build_export(
             blocked: 0, // No blocked status variant in enum
             ready,
         },
+        evidence,
         sprints,
         tasks: export_tasks,
+    }
+}
+
+/// Load evidence files from docs/evidence/ directory.
+/// Returns None if evidence directory is missing — dashboard handles gracefully.
+fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &str) -> Option<ExportEvidence> {
+    let evidence_dir = project_root.join("docs/evidence");
+
+    if !evidence_dir.is_dir() {
+        eprintln!("note: docs/evidence/ not found, skipping evidence section");
+        return None;
+    }
+
+    let release_history = read_json_file(&evidence_dir.join("release-history.json"));
+    let test_counts = read_json_file(&evidence_dir.join("test-count-history.json"));
+    let security_boundaries = read_json_file(&evidence_dir.join("security-boundaries.json"));
+    let autonomy_policy = read_json_file(&evidence_dir.join("autonomy-policy.json"));
+    let runtime_evidence = read_json_file(&evidence_dir.join("runtime-decision-matrix.json"));
+
+    // All five files must be present for evidence section
+    if release_history.is_none() || test_counts.is_none() || security_boundaries.is_none() || autonomy_policy.is_none() || runtime_evidence.is_none() {
+        eprintln!("note: one or more evidence files missing, skipping evidence section");
+        return None;
+    }
+
+    Some(ExportEvidence {
+        schema_version: 1,
+        generated_from: EvidenceGeneratedFrom {
+            source: "static-export".to_string(),
+            commit: commit.to_string(),
+            generated_at: generated_at.to_string(),
+        },
+        release_history: release_history.unwrap(),
+        test_counts: test_counts.unwrap(),
+        security_boundaries: security_boundaries.unwrap(),
+        autonomy_policy: autonomy_policy.unwrap(),
+        runtime_evidence: runtime_evidence.unwrap(),
+    })
+}
+
+fn read_json_file(path: &std::path::Path) -> Option<Value> {
+    match std::fs::read_to_string(path) {
+        Ok(content) => match serde_json::from_str(&content) {
+            Ok(v) => Some(v),
+            Err(e) => {
+                eprintln!("warning: failed to parse {}: {}", path.display(), e);
+                None
+            }
+        },
+        Err(e) => {
+            eprintln!("warning: failed to read {}: {}", path.display(), e);
+            None
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Tests for evidence export
+// ---------------------------------------------------------------------------
+
+#[cfg(test)]
+mod evidence_export_tests {
+    use super::*;
+    use std::fs;
+
+    fn setup_evidence_dir(dir: &std::path::Path) {
+        fs::create_dir_all(dir).unwrap();
+
+        let release_history = r#"{"schema_version":1,"releases":{"2.9.1":{"date":"2026-06-10","type":"security-patch","label":"Test"}}}"#;
+        let test_counts = r#"{"schema_version":1,"history":[{"version":"2.9.1","rust":442,"worker":24,"dashboard":12,"total":478}]}"#;
+        let security_boundaries = r#"{"schema_version":1,"boundaries":{"relay_auth":{"algorithm":"HMAC-SHA256"}}}"#;
+        let autonomy_policy = r#"{"schema_version":1,"max_session_cap":10,"default_cap":5,"auto_commit":false}"#;
+        let runtime_evidence = r#"{"schema_version":1,"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":false,"path_matrix_evaluated":50}"#;
+
+        fs::write(dir.join("release-history.json"), release_history).unwrap();
+        fs::write(dir.join("test-count-history.json"), test_counts).unwrap();
+        fs::write(dir.join("security-boundaries.json"), security_boundaries).unwrap();
+        fs::write(dir.join("autonomy-policy.json"), autonomy_policy).unwrap();
+        fs::write(dir.join("runtime-decision-matrix.json"), runtime_evidence).unwrap();
+    }
+
+    #[test]
+    fn test_export_includes_evidence_section() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        let evidence_dir = project_root.join("docs/evidence");
+        fs::create_dir_all(&roadmap_dir).unwrap();
+
+        // Minimal task file
+        fs::write(
+            roadmap_dir.join("TASK-001.md"),
+            "---\npm-task: true\nid: TASK-001\ntitle: Test\ntype: Task\nstatus: done\npriority: Medium\nprogress: 100\n---\n\nContext\n",
+        ).unwrap();
+
+        setup_evidence_dir(&evidence_dir);
+
+        // Mock git info by creating a .git directory
+        let result = md_indexer::index_roadmap(&roadmap_dir).unwrap();
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+
+        assert!(export.evidence.is_some(), "export should include evidence section");
+        let evidence = export.evidence.unwrap();
+        assert_eq!(evidence.schema_version, 1);
+    }
+
+    #[test]
+    fn test_export_without_evidence_dir_graceful() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        fs::create_dir_all(&roadmap_dir).unwrap();
+
+        fs::write(
+            roadmap_dir.join("TASK-001.md"),
+            "---\npm-task: true\nid: TASK-001\ntitle: Test\ntype: Task\nstatus: done\npriority: Medium\nprogress: 100\n---\n\nContext\n",
+        ).unwrap();
+
+        // No docs/evidence/ directory
+        let result = md_indexer::index_roadmap(&roadmap_dir).unwrap();
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+
+        assert!(export.evidence.is_none(), "export should handle missing evidence gracefully");
+    }
+
+    #[test]
+    fn test_evidence_schema_has_required_sections() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        let evidence_dir = project_root.join("docs/evidence");
+        fs::create_dir_all(&roadmap_dir).unwrap();
+
+        fs::write(
+            roadmap_dir.join("TASK-001.md"),
+            "---\npm-task: true\nid: TASK-001\ntitle: Test\ntype: Task\nstatus: done\npriority: Medium\nprogress: 100\n---\n\nContext\n",
+        ).unwrap();
+
+        setup_evidence_dir(&evidence_dir);
+
+        let result = md_indexer::index_roadmap(&roadmap_dir).unwrap();
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+
+        let evidence = export.evidence.expect("evidence should be present");
+        assert!(evidence.release_history.is_object());
+        assert!(evidence.test_counts.is_object());
+        assert!(evidence.security_boundaries.is_object());
+        assert!(evidence.autonomy_policy.is_object());
+        assert!(evidence.runtime_evidence.is_object());
+    }
+
+    #[test]
+    fn test_runtime_evidence_marked_structural() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        let evidence_dir = project_root.join("docs/evidence");
+        fs::create_dir_all(&roadmap_dir).unwrap();
+
+        fs::write(
+            roadmap_dir.join("TASK-001.md"),
+            "---\npm-task: true\nid: TASK-001\ntitle: Test\ntype: Task\nstatus: done\npriority: Medium\nprogress: 100\n---\n\nContext\n",
+        ).unwrap();
+
+        setup_evidence_dir(&evidence_dir);
+
+        let result = md_indexer::index_roadmap(&roadmap_dir).unwrap();
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+
+        let evidence = export.evidence.expect("evidence should be present");
+        let rt = &evidence.runtime_evidence;
+        let evidence_type = rt.get("evidence_type").unwrap().as_str().unwrap();
+        assert_eq!(evidence_type, "structural-runtime-decision-matrix");
+        let external = rt.get("external_beta_user_data").unwrap().as_bool().unwrap();
+        assert!(!external, "external_beta_user_data must be false");
+    }
+
+    #[test]
+    fn test_autonomy_policy_cap_values() {
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        let evidence_dir = project_root.join("docs/evidence");
+        fs::create_dir_all(&roadmap_dir).unwrap();
+
+        fs::write(
+            roadmap_dir.join("TASK-001.md"),
+            "---\npm-task: true\nid: TASK-001\ntitle: Test\ntype: Task\nstatus: done\npriority: Medium\nprogress: 100\n---\n\nContext\n",
+        ).unwrap();
+
+        setup_evidence_dir(&evidence_dir);
+
+        let result = md_indexer::index_roadmap(&roadmap_dir).unwrap();
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+
+        let evidence = export.evidence.expect("evidence should be present");
+        let policy = &evidence.autonomy_policy;
+        let max_cap = policy.get("max_session_cap").unwrap().as_u64().unwrap();
+        assert_eq!(max_cap, 10, "max_session_cap in evidence must be 10");
+        let auto_commit = policy.get("auto_commit").unwrap().as_bool().unwrap();
+        assert!(!auto_commit, "auto_commit in evidence must be false");
     }
 }
