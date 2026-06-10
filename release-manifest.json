@@ -119,7 +119,7 @@
   "dashboard": {
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
-    "release": "v1.0.7",
+    "release": "v0.1.1",
     "generated_from_commit": "163ef91da464726830a4db450df0e1f4eb31007a"
   },
   "diagnostics": {

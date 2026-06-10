@@ -1,6 +1,11 @@
 /**
- * TokenGate — Write access gate for the dashboard.
- * Stakeholders view read-only; team members authenticate to edit.
+ * TokenGate — Private view connector for the dashboard.
+ *
+ * The dashboard is a read-only evidence surface.
+ * Tokens unlock private metadata views only — no write access, no admin scope.
+ * Accepted tokens: ork_read_* only.
+ * Rejected: ork_write_*, admin tokens, all other formats.
+ * Tokens are never persisted, logged, or included in errors/URLs.
  */
 import React, { useState } from 'react';
 
@@ -12,17 +17,11 @@ export const TokenGate: React.FC<{
   const [show, setShow] = useState(false);
 
   const validate = () => {
-    if (token.startsWith('ork_write_')) {
-      onAuth(token, 'write');
-      setError('');
-    } else if (token.startsWith('ork_read_')) {
-      onAuth(token, 'read');
-      setError('');
-    } else if (token === 'master-secret') {
-      onAuth(token, 'admin');
+    if (token.startsWith('ork_read_')) {
+      onAuth(token, 'private');
       setError('');
     } else {
-      setError('Invalid token');
+      setError('Invalid token. Use a read token for private dashboard view.');
     }
   };
 
@@ -38,7 +37,7 @@ export const TokenGate: React.FC<{
         alignItems: 'center',
       }}>
         <span style={{ fontSize: 13, color: '#94a3b8' }}>
-          Read-only view · Authenticate for write access
+          Read-only · Connect for private metadata
         </span>
         <button
           onClick={() => setShow(true)}
@@ -52,7 +51,7 @@ export const TokenGate: React.FC<{
             fontSize: 13,
           }}
         >
-          Enter Token
+          Connect Private View
         </button>
       </div>
     );
@@ -65,11 +64,11 @@ export const TokenGate: React.FC<{
       borderRadius: 8,
       marginBottom: 16,
     }}>
-      <div style={{ fontWeight: 600, marginBottom: 8 }}>Token Authentication</div>
+      <div style={{ fontWeight: 600, marginBottom: 8 }}>Connect Private View</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           type="password"
-          placeholder="Paste your access token..."
+          placeholder="Paste your read token..."
           value={token}
           onChange={e => { setToken(e.target.value); setError(''); }}
           onKeyDown={e => e.key === 'Enter' && validate()}
@@ -86,10 +85,10 @@ export const TokenGate: React.FC<{
             border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
           }}
         >
-          Authenticate
+          Connect
         </button>
         <button
-          onClick={() => { setShow(false); setError(''); }}
+          onClick={() => { setShow(false); setError(''); setToken(''); }}
           style={{
             padding: '8px 12px', backgroundColor: '#334155', color: '#94a3b8',
             border: 'none', borderRadius: 6, cursor: 'pointer',
