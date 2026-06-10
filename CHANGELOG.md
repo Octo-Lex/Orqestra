@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.9.1] - 2026-06-10
+
+### Security
+- **CRITICAL**: Removed hardcoded `master-secret` admin token from public dashboard (TokenGate.tsx)
+- Removed `admin` auth scope — no client-side admin authority possible
+- Removed `ork_write_` token acceptance — dashboard is read-only evidence surface, not authority plane
+- Dashboard tokens restricted to `ork_read_*` only, producing only `private` scope
+- Token gate language corrected: "Enter Token" → "Connect Private View", no write/admin implications
+- Auth badge corrected: shows "Private View" only, never "Authenticated (admin)" or "Authenticated (write)"
+- Added CI scan for forbidden token patterns in dashboard source (`secret-scan.yml`)
+- Added CI built-bundle scan after `npm run build` (dashboard.yml)
+- 12 dashboard security tests added (rejection, acceptance, source scan, persistence checks)
+
+### Changed
+- Dashboard token policy: `ork_read_*` → private view; all other tokens rejected
+- Dashboard version bumped: 0.1.0 → 0.1.1
+- Dashboard is now explicitly read-only public evidence surface
+
 ## [2.9.0] - 2026-06-09
 
 ### Added
