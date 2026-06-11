@@ -157,4 +157,52 @@ describe('Evidence Panels', () => {
       expect(source, `${comp} should not contain admin scope`).not.toContain("'admin'");
     }
   });
+
+  // --- v2.11.0: evidence entries ---
+
+  it('release history includes v2.11.0 entry', () => {
+    render(<ReleaseHistoryPanel releaseHistory={{
+      ...mockReleaseHistory,
+      releases: {
+        ...mockReleaseHistory.releases,
+        '2.11.0': { date: '2026-06-11', type: 'productization', label: 'Self-Serve Beta Readiness' },
+        '2.10.1': { date: '2026-06-11', type: 'hardening', label: 'Evidence Surface Hardening' },
+        '2.10.0': { date: '2026-06-10', type: 'feature', label: 'Public Evidence Surface' },
+      }
+    }} />);
+    expect(screen.getByText('Self-Serve Beta Readiness')).toBeDefined();
+  });
+
+  it('release history shows productization type', () => {
+    render(<ReleaseHistoryPanel releaseHistory={{
+      ...mockReleaseHistory,
+      releases: {
+        '2.11.0': { date: '2026-06-11', type: 'productization', label: 'Self-Serve Beta Readiness' },
+      }
+    }} />);
+    expect(screen.getByText('productization')).toBeDefined();
+  });
+
+  // --- v2.11.0: no new authority language ---
+
+  it('no evidence component introduces live API or write language', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const components = [
+      'ReleaseHistoryPanel.tsx',
+      'TestCountTrendPanel.tsx',
+      'SecurityBoundaryPanel.tsx',
+      'AutonomyPolicyPanel.tsx',
+      'RuntimeEvidencePanel.tsx',
+      'DataFreshnessPanel.tsx',
+    ];
+    for (const comp of components) {
+      const source = fs.readFileSync(
+        path.resolve(__dirname, `../src/components/${comp}`),
+        'utf-8'
+      );
+      expect(source, `${comp} should not contain live API fetch`).not.toContain('fetch(');
+      expect(source, `${comp} should not contain write scope`).not.toContain("'write'");
+    }
+  });
 });
