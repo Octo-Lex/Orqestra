@@ -1,7 +1,7 @@
 # Orqestra Public Beta Quickstart
 
 **Audience:** Technical reviewers evaluating the Orqestra public beta.
-**Version:** v2.11.0
+**Version:** v2.14.1
 
 ---
 

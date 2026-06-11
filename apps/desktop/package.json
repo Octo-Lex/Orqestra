@@ -1,7 +1,7 @@
 {
   "name": "orqestra-desktop",
   "private": true,
-  "version": "0.1.0",
+  "version": "2.14.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
