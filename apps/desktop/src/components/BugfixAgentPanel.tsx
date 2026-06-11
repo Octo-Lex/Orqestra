@@ -1,15 +1,13 @@
 /**
- * BugfixAgentPanel — v1.1.0 bugfix-agent review-only execution panel.
+ * BugfixAgentPanel — v2.14.4 bugfix-agent review-only execution panel.
  *
  * Flow:
  * 1. User selects bug-labeled task
- * 2. Agent router identifies bugfix workspace
- * 3. Desktop gathers task context and selected files
- * 4. run_bugfix_agent_cmd invokes AI service
- * 5. AI returns diagnosis + proposed edits
- * 6. DiffReviewPanel shows reviewable diff
- * 7. On accept: user commits through normal commit flow (NOT auto-commit)
- * 8. On reject: edits discarded
+ * 2. User enters relative file paths to analyze (at least one required)
+ * 3. run_bugfix_agent_cmd invokes AI service with selected files
+ * 4. AI returns diagnosis + proposed edits
+ * 5. DiffReviewPanel shows reviewable diff
+ * 6. Accept/reject are review-only labels (no file mutation)
  *
  * Key constraint: auto_commit is ALWAYS disabled for bugfix-agent.
  */
@@ -32,18 +30,31 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
   const [result, setResult] = useState<AgentEditResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const selectedFiles: string[] = [];
+  const [filePathInput, setFilePathInput] = useState('');
   const [status, setStatus] = useState<'idle' | 'running' | 'review' | 'accepted' | 'rejected'>('idle');
 
   if (!task) {
     return (
-      <div className="text-sm text-gray-500 p-4">
-        Select a bug-labeled task to run the bugfix agent.
+      <div style={{ fontSize: '0.875rem', color: '#6b7280', padding: '0.75rem' }}>
+        No bug-labeled task found. Add a <code>bugfix</code> or <code>bug</code> label to a task to enable the bugfix agent.
       </div>
     );
   }
 
+  // Parse newline-separated relative paths, trimmed, non-empty
+  const parsedFiles = filePathInput
+    .split('\n')
+    .map(p => p.trim())
+    .filter(p => p.length > 0);
+
+  const hasFiles = parsedFiles.length > 0;
+
   const runAgent = async () => {
+    if (!hasFiles) {
+      setError('Enter at least one file path to analyze.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
     setStatus('running');
@@ -56,9 +67,43 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
         source_path: task.source_path,
       });
 
-      const filesJson = JSON.stringify(
-        selectedFiles.map(path => ({ path, content: '' }))
-      );
+      // Validate paths: reject absolute, traversal, and escape patterns
+      const invalidPaths = parsedFiles.filter(p => {
+        // Reject absolute paths (Windows or Unix)
+        if (/^[A-Za-z]:/.test(p) || p.startsWith('/') || p.startsWith('\\')) return true;
+        // Reject home directory
+        if (p.startsWith('~')) return true;
+        // Reject path traversal
+        if (p.includes('..')) return true;
+        // Reject backslashes
+        if (p.includes('\\')) return true;
+        // Reject bare dot
+        if (p === '.' || p === './') return true;
+        return false;
+      });
+
+      if (invalidPaths.length > 0) {
+        setError(`Invalid path(s): ${invalidPaths.join(', ')}. Use relative paths without .. or absolute prefixes.`);
+        return;
+      }
+
+      // Read file contents — fail if any file cannot be read
+      const filesWithContext: { path: string; content: string }[] = [];
+      for (const path of parsedFiles) {
+        try {
+          const content = await invoke<string>('read_file_cmd', {
+            path: `${projectRoot}/${path}`,
+          });
+          filesWithContext.push({ path, content });
+        } catch {
+          setError(`Cannot read file: ${path}. Ensure the path is correct and the file exists.`);
+          setLoading(false);
+          setStatus('idle');
+          return;
+        }
+      }
+
+      const filesJson = JSON.stringify(filesWithContext);
 
       const response = await invoke<string>('run_bugfix_agent_cmd', {
         projectRoot,
@@ -78,52 +123,77 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
   };
 
   const handleAccept = () => {
-    // v1.1.0: User must commit through normal commit flow.
-    // This does NOT auto-commit. It records acceptance.
     setStatus('accepted');
   };
 
   const handleReject = () => {
-    // Discard proposed edits
     setResult(null);
     setStatus('rejected');
   };
 
   return (
-    <div className="border rounded-lg p-4 mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <h3 className="font-semibold">Bugfix Agent</h3>
-        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">
+    <div style={{ border: '1px solid #e5e7eb', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
+        <span style={{ fontWeight: 600 }}>Task: {task.title} ({task.id})</span>
+        <span style={{ fontSize: '0.75rem', backgroundColor: '#fef3c7', color: '#92400e', padding: '0.125rem 0.5rem', borderRadius: '9999px' }}>
           review-only
         </span>
       </div>
 
-      <div className="text-sm text-gray-600 mb-3">
-        Task: {task.title} ({task.id})
-      </div>
-
+      {/* File path input */}
       {status === 'idle' && (
-        <button
-          onClick={runAgent}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          disabled={loading}
-        >
-          Run Bugfix Agent
-        </button>
+        <div style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, marginBottom: '0.25rem', color: '#374151' }}>
+            File paths to analyze (one per line, relative to project root)
+          </label>
+          <textarea
+            value={filePathInput}
+            onChange={e => setFilePathInput(e.target.value)}
+            placeholder={"src/lib/handler.rs\nsrc/lib/error.rs"}
+            rows={3}
+            style={{
+              width: '100%',
+              padding: '0.5rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '0.375rem',
+              fontFamily: 'monospace',
+              fontSize: '0.875rem',
+              resize: 'vertical',
+            }}
+          />
+          {!hasFiles && filePathInput.length > 0 && (
+            <div style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.25rem' }}>
+              Enter at least one valid file path.
+            </div>
+          )}
+          <button
+            onClick={runAgent}
+            disabled={!hasFiles || loading}
+            style={{
+              marginTop: '0.5rem',
+              padding: '0.5rem 1rem',
+              backgroundColor: hasFiles ? '#3b82f6' : '#9ca3af',
+              color: 'white',
+              border: 'none',
+              borderRadius: '0.375rem',
+              cursor: hasFiles ? 'pointer' : 'not-allowed',
+              fontWeight: 600,
+              fontSize: '0.875rem',
+            }}
+          >
+            {loading ? 'Running...' : 'Run Bugfix Agent'}
+          </button>
+        </div>
       )}
 
       {status === 'running' && (
-        <div className="text-sm text-gray-500">
-          Agent is analyzing the task...
+        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+          Agent is analyzing selected files...
         </div>
       )}
 
       {status === 'review' && (
         <div>
-          <div className="text-sm text-gray-500 mb-2">
-            Review the proposed changes below. Accept to apply, reject to discard.
-            Commits use the normal Git flow.
-          </div>
           <DiffReviewPanel
             result={result}
             loading={loading}
@@ -135,17 +205,17 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
       )}
 
       {status === 'accepted' && (
-        <div className="text-sm text-green-600">
-          Changes accepted. Use the commit panel to commit.
+        <div style={{ fontSize: '0.875rem', color: '#16a34a' }}>
+          Proposal accepted (review-only). No files were changed.
         </div>
       )}
 
       {status === 'rejected' && (
-        <div className="text-sm text-gray-500">
-          Changes rejected.
+        <div style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+          Proposal rejected.
           <button
             onClick={() => setStatus('idle')}
-            className="ml-2 text-blue-500 hover:underline"
+            style={{ marginLeft: '0.5rem', color: '#3b82f6', background: 'none', border: 'none', cursor: 'pointer', textDecoration: 'underline' }}
           >
             Retry
           </button>
@@ -153,13 +223,13 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
       )}
 
       {error && (
-        <div className="text-sm text-red-500 mt-2">
+        <div style={{ fontSize: '0.875rem', color: '#ef4444', marginTop: '0.5rem' }}>
           Error: {error}
         </div>
       )}
 
-      <div className="text-xs text-gray-400 mt-2">
-        Bugfix agent is review-only. No autonomous commits.
+      <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
+        Bugfix agent is review-only. No autonomous commits. Accept/reject are labels only.
       </div>
     </div>
   );
