@@ -265,8 +265,12 @@ pub fn export_beta_evidence_cmd(
         }
     };
 
-    let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
-    let bundle_name = format!("beta-evidence-{}", timestamp);
+    let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S-%3f");
+    let unique = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .subsec_nanos();
+    let bundle_name = format!("beta-evidence-{}-{}", timestamp, unique);
     let bundle_path = output_dir.join(&bundle_name);
 
     std::fs::create_dir_all(&bundle_path)

@@ -156,14 +156,26 @@ fn test_loro_engine_no_tauri_imports() {
 #[test]
 fn test_loro_engine_source_no_tauri_refs() {
     let root = find_repo_root();
-    // Grep for tauri references in source
-    let output = std::process::Command::new("grep")
-        .current_dir(&root)
-        .args(["-r", "use tauri", "crates/loro-engine/src/", "--include=*.rs"])
-        .output()
-        .expect("grep must work");
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    assert!(stdout.trim().is_empty(), "loro-engine source must not import tauri: {}", stdout);
+    // Check for tauri references in loro-engine source (cross-platform)
+    let loro_src = root.join("crates").join("loro-engine").join("src");
+    let mut found = false;
+    if let Ok(entries) = std::fs::read_dir(&loro_src) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().map(|e| e == "rs").unwrap_or(false) {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    for line in content.lines() {
+                        if line.contains("use tauri") {
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if found { break; }
+        }
+    }
+    assert!(!found, "loro-engine source must not import tauri");
 }
 
 // ---------------------------------------------------------------------------

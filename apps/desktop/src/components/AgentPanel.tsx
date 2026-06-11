@@ -71,7 +71,7 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
       // Gather context files (README.md from project root)
       const contextFiles: { path: string; content: string }[] = [];
       try {
-        const readme = await invoke<string>('read_file_cmd', { path: `${projectRoot}/README.md` });
+        const readme = await invoke<string>('read_file_cmd', { projectRoot, path: `${projectRoot}/README.md` });
         contextFiles.push({ path: 'README.md', content: readme });
       } catch { /* README not available */ }
 
