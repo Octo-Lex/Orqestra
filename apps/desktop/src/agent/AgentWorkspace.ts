@@ -27,7 +27,7 @@ export interface WorkspaceConfig {
 
 export interface WorkspaceState {
   workspaceId: string;
-  status: 'idle' | 'running' | 'done' | 'error';
+  status: 'idle' | 'running' | 'done' | 'error' | 'unavailable';
   currentTaskId: string | null;
   lastRunAt: string | null;
   lastResult: AgentResult | null;
