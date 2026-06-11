@@ -18,6 +18,7 @@
     { "version": "2.10.0", "rust": 447, "worker": 24, "dashboard": 22, "total": 493 },
     { "version": "2.10.1", "rust": 470, "worker": 24, "dashboard": 32, "total": 526 },
     { "version": "2.11.0", "rust": 778, "worker": 24, "dashboard": 35, "total": 837 },
-    { "version": "2.12.0", "rust": 796, "worker": 24, "dashboard": 40, "total": 860 }
+    { "version": "2.12.0", "rust": 796, "worker": 24, "dashboard": 40, "total": 860 },
+    { "version": "2.13.0", "rust": 808, "worker": 24, "dashboard": 48, "total": 880 }
   ]
 }
