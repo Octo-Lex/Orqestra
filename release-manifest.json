@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.12.0",
-    "tag": "v2.12.0",
+    "name": "Orqestra v2.13.0",
+    "tag": "v2.13.0",
     "channel": "public-beta",
-    "release_version": "2.12.0",
-    "app_version": "2.12.0",
+    "release_version": "2.13.0",
+    "app_version": "2.13.0",
     "date": "2026-06-11"
   },
   "provenance": {
@@ -713,6 +713,16 @@
       "redaction_required": true,
       "failure_taxonomy_codes": 16,
       "external_beta_user_data": false
+    },
+    "external_beta_evidence_review": {
+      "enabled": true,
+      "review_process_documented": true,
+      "review_artifact_present": true,
+      "aggregate_only": true,
+      "no_raw_data_published": true,
+      "status": "none",
+      "external_beta_user_data": false,
+      "accepted_evidence_means_usable_not_successful": true
     }
   }
 }

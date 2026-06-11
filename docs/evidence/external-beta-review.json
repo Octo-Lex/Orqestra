@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "description": "External beta evidence review results. Aggregate only. No raw data.",
+  "provenance": "Curated review metadata. Updated manually per reviewed bundle.",
+  "review_type": "external_beta_evidence_review",
+  "release": "2.13.0",
+  "reviewed_at": null,
+  "external_beta_user_data": false,
+  "usable_bundle_count": 0,
+  "reviewed_bundle_count": 0,
+  "accepted_bundle_count": 0,
+  "rejected_bundle_count": 0,
+  "needs_follow_up_count": 0,
+  "aggregate_outcomes": {
+    "completed": 0,
+    "completed_with_warnings": 0,
+    "blocked": 0,
+    "abandoned": 0,
+    "unknown": 0
+  },
+  "aggregate_failure_codes": {},
+  "privacy": {
+    "raw_paths_published": false,
+    "raw_tokens_published": false,
+    "raw_file_contents_published": false,
+    "raw_bundle_committed": false,
+    "aggregate_only": true
+  },
+  "status": "none"
+}

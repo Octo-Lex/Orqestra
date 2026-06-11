@@ -82,6 +82,11 @@
       "date": "2026-06-11",
       "type": "evidence-intake",
       "label": "External Beta Evidence Intake"
+    },
+    "2.13.0": {
+      "date": "2026-06-11",
+      "type": "evidence-review",
+      "label": "First External Beta Evidence Review"
     }
   }
 }

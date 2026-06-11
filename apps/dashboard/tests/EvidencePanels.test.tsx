@@ -265,4 +265,74 @@ describe('Evidence Panels', () => {
     expect(screen.getByText('External Beta Evidence Intake')).toBeDefined();
     expect(screen.getByText('evidence-intake')).toBeDefined();
   });
+
+  // --- v2.13.0: External beta review ---
+
+  it('external beta panel shows none without accepted evidence', () => {
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'none', external_beta_user_data: false,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'none', external_beta_user_data: false, aggregate_only: true,
+    }} />);
+    expect(screen.getByText('None')).toBeDefined();
+  });
+
+  it('external beta panel shows present for accepted aggregate evidence', () => {
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+      intake_mechanism: 'local_export_only', automatic_upload: false, consent_required: true, redaction_required: true,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+      reviewed_bundle_count: 1, accepted_bundle_count: 1, rejected_bundle_count: 0,
+      needs_follow_up_count: 0, aggregate_only: true,
+    }} />);
+    expect(screen.getByText('Present')).toBeDefined();
+    expect(screen.getByText('Evidence Review')).toBeDefined();
+    expect(screen.getByText('Reviewed bundles')).toBeDefined();
+    expect(screen.getByText('Accepted bundles')).toBeDefined();
+  });
+
+  it('external beta panel does not render validation claim', () => {
+    const { container } = render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'present', external_beta_user_data: true, aggregate_only: true,
+    }} />);
+    const html = container.innerHTML;
+    expect(html).not.toContain('validated');
+    expect(html).not.toContain('Validated');
+    expect(html).not.toContain('external_beta_validated');
+  });
+
+  it('external beta panel does not render raw feedback', () => {
+    const { container } = render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'present', external_beta_user_data: true, aggregate_only: true,
+    }} />);
+    const html = container.innerHTML;
+    expect(html).not.toContain('feedback');
+    expect(html).not.toContain('quote');
+  });
+
+  it('external beta panel does not fetch live data', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../src/components/ExternalBetaEvidencePanel.tsx'),
+      'utf-8'
+    );
+    expect(source).not.toContain('fetch(');
+    expect(source).not.toContain('useEffect');
+  });
+
+  it('v2.13.0 release entry present in release history', () => {
+    render(<ReleaseHistoryPanel releaseHistory={{
+      releases: {
+        '2.13.0': { date: '2026-06-11', type: 'evidence-review', label: 'First External Beta Evidence Review' },
+      }
+    }} />);
+    expect(screen.getByText('First External Beta Evidence Review')).toBeDefined();
+    expect(screen.getByText('evidence-review')).toBeDefined();
+  });
 });

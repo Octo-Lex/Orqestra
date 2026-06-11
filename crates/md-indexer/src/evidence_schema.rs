@@ -48,6 +48,7 @@ pub fn validate_evidence_dir(dir: &Path) -> ValidationResult {
         "autonomy-policy.json",
         "runtime-decision-matrix.json",
         "external-beta-evidence.json",
+        "external-beta-review.json",
     ];
 
     for file in &files {
@@ -85,6 +86,7 @@ fn validate_evidence_file(name: &str, data: &Value, result: &mut ValidationResul
         "autonomy-policy.json" => validate_autonomy_policy(data, result),
         "runtime-decision-matrix.json" => validate_runtime_evidence(data, result),
         "external-beta-evidence.json" => validate_external_beta_evidence(data, result),
+        "external-beta-review.json" => validate_external_beta_review(data, result),
         _ => {}
     }
 }
@@ -291,6 +293,88 @@ fn validate_external_beta_evidence(data: &Value, result: &mut ValidationResult) 
     }
 }
 
+fn validate_external_beta_review(data: &Value, result: &mut ValidationResult) {
+    // schema_version
+    match data.get("schema_version").and_then(|v| v.as_u64()) {
+        Some(1) => {}
+        Some(v) => result.add_error(format!(
+            "external-beta-review.json: schema_version is {}, expected 1",
+            v
+        )),
+        None => result.add_error("external-beta-review.json: missing schema_version".to_string()),
+    }
+
+    // status must be one of the allowed values
+    match data.get("status").and_then(|v| v.as_str()) {
+        Some(s) if ["none", "present", "insufficient", "rejected"].contains(&s) => {}
+        Some(s) => result.add_error(format!(
+            "external-beta-review.json: invalid status '{}', expected none/present/insufficient/rejected",
+            s
+        )),
+        None => result.add_error("external-beta-review.json: missing status".to_string()),
+    }
+
+    // external_beta_user_data must match status
+    let status = data.get("status").and_then(|v| v.as_str()).unwrap_or("none");
+    match data.get("external_beta_user_data").and_then(|v| v.as_bool()) {
+        Some(false) => {
+            if status == "present" {
+                result.add_error(
+                    "external-beta-review.json: status is 'present' but external_beta_user_data is false"
+                        .to_string(),
+                );
+            }
+        }
+        Some(true) => {
+            if status != "present" {
+                result.add_error(format!(
+                    "external-beta-review.json: external_beta_user_data is true but status is '{}' (not 'present')",
+                    status
+                ));
+            }
+        }
+        None => result.add_error("external-beta-review.json: missing external_beta_user_data".to_string()),
+    }
+
+    // privacy section must exist and be honest
+    let privacy = data.get("privacy");
+    if privacy.is_none() {
+        result.add_error("external-beta-review.json: missing privacy section".to_string());
+    } else {
+        let p = privacy.unwrap();
+        for flag in &["raw_paths_published", "raw_tokens_published", "raw_file_contents_published", "raw_bundle_committed"] {
+            match p.get(*flag).and_then(|v| v.as_bool()) {
+                Some(false) => {}
+                Some(true) => result.add_error(format!(
+                    "external-beta-review.json: privacy.{} must be false",
+                    flag
+                )),
+                None => result.add_error(format!(
+                    "external-beta-review.json: missing privacy.{}",
+                    flag
+                )),
+            }
+        }
+        match p.get("aggregate_only").and_then(|v| v.as_bool()) {
+            Some(true) => {}
+            Some(false) => result.add_error(
+                "external-beta-review.json: privacy.aggregate_only must be true".to_string(),
+            ),
+            None => result.add_error(
+                "external-beta-review.json: missing privacy.aggregate_only".to_string(),
+            ),
+        }
+    }
+
+    // Must not contain validation claim without explicit threshold
+    let serialized = serde_json::to_string(data).unwrap_or_default();
+    if serialized.contains("external_beta_validated") {
+        result.add_error(
+            "external-beta-review.json: must not contain 'external_beta_validated' field".to_string(),
+        );
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -307,6 +391,7 @@ mod tests {
         write_evidence_file(dir, "autonomy-policy.json", r#"{"schema_version":1,"status":"docs-only pilot","max_session_cap":10,"default_cap":5,"auto_commit":false,"allowed_paths":["docs/**"]}"#);
         write_evidence_file(dir, "runtime-decision-matrix.json", r#"{"schema_version":1,"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":false,"path_matrix_evaluated":50}"#);
         write_evidence_file(dir, "external-beta-evidence.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        write_evidence_file(dir, "external-beta-review.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#);
     }
 
     #[test]
@@ -327,6 +412,7 @@ mod tests {
         write_evidence_file(tmp.path(), "autonomy-policy.json", r#"{"max_session_cap":10,"auto_commit":false,"allowed_paths":[]}"#);
         write_evidence_file(tmp.path(), "runtime-decision-matrix.json", r#"{"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":false,"path_matrix_evaluated":50}"#);
         write_evidence_file(tmp.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        write_evidence_file(tmp.path(), "external-beta-review.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#);
         let result = validate_evidence_dir(tmp.path());
         assert!(!result.valid);
         assert!(result.errors.iter().any(|e| e.contains("missing schema_version")));
@@ -341,6 +427,7 @@ mod tests {
         write_evidence_file(tmp.path(), "autonomy-policy.json", r#"{"schema_version":1,"max_session_cap":10,"auto_commit":false,"allowed_paths":[]}"#);
         write_evidence_file(tmp.path(), "runtime-decision-matrix.json", r#"{"schema_version":1,"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":false,"path_matrix_evaluated":50}"#);
         write_evidence_file(tmp.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        write_evidence_file(tmp.path(), "external-beta-review.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#);
         let result = validate_evidence_dir(tmp.path());
         assert!(!result.valid);
         assert!(result.errors.iter().any(|e| e.contains("schema_version is 2, expected 1")));
@@ -353,6 +440,7 @@ mod tests {
         // Overwrite runtime evidence with wrong type
         write_evidence_file(tmp.path(), "runtime-decision-matrix.json", r#"{"schema_version":1,"evidence_type":"external-beta","external_beta_user_data":false,"path_matrix_evaluated":50}"#);
         write_evidence_file(tmp.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        write_evidence_file(tmp.path(), "external-beta-review.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#);
         let result = validate_evidence_dir(tmp.path());
         assert!(!result.valid);
         assert!(result.errors.iter().any(|e| e.contains("evidence_type") && e.contains("external-beta")));
@@ -364,6 +452,7 @@ mod tests {
         make_valid_evidence(tmp.path());
         write_evidence_file(tmp.path(), "runtime-decision-matrix.json", r#"{"schema_version":1,"evidence_type":"structural-runtime-decision-matrix","external_beta_user_data":true,"path_matrix_evaluated":50}"#);
         write_evidence_file(tmp.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        write_evidence_file(tmp.path(), "external-beta-review.json", r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#);
         let result = validate_evidence_dir(tmp.path());
         assert!(!result.valid);
         assert!(result.errors.iter().any(|e| e.contains("external_beta_user_data is true")));

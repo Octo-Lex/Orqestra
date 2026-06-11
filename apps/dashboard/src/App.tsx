@@ -170,7 +170,7 @@ export function App() {
               <SecurityBoundaryPanel securityBoundaries={data.evidence.security_boundaries} />
               <AutonomyPolicyPanel autonomyPolicy={data.evidence.autonomy_policy} />
               <RuntimeEvidencePanel runtimeEvidence={data.evidence.runtime_evidence} />
-              <ExternalBetaEvidencePanel externalBetaEvidence={data.evidence.external_beta_evidence ?? null} />
+              <ExternalBetaEvidencePanel externalBetaEvidence={data.evidence.external_beta_evidence ?? null} externalBetaReview={data.evidence.external_beta_review ?? null} />
             </>
           ) : (
             <div style={{ padding: 24, backgroundColor: '#0f172a', borderRadius: 8, textAlign: 'center', color: '#f59e0b' }}>
