@@ -135,7 +135,7 @@ export class SyncRoom implements DurableObject {
 
     // Validate token
     const masterSecret = (this.state.env as Record<string, string>).ORQESTRA_SYNC_MASTER || '';
-    const tokenPayload = validateToken(token, masterSecret);
+    const tokenPayload = await validateToken(token, masterSecret);
     if (!tokenPayload) {
       this.sendError(ws, message_id, 'UNAUTHORIZED', 'Invalid token');
       ws.close(4001, 'Unauthorized');
