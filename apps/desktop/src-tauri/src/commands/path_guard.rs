@@ -20,25 +20,40 @@ pub fn guard_path(project_root: &str, target: &str) -> Result<PathBuf, String> {
     // Handle the target path
     let target_path = Path::new(target);
 
-    // Reject absolute paths that don't start with project root
+    // Resolve absolute paths: must stay under project root after canonicalization
     if target_path.is_absolute() {
-        // Allow if it starts with the project root
-        let canonical_target = target_path
-            .parent()
-            .map(|p| {
-                p.canonicalize()
-                    .map(|cp| cp.join(target_path.file_name().unwrap_or_default()))
-            })
-            .transpose()
-            .map_err(|e| format!("Cannot resolve path '{}': {}", target, e))?;
+        // If the target exists, canonicalize it directly to resolve symlinks
+        if target_path.exists() {
+            let canonical = target_path
+                .canonicalize()
+                .map_err(|e| format!("Cannot resolve path '{}': {}", target, e))?;
+            if canonical.starts_with(&canonical_root) {
+                return Ok(canonical);
+            }
+            return Err(format!(
+                "Access denied: path '{}' resolves outside project root '{}'",
+                target, project_root
+            ));
+        }
 
-        if let Some(ct) = canonical_target {
-            if ct.starts_with(&canonical_root) {
-                return Ok(ct);
+        // Target doesn't exist — canonicalize parent and verify it's under root
+        if let Some(parent) = target_path.parent() {
+            if parent.exists() {
+                let canonical_parent = parent
+                    .canonicalize()
+                    .map_err(|e| format!("Cannot resolve parent of '{}': {}", target, e))?;
+                if canonical_parent.starts_with(&canonical_root) {
+                    return Ok(target_path.to_path_buf());
+                }
+                return Err(format!(
+                    "Access denied: parent of '{}' resolves outside project root",
+                    target
+                ));
             }
         }
+
         return Err(format!(
-            "Access denied: path '{}' is outside project root '{}'",
+            "Access denied: absolute path '{}' cannot be verified under project root '{}'",
             target, project_root
         ));
     }
@@ -175,6 +190,48 @@ mod tests {
 
         let result = guard_path(root, &abs_path);
         assert!(result.is_ok(), "Should allow absolute path within project");
+    }
+
+    #[test]
+    fn rejects_absolute_in_project_symlink_escape() {
+        let tmp = tempfile::tempdir().unwrap();
+        let outside = tempfile::tempdir().unwrap();
+        let root = tmp.path().to_str().unwrap();
+
+        // Write a file outside the project
+        fs::write(outside.path().join("secret.txt"), "sensitive").unwrap();
+
+        // Create a symlink inside the project pointing outside
+        #[cfg(unix)]
+        {
+            std::os::unix::fs::symlink(
+                outside.path().join("secret.txt"),
+                tmp.path().join("link-to-outside"),
+            )
+            .unwrap();
+        }
+        #[cfg(windows)]
+        {
+            if std::os::windows::fs::symlink_file(
+                outside.path().join("secret.txt"),
+                tmp.path().join("link-to-outside"),
+            ).is_err() {
+                eprintln!("Skipping symlink test on Windows: not enough privileges");
+                return;
+            }
+        }
+
+        if tmp.path().join("link-to-outside").exists() {
+            let abs_link = tmp.path().join("link-to-outside").to_str().unwrap().to_string();
+            let result = guard_path(root, &abs_link);
+            assert!(
+                result.is_err(),
+                "Should reject absolute in-project symlink pointing outside project: {:?}",
+                result
+            );
+            let err = result.unwrap_err();
+            assert!(err.contains("Access denied"), "Error should mention access denied: {}", err);
+        }
     }
 
     #[test]
