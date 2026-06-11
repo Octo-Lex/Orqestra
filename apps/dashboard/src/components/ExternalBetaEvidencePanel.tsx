@@ -45,6 +45,15 @@ export const ExternalBetaEvidencePanel: React.FC<Props> = ({ externalBetaEvidenc
   const reviewStatus = externalBetaReview?.status || 'none';
   const hasData = externalBetaEvidence?.external_beta_user_data === true;
 
+  // Map review status to display text and color
+  const reviewDisplay: Record<string, { text: string; color: string }> = {
+    present: { text: 'Present', color: '#22c55e' },
+    none: { text: 'None', color: '#94a3b8' },
+    insufficient: { text: 'Insufficient', color: '#f59e0b' },
+    rejected: { text: 'Rejected', color: '#ef4444' },
+  };
+  const statusInfo = reviewDisplay[reviewStatus] || reviewDisplay['none'];
+
   return (
     <div style={styles.panel}>
       <h3 style={styles.title}>External Beta Evidence</h3>
@@ -53,9 +62,9 @@ export const ExternalBetaEvidencePanel: React.FC<Props> = ({ externalBetaEvidenc
         <span style={styles.label}>Status</span>
         <span style={{
           ...styles.value,
-          color: hasData ? '#22c55e' : '#94a3b8',
+          color: statusInfo.color,
         }}>
-          {hasData ? 'Present' : 'None'}
+          {statusInfo.text}
         </span>
       </div>
 
@@ -101,8 +110,8 @@ export const ExternalBetaEvidencePanel: React.FC<Props> = ({ externalBetaEvidenc
         <span style={styles.value}>Aggregate only</span>
       </div>
 
-      {/* Review section */}
-      {externalBetaReview && hasData && (
+      {/* Review section — show for present, insufficient, or rejected */}
+      {externalBetaReview && reviewStatus !== 'none' && (
         <>
           <div style={styles.sectionTitle}>Evidence Review</div>
           <div style={styles.row}>

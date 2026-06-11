@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.14.0] - 2026-06-11
+
+### Added
+- `docs/beta/first-external-beta-session.md` — real-session runbook for external beta
+- `docs/beta/external-beta-participant-instructions.md` — participant-facing instructions
+- `docs/evidence/first-external-beta-session-summary.md` — aggregate-only session review summary
+- Dashboard handles `insufficient` and `rejected` review statuses
+- 8 new dashboard tests (status display, validation guard, doc checks)
+
+### Evidence State
+- Review status: `none` — no real external beta session reviewed yet
+- `external_beta_user_data: false` preserved
+- Bundle counts remain at zero
+
+### Non-scope
+- No external validation claim
+- No telemetry
+- No auto-upload
+- No dashboard writes
+- No autonomy expansion
+
 ## [2.13.0] - 2026-06-11
 
 ### Added
