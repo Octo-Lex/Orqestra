@@ -4,6 +4,8 @@ import { AgentRouter, ROUTING_RULES } from '../agent/AgentRouter';
 import type { AgentResult } from '../agent/AgentWorkspace';
 import type { Task } from '../lib/orqestra';
 import { DiffReviewPanel, type AgentEditResponse } from './DiffReviewPanel';
+import { BugfixAgentPanel } from './BugfixAgentPanel';
+import { ArchitectAgentPanel } from './ArchitectAgentPanel';
 
 interface AgentPanelProps {
   projectRoot: string;
@@ -185,21 +187,9 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
     <div style={{ marginTop: '1.5rem' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
         <h3 style={{ margin: 0 }}>Agent Workspaces</h3>
-        <button
-          onClick={runAllAgents}
-          disabled={isRunning || workspaces.length === 0}
-          style={{
-            padding: '0.4rem 1rem',
-            background: isRunning ? '#fbbf24' : '#3b82f6',
-            color: 'white',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isRunning ? 'wait' : 'pointer',
-            fontWeight: 600,
-          }}
-        >
-          {isRunning ? 'Running...' : 'Run All Agents'}
-        </button>
+        <span style={{ fontSize: '0.85em', color: '#6b7280' }}>
+          Individual agents call real AI service. No fabricated results.
+        </span>
         {totalCommits > 0 && (
           <span style={{ color: '#10b981', fontSize: '0.85em', fontWeight: 600 }}>
             {totalCommits} commit{totalCommits !== 1 ? 's' : ''} produced
@@ -238,6 +228,18 @@ export function AgentPanel({ projectRoot, tasks }: AgentPanelProps) {
           onAccept={() => addLog('docs-agent', 'Change accepted by human')}
           onReject={() => addLog('docs-agent', 'Change rejected by human')}
         />
+      </div>
+
+      {/* Bugfix agent (real execution) */}
+      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+        <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Bugfix Agent</h4>
+        <BugfixAgentPanel projectRoot={projectRoot} task={tasks.find(t => t.frontmatter.labels?.some(l => l === 'bugfix' || l === 'bug')) ?? null} />
+      </div>
+
+      {/* Architect agent (real execution) */}
+      <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
+        <h4 style={{ margin: 0, marginBottom: '0.5rem' }}>Architect Agent</h4>
+        <ArchitectAgentPanel projectRoot={projectRoot} task={tasks.find(t => t.frontmatter.labels?.some(l => l === 'architect' || l === 'architecture')) ?? null} />
       </div>
 
       {/* Routing rules legend */}

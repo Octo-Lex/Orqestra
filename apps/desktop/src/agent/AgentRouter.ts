@@ -106,6 +106,7 @@ export class AgentRouter {
 
   /**
    * Run a single task: route → execute → commit.
+   * Handles both real results and unavailable agent responses.
    */
   async runTask(task: Task): Promise<AgentResult> {
     const { workspace, matchReason } = await this.route(task);
@@ -116,13 +117,24 @@ export class AgentRouter {
     try {
       const runner = new AgentRunner(this.projectRoot, workspace);
       const result = await runner.run(task);
+
+      // Check for unavailable result — never treat as success
+      if ('available' in result && result.available === false) {
+        workspace.state.status = 'unavailable';
+        workspace.log(`Unavailable: ${result.reason}`);
+        throw new Error(`Agent unavailable: ${result.reason}`);
+      }
+
+      // Real result
       workspace.state.status = 'done';
       workspace.state.lastRunAt = new Date().toISOString();
       workspace.state.lastResult = result;
       workspace.log(`Done: confidence=${result.confidence}, gate=${result.gateAction}`);
       return result;
     } catch (e) {
-      workspace.state.status = 'error';
+      if (workspace.state.status !== 'unavailable') {
+        workspace.state.status = 'error';
+      }
       workspace.log(`Error: ${e instanceof Error ? e.message : String(e)}`);
       throw e;
     } finally {

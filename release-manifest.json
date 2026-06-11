@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.14.0",
-    "tag": "v2.14.0",
+    "name": "Orqestra v2.14.1",
+    "tag": "v2.14.1",
     "channel": "public-beta",
-    "release_version": "2.14.0",
-    "app_version": "2.14.0",
+    "release_version": "2.14.1",
+    "app_version": "2.14.1",
     "date": "2026-06-11"
   },
   "provenance": {
@@ -14,7 +14,8 @@
     "release_upload_commit": null,
     "workflow": ".github/workflows/desktop-release.yml",
     "workflow_run_id": "27042512286",
-    "status": "local-build"
+    "status": "local-build",
+    "note": "SHAs are placeholders for local builds. Not a sealed artifact release."
   },
   "signing": {
     "windows": {
@@ -47,7 +48,9 @@
       "signed": false,
       "signature_status": "not-signed",
       "final_artifact_state": "unsigned-final",
-      "source": "local-build"
+      "source": "local-build",
+      "historical": true,
+      "note": "Legacy artifact name. Current release is v2.14.1 but no new installer has been built."
     },
     {
       "name": "Orqestra_2.9.0_x64.AppImage",
@@ -59,22 +62,26 @@
       "signature_status": "not-applicable",
       "final_artifact_state": "linux-appimage-final",
       "verification_status": "smoke-passed-native-desktop",
-      "source": "pending"
+      "source": "pending",
+      "historical": true,
+      "note": "Legacy artifact name. Current release is v2.14.1 but no new installer has been built."
     }
   ],
   "platforms": {
     "windows-x64": {
       "status": "tested",
       "release_blocking": true,
-      "artifact": "Orqestra_1.0.12_x64-setup.exe",
+      "artifact": "pending-v2.14.1-rebuild",
       "signed": false,
-      "smoke_evidence": "demo/v1.0.12-windows-smoke.md",
-      "notes": "Unsigned tested public beta installer"
+      "smoke_evidence": "v2.14.1 evidence in CI runs",
+      "notes": "Unsigned tested public beta installer",
+      "note": "v1.0.12 artifact was historical. Current platform evidence is in CI.",
+      "smoke_evidence_historical": "demo/v1.0.12-windows-smoke.md"
     },
     "linux-x64": {
       "status": "tested",
       "release_blocking": false,
-      "artifact": "Orqestra_1.0.12_x64.AppImage",
+      "artifact": "pending-v2.14.1-rebuild",
       "signed": false,
       "compile_status": "pass",
       "bundle_status": "pass",
@@ -84,14 +91,16 @@
       "native_desktop_smoke": true,
       "previous_runtime_evidence": "runtime-evidence-wslg",
       "notes": "Linux AppImage passed native smoke verification on Ubuntu 24.04.4 GNOME. Dashboard URL/version was verified externally because browser launch was deferred in the headless VM.",
-      "smoke_evidence": "demo/v1.0.12-linux-native-smoke.md",
+      "smoke_evidence": "v2.14.1 evidence in CI runs",
       "runtime_environment": {
         "distribution": "Ubuntu",
         "version": "24.04.4 LTS",
         "desktop": "GNOME 46",
         "display_server": "Wayland",
         "machine_type": "QEMU VM on Proxmox 8.4.10"
-      }
+      },
+      "note": "v1.0.12 artifact was historical. Current platform evidence is in CI.",
+      "smoke_evidence_historical": "demo/v1.0.12-linux-native-smoke.md"
     },
     "macos": {
       "status": "build-feasibility-verified",
@@ -114,13 +123,18 @@
     "windows": "demo/v1.0.12-windows-smoke.md",
     "linux": "demo/v1.0.12-linux-native-smoke.md",
     "linux_wslg_evidence": "demo/v1.0.11-linux-wslg-smoke.md",
-    "macos": "demo/v1.0.8-macos-feasibility.md"
+    "macos": "demo/v1.0.8-macos-feasibility.md",
+    "note": "v1.0.x smoke evidence is historical. v2.14.1 verification via CI.",
+    "v2.14.1_ci_verified": true,
+    "v2.14.1_rust_tests": 809,
+    "v2.14.1_dashboard_tests": 53,
+    "v2.14.1_worker_tests": 24
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
-    "release": "v0.2.1",
-    "generated_from_commit": "163ef91da464726830a4db450df0e1f4eb31007a"
+    "release": "v2.14.1",
+    "generated_from_commit": "v2.14.1 tag"
   },
   "diagnostics": {
     "installer_diagnostics": "docs/installer-diagnostics.md",
@@ -136,7 +150,9 @@
     "linux_native_smoke": "pass",
     "dashboard_status": "200 OK",
     "real_ai_demo": "pass",
-    "rust_tests_count": 141
+    "rust_tests_count": 809,
+    "dashboard_tests_count": 53,
+    "worker_tests_count": 24
   },
   "limitations": [
     "Unsigned Windows installer",
@@ -491,7 +507,7 @@
       "agent_endpoints_optional": true,
       "redaction_machine_checked": true,
       "redaction_tests": 8,
-      "readme_download_link": "v1.9.0 (pending v2.0.0 artifact)",
+      "readme_download_link": "v2.14.1 (current)",
       "classification": "governed AI-native development beta",
       "new_docs": [
         "patch-governance.md",
