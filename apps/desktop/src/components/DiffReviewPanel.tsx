@@ -1,6 +1,10 @@
 /**
  * DiffReviewPanel — Shows docs-agent proposed edits for human review.
  * Spec §9.6: all docs-agent output forces propose mode, no auto-commit.
+ *
+ * v2.14.3: Accept/reject are review-only labels. No file mutation or commit
+ * occurs from this panel. Accepting marks the proposal for human reference;
+ * files must be applied through a separate guarded flow if desired.
  */
 import React, { useState } from 'react';
 
@@ -54,9 +58,10 @@ export const DiffReviewPanel: React.FC<Props> = ({ result, loading, error, onAcc
   if (accepted) {
     return (
       <div style={{ padding: 16, backgroundColor: '#22c55e11', borderRadius: 8, borderLeft: '3px solid #22c55e' }}>
-        <div style={{ color: '#22c55e', fontSize: 14, fontWeight: 600 }}>Change Accepted (Human-Approved)</div>
+        <div style={{ color: '#22c55e', fontSize: 14, fontWeight: 600 }}>Proposal Accepted (Review-Only)</div>
         <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
-          The commit has been created with semantic metadata.
+          Proposal marked as accepted for review. No files were changed and no commit was created.
+          Apply changes through the guarded patch flow if desired.
         </div>
       </div>
     );
@@ -65,9 +70,9 @@ export const DiffReviewPanel: React.FC<Props> = ({ result, loading, error, onAcc
   if (rejected) {
     return (
       <div style={{ padding: 16, backgroundColor: '#ef444411', borderRadius: 8, borderLeft: '3px solid #ef4444' }}>
-        <div style={{ color: '#ef4444', fontSize: 14, fontWeight: 600 }}>Change Rejected</div>
+        <div style={{ color: '#ef4444', fontSize: 14, fontWeight: 600 }}>Proposal Rejected</div>
         <div style={{ color: '#94a3b8', fontSize: 12, marginTop: 4 }}>
-          No changes were applied.
+          No changes were applied. Proposal dismissed.
         </div>
       </div>
     );
@@ -114,7 +119,7 @@ export const DiffReviewPanel: React.FC<Props> = ({ result, loading, error, onAcc
         backgroundColor: '#f59e0b11', borderRadius: 6,
         fontSize: 12, color: '#f59e0b',
       }}>
-        ⚠️ v1.0.1 policy: all agent outputs require human review. Auto-commit is disabled.
+        ⚠️ Review-only: accept/reject labels the proposal for your reference. No files are changed and no commit is created from this panel.
       </div>
 
       {/* Edits */}
@@ -154,7 +159,7 @@ export const DiffReviewPanel: React.FC<Props> = ({ result, loading, error, onAcc
             border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
           }}
         >
-          Accept Change
+          Accept (Review-Only)
         </button>
         <button
           onClick={() => { setRejected(true); onReject(); }}
