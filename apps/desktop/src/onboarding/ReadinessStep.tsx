@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { getReadiness } from '../lib/readiness';
 import type { ReadinessReport, ToolReadiness } from '../lib/readiness';
+import { BetaEvidenceExportPanel } from '../components/BetaEvidenceExportPanel';
 
 interface Props {
   projectRoot: string | null;
@@ -218,6 +219,9 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
               )}
             </div>
           )}
+
+          {/* v2.12.0: Beta Evidence Export */}
+          <BetaEvidenceExportPanel projectRoot={projectRoot} betaReadiness={betaReadiness} />
 
           <button style={styles.completeBtn} onClick={onComplete}>
             Open Workspace

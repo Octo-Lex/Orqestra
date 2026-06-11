@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "description": "External beta evidence intake status. Honest display only — no claims without real data.",
+  "provenance": "Curated metadata. No live telemetry.",
+  "status": "none",
+  "external_beta_user_data": false,
+  "intake_mechanism": "local_export_only",
+  "automatic_upload": false,
+  "consent_required": true,
+  "redaction_required": true
+}

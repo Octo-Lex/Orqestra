@@ -70,6 +70,17 @@ export type EvidenceSection = {
   security_boundaries: SecurityBoundariesEvidence;
   autonomy_policy: AutonomyPolicyEvidence;
   runtime_evidence: RuntimeEvidence;
+  external_beta_evidence?: ExternalBetaEvidence;
+};
+
+export type ExternalBetaEvidence = {
+  schema_version: number;
+  status: string;
+  external_beta_user_data: boolean;
+  intake_mechanism?: string;
+  automatic_upload?: boolean;
+  consent_required?: boolean;
+  redaction_required?: boolean;
 };
 
 export type ReleaseHistoryEvidence = {
