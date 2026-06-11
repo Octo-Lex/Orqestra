@@ -116,16 +116,17 @@ export class AgentRouter {
 
     try {
       const runner = new AgentRunner(this.projectRoot, workspace);
-      const result = await runner.run(task);
+      const rawResult = await runner.run(task);
 
       // Check for unavailable result — never treat as success
-      if ('available' in result && result.available === false) {
+      if ('available' in rawResult && rawResult.available === false) {
         workspace.state.status = 'unavailable';
-        workspace.log(`Unavailable: ${result.reason}`);
-        throw new Error(`Agent unavailable: ${result.reason}`);
+        workspace.log(`Unavailable: ${rawResult.reason}`);
+        throw new Error(`Agent unavailable: ${rawResult.reason}`);
       }
 
-      // Real result
+      // Narrowed to AgentResult after the guard (throw guarantees this path)
+      const result = rawResult as AgentResult;
       workspace.state.status = 'done';
       workspace.state.lastRunAt = new Date().toISOString();
       workspace.state.lastResult = result;
