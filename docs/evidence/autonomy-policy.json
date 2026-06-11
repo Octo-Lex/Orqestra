@@ -34,5 +34,12 @@
     "BinaryFile"
   ],
   "allowed_agents": ["docs"],
-  "disallowed_operations": ["source-code auto-apply", "bugfix-agent autonomy", "architect writes", "auto_commit"]
+  "disallowed_operations": ["source-code auto-apply", "bugfix-agent autonomy", "architect writes", "auto_commit"],
+  "self_serve_beta_readiness_artifacts": {
+    "checklist": "present",
+    "demo_scenario": "present",
+    "platform_matrix": "present",
+    "diagnostics_summary": "present",
+    "external_beta_user_data": false
+  }
 }

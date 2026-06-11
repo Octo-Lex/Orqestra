@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.11.0] - 2026-06-11
+
+### Added
+- Beta readiness summary in diagnostics bundle (`beta-readiness-summary.json`)
+  - Structured readiness checks with `ready`/`ready_with_warnings`/`blocked` labels
+  - No unconditional `beta_ready` when AI is down — uses `blocked_features` array
+  - Project path hashed (SHA-256), not raw
+- `get_beta_readiness_cmd` — lightweight readiness query without full bundle export
+- Beta documentation suite:
+  - `docs/beta/self-serve-beta-checklist.md` — canonical external beta smoke path
+  - `docs/beta/demo-scenario.md` — step-by-step demo walkthrough
+  - `docs/beta/platform-support.md` — platform support matrix (Windows only, no overclaim)
+  - `docs/beta/troubleshooting.md` — common failure modes and recovery
+- Updated `docs/beta-quickstart.md` from v1.0.6 to v2.11.0
+- 10 new Rust tests (beta readiness shape, redaction, git readiness, AI degraded state, corrupt recovery, no-secrets)
+- 6 new dashboard tests (v2.11.0 evidence entry, fallback, security regression)
+- Evidence updated: v2.11.0 release entry, test count history, beta readiness artifacts
+
+### Non-scope
+- No autonomy expansion
+- No new agent authority
+- No dashboard writes
+- No live dashboard API
+- No silent AI mocks
+- No credential auto-repair
+- No claim of cross-platform support
+
 ## [2.10.1] - 2026-06-11
 
 ### Added
