@@ -305,18 +305,24 @@ fn validate_external_beta_review(data: &Value, result: &mut ValidationResult) {
     }
 
     // status must be one of the allowed values
-    match data.get("status").and_then(|v| v.as_str()) {
-        Some(s) if ["none", "present", "insufficient", "rejected"].contains(&s) => {}
-        Some(s) => result.add_error(format!(
-            "external-beta-review.json: invalid status '{}', expected none/present/insufficient/rejected",
-            s
-        )),
-        None => result.add_error("external-beta-review.json: missing status".to_string()),
-    }
+    let status = match data.get("status").and_then(|v| v.as_str()) {
+        Some(s) if ["none", "present", "insufficient", "rejected"].contains(&s) => s,
+        Some(s) => {
+            result.add_error(format!(
+                "external-beta-review.json: invalid status '{}', expected none/present/insufficient/rejected",
+                s
+            ));
+            ""
+        }
+        None => {
+            result.add_error("external-beta-review.json: missing status".to_string());
+            ""
+        }
+    };
 
     // external_beta_user_data must match status
-    let status = data.get("status").and_then(|v| v.as_str()).unwrap_or("none");
-    match data.get("external_beta_user_data").and_then(|v| v.as_bool()) {
+    let has_user_data = data.get("external_beta_user_data").and_then(|v| v.as_bool());
+    match has_user_data {
         Some(false) => {
             if status == "present" {
                 result.add_error(
@@ -334,6 +340,100 @@ fn validate_external_beta_review(data: &Value, result: &mut ValidationResult) {
             }
         }
         None => result.add_error("external-beta-review.json: missing external_beta_user_data".to_string()),
+    }
+
+    // --- status-specific enforcement ---
+
+    if status == "present" {
+        // reviewed_bundle_count must be > 0
+        match data.get("reviewed_bundle_count").and_then(|v| v.as_u64()) {
+            Some(n) if n > 0 => {}
+            Some(0) => result.add_error(
+                "external-beta-review.json: reviewed_bundle_count must be > 0 when status is 'present'"
+                    .to_string(),
+            ),
+            Some(_) => result.add_error(
+                "external-beta-review.json: reviewed_bundle_count must be a non-negative integer"
+                    .to_string(),
+            ),
+            None => result.add_error(
+                "external-beta-review.json: reviewed_bundle_count is required when status is 'present'"
+                    .to_string(),
+            ),
+        }
+
+        // accepted_bundle_count must be > 0
+        let reviewed = data.get("reviewed_bundle_count").and_then(|v| v.as_u64()).unwrap_or(0);
+        match data.get("accepted_bundle_count").and_then(|v| v.as_u64()) {
+            Some(n) if n > 0 => {
+                if n > reviewed {
+                    result.add_error(format!(
+                        "external-beta-review.json: accepted_bundle_count ({}) must be <= reviewed_bundle_count ({})",
+                        n, reviewed
+                    ));
+                }
+            }
+            Some(0) => result.add_error(
+                "external-beta-review.json: accepted_bundle_count must be > 0 when status is 'present'"
+                    .to_string(),
+            ),
+            Some(_) => result.add_error(
+                "external-beta-review.json: accepted_bundle_count must be a non-negative integer"
+                    .to_string(),
+            ),
+            None => result.add_error(
+                "external-beta-review.json: accepted_bundle_count is required when status is 'present'"
+                    .to_string(),
+            ),
+        }
+
+        // aggregate_outcomes must exist with all 5 keys
+        match data.get("aggregate_outcomes") {
+            Some(obj) if obj.is_object() => {
+                for key in &["completed", "completed_with_warnings", "blocked", "abandoned", "unknown"] {
+                    match obj.get(*key).and_then(|v| v.as_u64()) {
+                        Some(_) => {}
+                        None => result.add_error(format!(
+                            "external-beta-review.json: aggregate_outcomes.{} must be a non-negative integer",
+                            key
+                        )),
+                    }
+                }
+            }
+            Some(_) => result.add_error(
+                "external-beta-review.json: aggregate_outcomes must be an object".to_string(),
+            ),
+            None => result.add_error(
+                "external-beta-review.json: aggregate_outcomes is required when status is 'present'"
+                    .to_string(),
+            ),
+        }
+
+        // aggregate_failure_codes must exist and be an object
+        match data.get("aggregate_failure_codes") {
+            Some(obj) if obj.is_object() => {}
+            Some(_) => result.add_error(
+                "external-beta-review.json: aggregate_failure_codes must be an object".to_string(),
+            ),
+            None => result.add_error(
+                "external-beta-review.json: aggregate_failure_codes is required when status is 'present'"
+                    .to_string(),
+            ),
+        }
+    }
+
+    if status == "none" {
+        // reviewed/accepted/rejected/follow-up counts must be zero if present
+        for field in &["reviewed_bundle_count", "accepted_bundle_count", "rejected_bundle_count", "needs_follow_up_count"] {
+            if let Some(n) = data.get(*field).and_then(|v| v.as_u64()) {
+                if n > 0 {
+                    result.add_error(format!(
+                        "external-beta-review.json: {} must be 0 when status is 'none'",
+                        field
+                    ));
+                }
+            }
+        }
     }
 
     // privacy section must exist and be honest
@@ -484,5 +584,195 @@ mod tests {
         let result = validate_evidence_dir(tmp.path());
         assert!(!result.valid);
         assert!(result.errors.iter().any(|e| e.contains("invalid JSON")));
+    }
+
+    // --- v2.13.0: external beta review schema tests ---
+
+    #[test]
+    fn external_beta_review_schema_accepts_none_status() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        let result = validate_evidence_dir(dir.path());
+        assert!(result.valid, "Expected valid: {:?}", result.errors);
+    }
+
+    #[test]
+    fn external_beta_review_schema_accepts_present_status_with_aggregate() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        // Override review with valid present status
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "present",
+            "external_beta_user_data": true,
+            "reviewed_bundle_count": 2,
+            "accepted_bundle_count": 1,
+            "rejected_bundle_count": 1,
+            "needs_follow_up_count": 0,
+            "aggregate_outcomes": {
+                "completed": 1,
+                "completed_with_warnings": 0,
+                "blocked": 1,
+                "abandoned": 0,
+                "unknown": 0
+            },
+            "aggregate_failure_codes": {"INSTALL_BLOCKED": 1},
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        // Also override external-beta-evidence to match
+        write_evidence_file(dir.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"present","external_beta_user_data":true,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(result.valid, "Expected valid: {:?}", result.errors);
+    }
+
+    #[test]
+    fn external_beta_review_rejects_present_without_accepted_count() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "present",
+            "external_beta_user_data": true,
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        write_evidence_file(dir.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"present","external_beta_user_data":true,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("reviewed_bundle_count is required when status is 'present'")));
+        assert!(result.errors.iter().any(|e| e.contains("accepted_bundle_count is required when status is 'present'")));
+        assert!(result.errors.iter().any(|e| e.contains("aggregate_outcomes is required when status is 'present'")));
+        assert!(result.errors.iter().any(|e| e.contains("aggregate_failure_codes is required when status is 'present'")));
+    }
+
+    #[test]
+    fn external_beta_review_rejects_present_with_zero_accepted() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "present",
+            "external_beta_user_data": true,
+            "reviewed_bundle_count": 1,
+            "accepted_bundle_count": 0,
+            "aggregate_outcomes": {"completed":0,"completed_with_warnings":0,"blocked":0,"abandoned":0,"unknown":0},
+            "aggregate_failure_codes": {},
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        write_evidence_file(dir.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"present","external_beta_user_data":true,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("accepted_bundle_count must be > 0 when status is 'present'")));
+    }
+
+    #[test]
+    fn external_beta_review_rejects_present_with_accepted_exceeding_reviewed() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "present",
+            "external_beta_user_data": true,
+            "reviewed_bundle_count": 1,
+            "accepted_bundle_count": 2,
+            "aggregate_outcomes": {"completed":2,"completed_with_warnings":0,"blocked":0,"abandoned":0,"unknown":0},
+            "aggregate_failure_codes": {},
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        write_evidence_file(dir.path(), "external-beta-evidence.json", r#"{"schema_version":1,"status":"present","external_beta_user_data":true,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("accepted_bundle_count (2) must be <= reviewed_bundle_count (1)")));
+    }
+
+    #[test]
+    fn external_beta_review_rejects_none_with_user_data_true() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "none",
+            "external_beta_user_data": true,
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("external_beta_user_data is true but status is 'none'")));
+    }
+
+    #[test]
+    fn external_beta_review_rejects_none_with_nonzero_counts() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "none",
+            "external_beta_user_data": false,
+            "reviewed_bundle_count": 1,
+            "accepted_bundle_count": 0,
+            "rejected_bundle_count": 0,
+            "needs_follow_up_count": 0,
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("reviewed_bundle_count must be 0 when status is 'none'")));
+    }
+
+    #[test]
+    fn external_beta_review_rejects_validation_claim() {
+        let dir = tempfile::tempdir().unwrap();
+        make_valid_evidence(dir.path());
+        write_evidence_file(dir.path(), "external-beta-review.json", r#"{
+            "schema_version": 1,
+            "status": "none",
+            "external_beta_user_data": false,
+            "external_beta_validated": true,
+            "privacy": {
+                "raw_paths_published": false,
+                "raw_tokens_published": false,
+                "raw_file_contents_published": false,
+                "raw_bundle_committed": false,
+                "aggregate_only": true
+            }
+        }"#);
+        let result = validate_evidence_dir(dir.path());
+        assert!(!result.valid);
+        assert!(result.errors.iter().any(|e| e.contains("must not contain 'external_beta_validated'")));
     }
 }
