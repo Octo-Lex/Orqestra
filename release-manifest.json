@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.14.0",
-    "tag": "v2.14.0",
+    "name": "Orqestra v2.14.1",
+    "tag": "v2.14.1",
     "channel": "public-beta",
-    "release_version": "2.14.0",
-    "app_version": "2.14.0",
+    "release_version": "2.14.1",
+    "app_version": "2.14.1",
     "date": "2026-06-11"
   },
   "provenance": {

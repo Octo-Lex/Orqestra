@@ -1,5 +1,4 @@
 import { invoke } from '@tauri-apps/api/core';
-import { load, type Store } from '@tauri-apps/plugin-store';
 
 export interface GitResult {
   success: boolean;
@@ -8,48 +7,49 @@ export interface GitResult {
 }
 
 // ---------------------------------------------------------------------------
-// PAT persistence — store is ONLY used for cross-session survival.
-// Within a session, the PAT lives in React state and is passed directly.
+// PAT handling — credentials are managed exclusively by the Rust backend
+// via the OS keychain. The frontend never persists PATs to disk.
+//
+// v2.14.1: Removed credentials.json plaintext PAT storage.
+// Rust/keychain is the only credential persistence authority.
+// Old credentials.json files are no longer read or written.
 // ---------------------------------------------------------------------------
 
-const STORE_FILE = 'credentials.json';
-const PAT_KEY = 'github_pat';
-
-let _store: Store | null = null;
-
-async function getStore(): Promise<Store> {
-  if (!_store) {
-    _store = await load(STORE_FILE, { autoSave: false, defaults: {} });
-  }
-  return _store;
+interface TokenStatus {
+  exists: boolean;
+  provider: string;
+  label: string;
+  last_updated: string | null;
 }
 
-/// Persist PAT to disk for next app launch.
-export async function persistPat(pat: string): Promise<void> {
-  const store = await getStore();
-  await store.set(PAT_KEY, pat);
-  await store.save();
-}
-
-/// Load PAT from disk (used on app startup to pre-fill state).
-export async function loadPersistedPat(): Promise<string | null> {
+/// Check whether a PAT is stored in the OS keychain.
+export async function hasStoredPat(): Promise<boolean> {
   try {
-    const store = await getStore();
-    const val = await store.get<string>(PAT_KEY);
-    return val ?? null;
+    const status = await invoke<TokenStatus>('get_github_token_status_cmd');
+    return status.exists;
   } catch {
-    return null;
+    return false;
   }
 }
 
-// ---------------------------------------------------------------------------
-// Git commands — PAT always passed from caller (React state)
-// ---------------------------------------------------------------------------
-
-export async function gitPullRoadmap(projectRoot: string, pat: string): Promise<GitResult> {
-  return invoke<GitResult>('git_pull_roadmap', { projectRoot, pat });
+/// Store a PAT in the OS keychain (never written to disk by frontend).
+export async function storePat(pat: string): Promise<void> {
+  await invoke('save_github_token_cmd', { token: pat });
 }
 
-export async function gitPushRoadmap(projectRoot: string, pat: string): Promise<GitResult> {
-  return invoke<GitResult>('git_push_roadmap', { projectRoot, pat });
+/// Clear the stored PAT from the OS keychain.
+export async function clearStoredPat(): Promise<void> {
+  await invoke('delete_github_token_cmd');
+}
+
+// ---------------------------------------------------------------------------
+// Git commands — PAT managed internally by Rust via OS keychain
+// ---------------------------------------------------------------------------
+
+export async function gitPullRoadmap(projectRoot: string): Promise<GitResult> {
+  return invoke<GitResult>('git_pull_roadmap', { projectRoot, pat: '' });
+}
+
+export async function gitPushRoadmap(projectRoot: string): Promise<GitResult> {
+  return invoke<GitResult>('git_push_roadmap', { projectRoot, pat: '' });
 }
