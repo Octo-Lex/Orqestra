@@ -335,4 +335,84 @@ describe('Evidence Panels', () => {
     expect(screen.getByText('First External Beta Evidence Review')).toBeDefined();
     expect(screen.getByText('evidence-review')).toBeDefined();
   });
+
+  // --- v2.14.0: real external beta session ---
+
+  it('external beta panel shows insufficient status', () => {
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'none', external_beta_user_data: false,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'insufficient', external_beta_user_data: false, aggregate_only: true,
+      reviewed_bundle_count: 1, accepted_bundle_count: 0, rejected_bundle_count: 0,
+      needs_follow_up_count: 1,
+    }} />);
+    expect(screen.getByText('Insufficient')).toBeDefined();
+  });
+
+  it('external beta panel shows rejected status', () => {
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'none', external_beta_user_data: false,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'rejected', external_beta_user_data: false, aggregate_only: true,
+      reviewed_bundle_count: 1, accepted_bundle_count: 0, rejected_bundle_count: 1,
+      needs_follow_up_count: 0,
+    }} />);
+    expect(screen.getByText('Rejected')).toBeDefined();
+  });
+
+  it('external beta panel does not render validation language', () => {
+    const { container } = render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'present', external_beta_user_data: true, aggregate_only: true,
+      reviewed_bundle_count: 1, accepted_bundle_count: 1,
+    }} />);
+    const html = container.innerHTML;
+    expect(html).not.toContain('Validated');
+    expect(html).not.toContain('validated');
+    expect(html).not.toContain('Beta passed');
+    expect(html).not.toContain('Product succeeded');
+  });
+
+  it('external beta panel does not render raw feedback', () => {
+    const { container } = render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1, status: 'present', external_beta_user_data: true,
+    }} externalBetaReview={{
+      schema_version: 1, status: 'present', external_beta_user_data: true, aggregate_only: true,
+    }} />);
+    const html = container.innerHTML;
+    expect(html).not.toContain('feedback');
+    expect(html).not.toContain('quote');
+  });
+
+  it('participant instructions warn do not share secrets', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const docPath = path.resolve(__dirname, '..', '..', '..', 'docs', 'beta', 'external-beta-participant-instructions.md');
+    const source = fs.readFileSync(docPath, 'utf-8');
+    expect(source).toContain('Do not share secrets');
+    expect(source).toContain('You may stop at any time');
+    expect(source).toContain('You may decline evidence export');
+  });
+
+  it('session summary warns not external validation', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const docPath = path.resolve(__dirname, '..', '..', '..', 'docs', 'evidence', 'first-external-beta-session-summary.md');
+    const source = fs.readFileSync(docPath, 'utf-8');
+    expect(source).toContain('does not constitute external validation');
+    // Must not contain raw identity fields
+    expect(source).not.toContain('participant@');
+    expect(source).not.toContain('github.com/');
+  });
+
+  it('v2.14.0 release entry present in release history', () => {
+    render(<ReleaseHistoryPanel releaseHistory={{
+      releases: {
+        '2.14.0': { date: '2026-06-11', type: 'external-beta-session', label: 'First Real External Beta Session' },
+      }
+    }} />);
+    expect(screen.getByText('First Real External Beta Session')).toBeDefined();
+    expect(screen.getByText('external-beta-session')).toBeDefined();
+  });
 });

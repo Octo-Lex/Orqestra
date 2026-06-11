@@ -1,24 +1,133 @@
 {
   "schema_version": 1,
   "description": "Curated test count history per release. Sourced from CHANGELOG.md and CI records.",
-  "provenance": "Curated release evidence — not auto-extracted from CI.",
+  "provenance": "Curated release evidence \u00e2\u20ac\u201d not auto-extracted from CI.",
   "history": [
-    { "version": "2.3.0", "rust": 502, "worker": 24, "dashboard": 0, "total": 526 },
-    { "version": "2.4.0", "rust": 529, "worker": 24, "dashboard": 0, "total": 553 },
-    { "version": "2.5.0", "rust": 547, "worker": 24, "dashboard": 0, "total": 571 },
-    { "version": "2.5.1", "rust": 568, "worker": 24, "dashboard": 0, "total": 592 },
-    { "version": "2.5.2", "rust": 586, "worker": 24, "dashboard": 0, "total": 610 },
-    { "version": "2.5.3", "rust": 412, "worker": 24, "dashboard": 0, "total": 436 },
-    { "version": "2.6.0", "rust": 402, "worker": 24, "dashboard": 0, "total": 426 },
-    { "version": "2.7.0", "rust": 416, "worker": 24, "dashboard": 0, "total": 440 },
-    { "version": "2.8.0", "rust": 434, "worker": 24, "dashboard": 0, "total": 458 },
-    { "version": "2.8.1", "rust": 435, "worker": 24, "dashboard": 0, "total": 459 },
-    { "version": "2.9.0", "rust": 442, "worker": 24, "dashboard": 0, "total": 466 },
-    { "version": "2.9.1", "rust": 442, "worker": 24, "dashboard": 12, "total": 478 },
-    { "version": "2.10.0", "rust": 447, "worker": 24, "dashboard": 22, "total": 493 },
-    { "version": "2.10.1", "rust": 470, "worker": 24, "dashboard": 32, "total": 526 },
-    { "version": "2.11.0", "rust": 778, "worker": 24, "dashboard": 35, "total": 837 },
-    { "version": "2.12.0", "rust": 796, "worker": 24, "dashboard": 40, "total": 860 },
-    { "version": "2.13.0", "rust": 808, "worker": 24, "dashboard": 48, "total": 880 }
+    {
+      "version": "2.3.0",
+      "rust": 502,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 526
+    },
+    {
+      "version": "2.4.0",
+      "rust": 529,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 553
+    },
+    {
+      "version": "2.5.0",
+      "rust": 547,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 571
+    },
+    {
+      "version": "2.5.1",
+      "rust": 568,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 592
+    },
+    {
+      "version": "2.5.2",
+      "rust": 586,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 610
+    },
+    {
+      "version": "2.5.3",
+      "rust": 412,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 436
+    },
+    {
+      "version": "2.6.0",
+      "rust": 402,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 426
+    },
+    {
+      "version": "2.7.0",
+      "rust": 416,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 440
+    },
+    {
+      "version": "2.8.0",
+      "rust": 434,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 458
+    },
+    {
+      "version": "2.8.1",
+      "rust": 435,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 459
+    },
+    {
+      "version": "2.9.0",
+      "rust": 442,
+      "worker": 24,
+      "dashboard": 0,
+      "total": 466
+    },
+    {
+      "version": "2.9.1",
+      "rust": 442,
+      "worker": 24,
+      "dashboard": 12,
+      "total": 478
+    },
+    {
+      "version": "2.10.0",
+      "rust": 447,
+      "worker": 24,
+      "dashboard": 22,
+      "total": 493
+    },
+    {
+      "version": "2.10.1",
+      "rust": 470,
+      "worker": 24,
+      "dashboard": 32,
+      "total": 526
+    },
+    {
+      "version": "2.11.0",
+      "rust": 778,
+      "worker": 24,
+      "dashboard": 35,
+      "total": 837
+    },
+    {
+      "version": "2.12.0",
+      "rust": 796,
+      "worker": 24,
+      "dashboard": 40,
+      "total": 860
+    },
+    {
+      "version": "2.13.0",
+      "rust": 808,
+      "worker": 24,
+      "dashboard": 46,
+      "total": 878
+    },
+    {
+      "version": "2.14.0",
+      "rust": 808,
+      "worker": 24,
+      "dashboard": 53,
+      "total": 885
+    }
   ]
 }
