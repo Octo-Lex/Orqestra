@@ -22,6 +22,7 @@ export class SkillLoader {
     for (const relPath of skillPaths) {
       try {
         const content = await invoke<string>('read_file_cmd', {
+          projectRoot: this.projectRoot,
           path: `${this.projectRoot}/agents/${relPath}`,
         });
         skills.push({

@@ -202,7 +202,7 @@ fn file_checksum(path: &Path) -> Option<String> {
 /// Write file atomically: write to temp file in same directory, then rename.
 /// Failed writes leave the original file unchanged.
 fn atomic_write(target: &Path, content: &str) -> std::io::Result<()> {
-    let parent = target.parent().ok_or_else(|| {
+    let _parent = target.parent().ok_or_else(|| {
         std::io::Error::new(std::io::ErrorKind::InvalidInput, "No parent directory")
     })?;
 

@@ -81,6 +81,7 @@ export class AgentWorkspace {
   ): Promise<AgentWorkspace> {
     // Read workspace.yml
     const yamlContent = await invoke<string>('read_file_cmd', {
+      projectRoot,
       path: `${projectRoot}/agents/workspaces/${workspaceDir}/workspace.yml`,
     });
 
@@ -94,6 +95,7 @@ export class AgentWorkspace {
     let state: WorkspaceState;
     try {
       const stateJson = await invoke<string>('read_file_cmd', {
+        projectRoot,
         path: `${projectRoot}/.Orqestra/agents/${config.id}/state.json`,
       });
       state = JSON.parse(stateJson);
@@ -146,6 +148,7 @@ Return a JSON object with:
    */
   async persistState(): Promise<void> {
     await invoke('write_file_cmd', {
+      projectRoot: this.projectRoot,
       path: `${this.projectRoot}/.Orqestra/agents/${this.config.id}/state.json`,
       content: JSON.stringify(this.state, null, 2),
     });
