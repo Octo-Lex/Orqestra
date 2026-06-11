@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { invoke } from '@tauri-apps/api/core';
 import { getReadiness } from '../lib/readiness';
 import type { ReadinessReport, ToolReadiness } from '../lib/readiness';
 
@@ -10,6 +11,14 @@ interface Props {
 
 export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack }) => {
   const [report, setReport] = useState<ReadinessReport | null>(null);
+  const [betaReadiness, setBetaReadiness] = useState<{
+    readiness: string;
+    blocking: boolean;
+    checks: Record<string, boolean | null>;
+    repo: { detected: boolean; branch: string; dirty: boolean; remote_configured: boolean };
+    warnings: string[];
+    blocked_features: string[];
+  } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,6 +26,11 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
       setReport(r);
       setLoading(false);
     }).catch(() => setLoading(false));
+
+    // v2.11.0: Fetch beta readiness summary
+    invoke('get_beta_readiness_cmd', { projectRoot: projectRoot || null })
+      .then((data) => setBetaReadiness(data as typeof betaReadiness))
+      .catch(() => { /* beta readiness is optional */ });
   }, [projectRoot]);
 
   const statusColor = (status: string) => {
@@ -137,6 +151,74 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
             </div>
           )}
 
+          {/* v2.11.0: Beta Readiness Summary */}
+          {betaReadiness && (
+            <div style={styles.section}>
+              <h3 style={styles.sectionTitle}>Beta Readiness</h3>
+              <div style={{
+                ...styles.readinessBadge,
+                backgroundColor: betaReadiness.readiness === 'ready' ? '#166534' :
+                  betaReadiness.blocking ? '#7f1d1d' : '#92400e',
+              }}>
+                {betaReadiness.readiness === 'ready' ? '✓ Ready' :
+                 betaReadiness.blocking ? '✗ Blocked' : '⚠ Ready with Warnings'}
+              </div>
+
+              {/* Checks */}
+              <div style={{ marginTop: '8px' }}>
+                {Object.entries(betaReadiness.checks).map(([key, value]) => (
+                  <div key={key} style={styles.row}>
+                    <span>{key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
+                    <span style={{ color: value === true ? '#22c55e' : value === false ? '#ef4444' : '#94a3b8' }}>
+                      {value === true ? '✓' : value === false ? '✗' : '? unknown'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Repo details */}
+              {betaReadiness.repo.detected && (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={styles.row}>
+                    <span>Branch</span>
+                    <span style={{ color: '#e2e8f0' }}>{betaReadiness.repo.branch}</span>
+                  </div>
+                  <div style={styles.row}>
+                    <span>Working Tree</span>
+                    <span style={{ color: betaReadiness.repo.dirty ? '#f59e0b' : '#22c55e' }}>
+                      {betaReadiness.repo.dirty ? 'Dirty (uncommitted changes)' : 'Clean'}
+                    </span>
+                  </div>
+                  <div style={styles.row}>
+                    <span>Remote</span>
+                    <span style={{ color: betaReadiness.repo.remote_configured ? '#22c55e' : '#f59e0b' }}>
+                      {betaReadiness.repo.remote_configured ? 'Configured' : 'Not configured'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Blocked features */}
+              {betaReadiness.blocked_features.length > 0 && (
+                <div style={{ marginTop: '8px' }}>
+                  <div style={styles.sectionTitle}>Blocked Features</div>
+                  {betaReadiness.blocked_features.map((f, i) => (
+                    <div key={i} style={{ ...styles.row, color: '#f59e0b' }}>
+                      ⚠ {f.replace(/_/g, ' ')}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* AI degraded guidance */}
+              {!betaReadiness.checks.ai_service_reachable && (
+                <div style={styles.degradedGuidance}>
+                  AI service unavailable. Project management, roadmap views, Git history, and dashboard export remain available. Agent execution requires the local AI service (localhost:8000) to be running.
+                </div>
+              )}
+            </div>
+          )}
+
           <button style={styles.completeBtn} onClick={onComplete}>
             Open Workspace
           </button>
@@ -219,5 +301,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     marginTop: '16px',
+  },
+  readinessBadge: {
+    display: 'inline-block',
+    padding: '6px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#fff',
+    marginBottom: '8px',
+  },
+  degradedGuidance: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    backgroundColor: '#1e1e2e',
+    padding: '8px',
+    borderRadius: '6px',
+    marginTop: '8px',
+    lineHeight: '1.4',
   },
 };

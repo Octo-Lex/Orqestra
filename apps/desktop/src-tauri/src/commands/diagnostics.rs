@@ -387,6 +387,172 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         None => serde_json::json!({"valid": false, "reason": "no project root"}).to_string(),
     };
 
+    // v2.11.0: Beta readiness summary
+    // Build a structured readiness check without raw paths or secrets.
+    // Uses SHA-256 hash of project root instead of raw path.
+    let (repo_detected, path_hash, branch, dirty, remote_configured) = match &project_root {
+        Some(root) => {
+            let root_path = std::path::PathBuf::from(root);
+            let detected = root_path.join(".git").exists();
+            let hash = {
+                use sha2::{Sha256, Digest};
+                let mut hasher = Sha256::new();
+                hasher.update(root.as_bytes());
+                let result = hasher.finalize();
+                format!("sha256:{:x}", result)
+            };
+            let branch = if detected {
+                std::process::Command::new("git")
+                    .args(["rev-parse", "--abbrev-ref", "HEAD"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .and_then(|o| String::from_utf8(o.stdout).ok())
+                    .map(|s| s.trim().to_string())
+                    .unwrap_or_else(|| "unknown".to_string())
+            } else {
+                "n/a".to_string()
+            };
+            let dirty = if detected {
+                std::process::Command::new("git")
+                    .args(["status", "--porcelain"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .map(|o| !o.stdout.is_empty())
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+            let remote_configured = if detected {
+                std::process::Command::new("git")
+                    .args(["remote"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .map(|o| !String::from_utf8_lossy(&o.stdout).trim().is_empty())
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+            (detected, hash, branch, dirty, remote_configured)
+        }
+        None => (false, "none".to_string(), "n/a".to_string(), false, false),
+    };
+
+    // Parse readiness for checks
+    let readiness_value: serde_json::Value = serde_json::from_str(&readiness_json).unwrap_or(serde_json::json!({}));
+    let ai_reachable = readiness_value
+        .get("ai")
+        .and_then(|a| a.get("service_status"))
+        .and_then(|s| s.as_str())
+        .map(|s| s == "reachable")
+        .unwrap_or(false);
+    let keyring_available = crate::security::is_keyring_available();
+
+    let roadmap_found = readiness_value
+        .get("local_tools")
+        .and_then(|t| t.as_array())
+        .map(|arr| arr.iter().any(|t| t.get("tool").and_then(|v| v.as_str()) == Some("roadmap") && t.get("status").and_then(|v| v.as_str()) == Some("found")))
+        .unwrap_or(false);
+
+    let dashboard_exportable = readiness_value
+        .get("dashboard")
+        .and_then(|d| d.get("status"))
+        .and_then(|s| s.as_str())
+        .map(|s| s != "error")
+        .unwrap_or(true);
+
+    // v2.11.0: Probe git availability (not hardcoded)
+    let git_available = std::process::Command::new("git")
+        .arg("--version")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    // v2.11.0: Evidence schema validation — check if evidence dir exists and has valid files
+    // This is a desktop runtime check, not CLI export time.
+    let evidence_schema_valid = match &project_root {
+        Some(root) => {
+            let evidence_dir = std::path::Path::new(root).join("docs").join("evidence");
+            if !evidence_dir.is_dir() {
+                serde_json::Value::Null // unknown — no evidence dir in this project
+            } else {
+                // Check if at least one evidence file exists and parses as JSON
+                let has_valid = std::fs::read_dir(&evidence_dir)
+                    .ok()
+                    .map(|entries| {
+                        entries
+                            .filter_map(|e| e.ok())
+                            .filter(|e| e.path().extension().map(|ext| ext == "json").unwrap_or(false))
+                            .any(|e| {
+                                std::fs::read_to_string(e.path())
+                                    .ok()
+                                    .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
+                                    .is_some()
+                            })
+                    })
+                    .unwrap_or(false);
+                serde_json::Value::Bool(has_valid)
+            }
+        }
+        None => serde_json::Value::Null, // unknown — no project context
+    };
+
+    let checks = serde_json::json!({
+        "repo_detected": repo_detected,
+        "roadmap_found": roadmap_found,
+        "git_available": git_available,
+        "credentials_configured": keyring_available,
+        "ai_service_reachable": ai_reachable,
+        "dashboard_exportable": dashboard_exportable,
+        "evidence_schema_valid": evidence_schema_valid
+    });
+
+    let blocking = !repo_detected;
+    let mut warnings = Vec::new();
+    let mut blocked_features = Vec::new();
+
+    if !roadmap_found {
+        warnings.push("No roadmap files detected — project management views will be empty");
+    }
+    if !keyring_available {
+        warnings.push("OS keychain unavailable — credential storage may be limited");
+    }
+    if !ai_reachable {
+        warnings.push("AI service unreachable — agent features unavailable");
+        blocked_features.push("agent_execution");
+    }
+    if !dashboard_exportable {
+        warnings.push("Dashboard export unavailable");
+    }
+
+    let readiness_label = if blocking {
+        "blocked"
+    } else if !warnings.is_empty() {
+        "ready_with_warnings"
+    } else {
+        "ready"
+    };
+
+    let beta_readiness_json = serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "readiness": readiness_label,
+        "blocking": blocking,
+        "checks": checks,
+        "repo": {
+            "detected": repo_detected,
+            "path_hash": path_hash,
+            "branch": branch,
+            "dirty": dirty,
+            "remote_configured": remote_configured
+        },
+        "warnings": warnings,
+        "blocked_features": blocked_features
+    }).to_string();
+
     // Determine output directory
     let output_dir = match &project_root {
         Some(root) => std::path::PathBuf::from(root).join(".Orqestra"),
@@ -415,6 +581,7 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         "{}",  // sync-status (populated when relay is active)
         "{}",  // coherence (populated when dashboard export exists)
         "{}",  // operational-risk (populated from path classification)
+        &beta_readiness_json,  // v2.11.0: beta readiness summary
     )
     .map_err(|e| CommandError {
         code: "DIAGNOSTICS_EXPORT_FAILED",
@@ -737,4 +904,179 @@ pub fn get_recovery_advice_cmd(code: String) -> CommandResult<RecoveryAdvice> {
         action_kind: "open_panel".to_string(),
         action_payload: Some("diagnostics".to_string()),
     })
+}
+
+// ---------------------------------------------------------------------------
+// v2.11.0: Beta Readiness Summary Command
+// Returns beta readiness summary without full diagnostic bundle.
+// ---------------------------------------------------------------------------
+
+/// Get beta readiness summary (lightweight, no file export).
+#[command]
+pub fn get_beta_readiness_cmd(project_root: Option<String>) -> CommandResult<serde_json::Value> {
+    let readiness = super::readiness::get_readiness_cmd(project_root.clone());
+    let readiness_json = match &readiness {
+        Ok(r) => serde_json::to_string_pretty(r).unwrap_or_else(|_| "{}".to_string()),
+        Err(e) => serde_json::json!({"error": e.message}).to_string(),
+    };
+
+    let (repo_detected, path_hash, branch, dirty, remote_configured) = match &project_root {
+        Some(root) => {
+            let root_path = std::path::PathBuf::from(root);
+            let detected = root_path.join(".git").exists();
+            let hash = {
+                use sha2::{Sha256, Digest};
+                let mut hasher = Sha256::new();
+                hasher.update(root.as_bytes());
+                let result = hasher.finalize();
+                format!("sha256:{:x}", result)
+            };
+            let branch = if detected {
+                std::process::Command::new("git")
+                    .args(["rev-parse", "--abbrev-ref", "HEAD"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .and_then(|o| String::from_utf8(o.stdout).ok())
+                    .map(|s| s.trim().to_string())
+                    .unwrap_or_else(|| "unknown".to_string())
+            } else {
+                "n/a".to_string()
+            };
+            let dirty = if detected {
+                std::process::Command::new("git")
+                    .args(["status", "--porcelain"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .map(|o| !o.stdout.is_empty())
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+            let remote_configured = if detected {
+                std::process::Command::new("git")
+                    .args(["remote"])
+                    .current_dir(&root_path)
+                    .output()
+                    .ok()
+                    .map(|o| !String::from_utf8_lossy(&o.stdout).trim().is_empty())
+                    .unwrap_or(false)
+            } else {
+                false
+            };
+            (detected, hash, branch, dirty, remote_configured)
+        }
+        None => (false, "none".to_string(), "n/a".to_string(), false, false),
+    };
+
+    let readiness_value: serde_json::Value = serde_json::from_str(&readiness_json).unwrap_or(serde_json::json!({}));
+    let ai_reachable = readiness_value
+        .get("ai")
+        .and_then(|a| a.get("service_status"))
+        .and_then(|s| s.as_str())
+        .map(|s| s == "reachable")
+        .unwrap_or(false);
+    let keyring_available = crate::security::is_keyring_available();
+
+    let roadmap_found = readiness_value
+        .get("local_tools")
+        .and_then(|t| t.as_array())
+        .map(|arr| arr.iter().any(|t| t.get("tool").and_then(|v| v.as_str()) == Some("roadmap") && t.get("status").and_then(|v| v.as_str()) == Some("found")))
+        .unwrap_or(false);
+
+    let dashboard_exportable = readiness_value
+        .get("dashboard")
+        .and_then(|d| d.get("status"))
+        .and_then(|s| s.as_str())
+        .map(|s| s != "error")
+        .unwrap_or(true);
+
+    // v2.11.0: Probe git availability (not hardcoded)
+    let git_available = std::process::Command::new("git")
+        .arg("--version")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+
+    // v2.11.0: Evidence schema — check if evidence dir exists with valid JSON
+    let evidence_schema_valid = match &project_root {
+        Some(root) => {
+            let evidence_dir = std::path::Path::new(root).join("docs").join("evidence");
+            if !evidence_dir.is_dir() {
+                serde_json::Value::Null
+            } else {
+                let has_valid = std::fs::read_dir(&evidence_dir)
+                    .ok()
+                    .map(|entries| {
+                        entries
+                            .filter_map(|e| e.ok())
+                            .filter(|e| e.path().extension().map(|ext| ext == "json").unwrap_or(false))
+                            .any(|e| {
+                                std::fs::read_to_string(e.path())
+                                    .ok()
+                                    .and_then(|content| serde_json::from_str::<serde_json::Value>(&content).ok())
+                                    .is_some()
+                            })
+                    })
+                    .unwrap_or(false);
+                serde_json::Value::Bool(has_valid)
+            }
+        }
+        None => serde_json::Value::Null,
+    };
+
+    let checks = serde_json::json!({
+        "repo_detected": repo_detected,
+        "roadmap_found": roadmap_found,
+        "git_available": git_available,
+        "credentials_configured": keyring_available,
+        "ai_service_reachable": ai_reachable,
+        "dashboard_exportable": dashboard_exportable,
+        "evidence_schema_valid": evidence_schema_valid
+    });
+
+    let blocking = !repo_detected;
+    let mut warnings = Vec::new();
+    let mut blocked_features = Vec::new();
+
+    if !roadmap_found {
+        warnings.push("No roadmap files detected — project management views will be empty");
+    }
+    if !keyring_available {
+        warnings.push("OS keychain unavailable — credential storage may be limited");
+    }
+    if !ai_reachable {
+        warnings.push("AI service unreachable — agent features unavailable");
+        blocked_features.push("agent_execution");
+    }
+    if !dashboard_exportable {
+        warnings.push("Dashboard export unavailable");
+    }
+
+    let readiness_label = if blocking {
+        "blocked"
+    } else if !warnings.is_empty() {
+        "ready_with_warnings"
+    } else {
+        "ready"
+    };
+
+    Ok(serde_json::json!({
+        "version": env!("CARGO_PKG_VERSION"),
+        "readiness": readiness_label,
+        "blocking": blocking,
+        "checks": checks,
+        "repo": {
+            "detected": repo_detected,
+            "path_hash": path_hash,
+            "branch": branch,
+            "dirty": dirty,
+            "remote_configured": remote_configured
+        },
+        "warnings": warnings,
+        "blocked_features": blocked_features
+    }))
 }
