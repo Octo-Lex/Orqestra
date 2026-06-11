@@ -11,6 +11,7 @@ import { SecurityBoundaryPanel } from '../src/components/SecurityBoundaryPanel';
 import { AutonomyPolicyPanel } from '../src/components/AutonomyPolicyPanel';
 import { RuntimeEvidencePanel } from '../src/components/RuntimeEvidencePanel';
 import { DataFreshnessPanel } from '../src/components/DataFreshnessPanel';
+import { ExternalBetaEvidencePanel } from '../src/components/ExternalBetaEvidencePanel';
 
 afterEach(() => cleanup());
 
@@ -204,5 +205,64 @@ describe('Evidence Panels', () => {
       expect(source, `${comp} should not contain live API fetch`).not.toContain('fetch(');
       expect(source, `${comp} should not contain write scope`).not.toContain("'write'");
     }
+  });
+
+  // --- v2.12.0: External beta evidence panel ---
+
+  it('ExternalBetaEvidencePanel shows none when no data', () => {
+    
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={null} />);
+    expect(screen.getByText('External beta data unavailable')).toBeDefined();
+  });
+
+  it('ExternalBetaEvidencePanel shows status none', () => {
+    
+    render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1,
+      status: 'none',
+      external_beta_user_data: false,
+      intake_mechanism: 'local_export_only',
+      automatic_upload: false,
+      consent_required: true,
+      redaction_required: true,
+    }} />);
+    expect(screen.getByText('None')).toBeDefined();
+    expect(screen.getByText('local_export_only')).toBeDefined();
+  });
+
+  it('ExternalBetaEvidencePanel does not claim validation', () => {
+    
+    const { container } = render(<ExternalBetaEvidencePanel externalBetaEvidence={{
+      schema_version: 1,
+      status: 'none',
+      external_beta_user_data: false,
+      automatic_upload: false,
+      consent_required: true,
+      redaction_required: true,
+    }} />);
+    const html = container.innerHTML;
+    expect(html).not.toContain('validated');
+    expect(html).not.toContain('external_beta_validated');
+  });
+
+  it('ExternalBetaEvidencePanel static only — no fetch', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const source = fs.readFileSync(
+      path.resolve(__dirname, '../src/components/ExternalBetaEvidencePanel.tsx'),
+      'utf-8'
+    );
+    expect(source).not.toContain('fetch(');
+    expect(source).not.toContain('useEffect');
+  });
+
+  it('v2.12.0 release entry present in release history', () => {
+    render(<ReleaseHistoryPanel releaseHistory={{
+      releases: {
+        '2.12.0': { date: '2026-06-11', type: 'evidence-intake', label: 'External Beta Evidence Intake' },
+      }
+    }} />);
+    expect(screen.getByText('External Beta Evidence Intake')).toBeDefined();
+    expect(screen.getByText('evidence-intake')).toBeDefined();
   });
 });

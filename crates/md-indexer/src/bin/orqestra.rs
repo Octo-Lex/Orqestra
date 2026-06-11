@@ -85,6 +85,7 @@ struct ExportEvidence {
     security_boundaries: Value,
     autonomy_policy: Value,
     runtime_evidence: Value,
+    external_beta_evidence: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -372,6 +373,7 @@ fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &st
     let security_boundaries = read_json_file(&evidence_dir.join("security-boundaries.json"));
     let autonomy_policy = read_json_file(&evidence_dir.join("autonomy-policy.json"));
     let runtime_evidence = read_json_file(&evidence_dir.join("runtime-decision-matrix.json"));
+    let external_beta_evidence = read_json_file(&evidence_dir.join("external-beta-evidence.json"));
 
     Some(ExportEvidence {
         schema_version: 1,
@@ -385,6 +387,7 @@ fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &st
         security_boundaries: security_boundaries.unwrap(),
         autonomy_policy: autonomy_policy.unwrap(),
         runtime_evidence: runtime_evidence.unwrap(),
+        external_beta_evidence,
     })
 }
 
@@ -427,6 +430,9 @@ mod evidence_export_tests {
         fs::write(dir.join("security-boundaries.json"), security_boundaries).unwrap();
         fs::write(dir.join("autonomy-policy.json"), autonomy_policy).unwrap();
         fs::write(dir.join("runtime-decision-matrix.json"), runtime_evidence).unwrap();
+        // v2.12.0: optional external beta evidence
+        let external_beta = r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#;
+        fs::write(dir.join("external-beta-evidence.json"), external_beta).unwrap();
     }
 
     #[test]
