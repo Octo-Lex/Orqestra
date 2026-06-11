@@ -57,11 +57,14 @@ export class AgentWorkspace {
   readonly skills: Skill[];
   readonly state: WorkspaceState;
 
-  private constructor(config: WorkspaceConfig, skills: Skill[], state: WorkspaceState) {
+  private projectRoot: string;
+
+  private constructor(config: WorkspaceConfig, skills: Skill[], state: WorkspaceState, projectRoot: string) {
     this.config = config;
     this.gate = new ConfidenceGate(config.confidence_gate);
     this.skills = skills;
     this.state = state;
+    this.projectRoot = projectRoot;
   }
 
   get id(): string {
@@ -105,7 +108,7 @@ export class AgentWorkspace {
       };
     }
 
-    return new AgentWorkspace(config, skills, state);
+    return new AgentWorkspace(config, skills, state, projectRoot);
   }
 
   /**
@@ -143,7 +146,7 @@ Return a JSON object with:
    */
   async persistState(): Promise<void> {
     await invoke('write_file_cmd', {
-      path: `${this.config.id}`,
+      path: `${this.projectRoot}/.Orqestra/agents/${this.config.id}/state.json`,
       content: JSON.stringify(this.state, null, 2),
     });
   }
