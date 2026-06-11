@@ -15,6 +15,7 @@ import { SecurityBoundaryPanel } from './components/SecurityBoundaryPanel';
 import { AutonomyPolicyPanel } from './components/AutonomyPolicyPanel';
 import { RuntimeEvidencePanel } from './components/RuntimeEvidencePanel';
 import { DataFreshnessPanel } from './components/DataFreshnessPanel';
+import { ExternalBetaEvidencePanel } from './components/ExternalBetaEvidencePanel';
 import {
   fetchRoadmapData,
   STATUS_COLORS,
@@ -169,6 +170,7 @@ export function App() {
               <SecurityBoundaryPanel securityBoundaries={data.evidence.security_boundaries} />
               <AutonomyPolicyPanel autonomyPolicy={data.evidence.autonomy_policy} />
               <RuntimeEvidencePanel runtimeEvidence={data.evidence.runtime_evidence} />
+              <ExternalBetaEvidencePanel externalBetaEvidence={data.evidence.external_beta_evidence ?? null} />
             </>
           ) : (
             <div style={{ padding: 24, backgroundColor: '#0f172a', borderRadius: 8, textAlign: 'center', color: '#f59e0b' }}>
