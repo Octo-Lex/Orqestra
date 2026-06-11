@@ -86,6 +86,7 @@ struct ExportEvidence {
     autonomy_policy: Value,
     runtime_evidence: Value,
     external_beta_evidence: Option<Value>,
+    external_beta_review: Option<Value>,
 }
 
 #[derive(Serialize)]
@@ -374,6 +375,7 @@ fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &st
     let autonomy_policy = read_json_file(&evidence_dir.join("autonomy-policy.json"));
     let runtime_evidence = read_json_file(&evidence_dir.join("runtime-decision-matrix.json"));
     let external_beta_evidence = read_json_file(&evidence_dir.join("external-beta-evidence.json"));
+    let external_beta_review = read_json_file(&evidence_dir.join("external-beta-review.json"));
 
     Some(ExportEvidence {
         schema_version: 1,
@@ -388,6 +390,7 @@ fn load_evidence(project_root: &std::path::Path, commit: &str, generated_at: &st
         autonomy_policy: autonomy_policy.unwrap(),
         runtime_evidence: runtime_evidence.unwrap(),
         external_beta_evidence,
+        external_beta_review,
     })
 }
 
@@ -433,6 +436,9 @@ mod evidence_export_tests {
         // v2.12.0: optional external beta evidence
         let external_beta = r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"automatic_upload":false,"consent_required":true,"redaction_required":true}"#;
         fs::write(dir.join("external-beta-evidence.json"), external_beta).unwrap();
+        // v2.13.0: external beta review
+        let external_review = r#"{"schema_version":1,"status":"none","external_beta_user_data":false,"privacy":{"raw_paths_published":false,"raw_tokens_published":false,"raw_file_contents_published":false,"raw_bundle_committed":false,"aggregate_only":true}}"#;
+        fs::write(dir.join("external-beta-review.json"), external_review).unwrap();
     }
 
     #[test]

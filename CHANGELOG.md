@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.13.0] - 2026-06-11
+
+### Added
+- `docs/beta/external-beta-evidence-review.md` — manual review process for external beta bundles
+- `docs/evidence/external-beta-review.json` — curated review artifact (status: none, aggregate only)
+- Evidence schema validator for `external-beta-review.json`
+- Dashboard `ExternalBetaEvidencePanel` extended with review data display
+- 8 new Rust schema validation tests for review artifact
+- 8 new dashboard tests for review panel, no-claim, aggregate-only, no-fetch
+
+### Non-scope
+- No external validation claim
+- No telemetry
+- No auto-upload
+- No dashboard writes
+- No autonomy expansion
+
 ## [2.12.0] - 2026-06-11
 
 ### Added

@@ -71,6 +71,7 @@ export type EvidenceSection = {
   autonomy_policy: AutonomyPolicyEvidence;
   runtime_evidence: RuntimeEvidence;
   external_beta_evidence?: ExternalBetaEvidence;
+  external_beta_review?: ExternalBetaReview;
 };
 
 export type ExternalBetaEvidence = {
@@ -81,6 +82,17 @@ export type ExternalBetaEvidence = {
   automatic_upload?: boolean;
   consent_required?: boolean;
   redaction_required?: boolean;
+};
+
+export type ExternalBetaReview = {
+  schema_version: number;
+  status: string;
+  external_beta_user_data: boolean;
+  reviewed_bundle_count?: number;
+  accepted_bundle_count?: number;
+  rejected_bundle_count?: number;
+  needs_follow_up_count?: number;
+  aggregate_only?: boolean;
 };
 
 export type ReleaseHistoryEvidence = {
