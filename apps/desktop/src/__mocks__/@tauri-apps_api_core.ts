@@ -244,7 +244,7 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     ];
   }
   if (cmd === "read_file_cmd") {
-    const { path } = args as { path: string };
+    const { path } = args as { path: string; projectRoot?: string };
     if (path.includes("workspace.yml")) {
       if (path.includes("architect")) {
         return `id: agent-architect\nmodel: glm-5.1\nskills:\n  - ./skills/documentation/SKILL.md\nconfidence_gate:\n  auto_commit: 0.95\n  propose: 0.85\n  flag: 0.70\n  breaking_change_override: always_propose`;
@@ -262,7 +262,8 @@ export async function invoke(cmd: string, args?: Record<string, unknown>): Promi
     return "";
   }
   if (cmd === "write_file_cmd") {
-    console.log(`[MOCK] Write: ${JSON.stringify(args).substring(0, 200)}`);
+    const _args = args as { path: string; projectRoot?: string; content?: string };
+    console.log(`[MOCK] Write: ${JSON.stringify(_args).substring(0, 200)}`);
     return null;
   }
   if (cmd === "run_agent_cmd") {

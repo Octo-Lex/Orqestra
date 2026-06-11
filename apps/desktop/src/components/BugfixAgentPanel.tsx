@@ -92,6 +92,7 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
       for (const path of parsedFiles) {
         try {
           const content = await invoke<string>('read_file_cmd', {
+            projectRoot,
             path: `${projectRoot}/${path}`,
           });
           filesWithContext.push({ path, content });

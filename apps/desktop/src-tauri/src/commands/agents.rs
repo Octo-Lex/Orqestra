@@ -82,20 +82,24 @@ pub struct ArchitectAgentResult {
     pub error: Option<String>,
 }
 
-/// Read a file from disk. Used by SkillLoader and workspace state loading.
+/// Read a file from disk. Path must be within the opened project root.
+/// Used by SkillLoader, workspace state loading, and agent file reads.
 #[command]
-pub fn read_file_cmd(path: String) -> Result<String, String> {
-    fs::read_to_string(&path).map_err(|e| format!("Failed to read {}: {}", path, e))
+pub fn read_file_cmd(project_root: String, path: String) -> Result<String, String> {
+    let guarded = crate::commands::path_guard::guard_path(&project_root, &path)?;
+    fs::read_to_string(&guarded).map_err(|e| format!("Failed to read {}: {}", path, e))
 }
 
-/// Write a file to disk. Used for workspace state persistence and agent file writes.
+/// Write a file to disk. Path must be within the opened project root.
+/// Used for workspace state persistence and agent file writes.
 #[command]
-pub fn write_file_cmd(path: String, content: String) -> Result<(), String> {
+pub fn write_file_cmd(project_root: String, path: String, content: String) -> Result<(), String> {
+    let guarded = crate::commands::path_guard::guard_path(&project_root, &path)?;
     // Ensure parent directory exists
-    if let Some(parent) = std::path::Path::new(&path).parent() {
+    if let Some(parent) = guarded.parent() {
         fs::create_dir_all(parent).map_err(|e| format!("Failed to create dir: {}", e))?;
     }
-    fs::write(&path, content).map_err(|e| format!("Failed to write {}: {}", path, e))
+    fs::write(&guarded, content).map_err(|e| format!("Failed to write {}: {}", path, e))
 }
 
 /// Run agent: calls the AI service /run-agent endpoint.
