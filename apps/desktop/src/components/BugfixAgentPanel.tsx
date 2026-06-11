@@ -67,19 +67,41 @@ export const BugfixAgentPanel: React.FC<Props> = ({ projectRoot, task }) => {
         source_path: task.source_path,
       });
 
-      // Read file contents through existing read path
-      const filesWithContext = await Promise.all(
-        parsedFiles.map(async (path) => {
-          try {
-            const content = await invoke<string>('read_file_cmd', {
-              path: `${projectRoot}/${path}`,
-            });
-            return { path, content };
-          } catch {
-            return { path, content: '' };
-          }
-        })
-      );
+      // Validate paths: reject absolute, traversal, and escape patterns
+      const invalidPaths = parsedFiles.filter(p => {
+        // Reject absolute paths (Windows or Unix)
+        if (/^[A-Za-z]:/.test(p) || p.startsWith('/') || p.startsWith('\\')) return true;
+        // Reject home directory
+        if (p.startsWith('~')) return true;
+        // Reject path traversal
+        if (p.includes('..')) return true;
+        // Reject backslashes
+        if (p.includes('\\')) return true;
+        // Reject bare dot
+        if (p === '.' || p === './') return true;
+        return false;
+      });
+
+      if (invalidPaths.length > 0) {
+        setError(`Invalid path(s): ${invalidPaths.join(', ')}. Use relative paths without .. or absolute prefixes.`);
+        return;
+      }
+
+      // Read file contents — fail if any file cannot be read
+      const filesWithContext: { path: string; content: string }[] = [];
+      for (const path of parsedFiles) {
+        try {
+          const content = await invoke<string>('read_file_cmd', {
+            path: `${projectRoot}/${path}`,
+          });
+          filesWithContext.push({ path, content });
+        } catch {
+          setError(`Cannot read file: ${path}. Ensure the path is correct and the file exists.`);
+          setLoading(false);
+          setStatus('idle');
+          return;
+        }
+      }
 
       const filesJson = JSON.stringify(filesWithContext);
 
