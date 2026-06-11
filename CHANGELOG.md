@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.12.0] - 2026-06-11
+
+### Added
+- `export_beta_evidence_cmd` — consent-gated, local-only, redacted beta evidence export
+- Beta evidence bundle artifacts: manifest, session outcome, feedback, failure taxonomy
+- 16-code failure taxonomy (including `CONSENT_DECLINED`)
+- Session outcome computation: completed / completed_with_warnings / blocked / abandoned / unknown
+- AI unavailable produces `completed_with_warnings`, not false failure
+- `ExternalBetaEvidencePanel` dashboard component — shows "none" until real evidence exists
+- `docs/evidence/external-beta-evidence.json` — status: none, automatic_upload: false
+- `docs/beta/external-beta-evidence.md` — what gets included, excluded, how to export
+- Evidence schema validator updated for external-beta-evidence.json
+- 16 new Rust tests (consent gating, redaction, session outcome, failure taxonomy, non-mutation)
+- 5 new dashboard tests (external beta panel, no-claim, static-only, release entry)
+
+### Non-scope
+- No telemetry by default
+- No automatic upload
+- No dashboard writes
+- No live dashboard API
+- No autonomy expansion
+- No new agent authority
+- No credential auto-repair
+- No external validation claim
+
 ## [2.11.0] - 2026-06-11
 
 ### Added

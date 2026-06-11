@@ -3,20 +3,85 @@
   "description": "Explicit release type mapping. Not inferred from changelog headings.",
   "provenance": "Curated release metadata.",
   "releases": {
-    "2.3.0": { "date": "2026-05-28", "type": "feature", "label": "Hunk-to-Symbol Impact Mapping" },
-    "2.4.0": { "date": "2026-05-29", "type": "feature", "label": "Dependency & Workflow Risk Intelligence" },
-    "2.5.0": { "date": "2026-05-30", "type": "feature", "label": "Native Git Write Expansion" },
-    "2.5.1": { "date": "2026-05-31", "type": "security", "label": "Security Boundary Stabilization" },
-    "2.5.2": { "date": "2026-06-01", "type": "feature", "label": "Real Desktop Relay Connection" },
-    "2.5.3": { "date": "2026-06-02", "type": "feature", "label": "Persistent Onboarding & Project Switching" },
-    "2.6.0": { "date": "2026-06-08", "type": "feature", "label": "Controlled Low-Risk Autonomy Pilot" },
-    "2.7.0": { "date": "2026-06-09", "type": "observability", "label": "Autonomy Observability & Pilot Evaluation" },
-    "2.8.0": { "date": "2026-06-09", "type": "ergonomics", "label": "Docs Autonomy Expansion (Configurable Cap)" },
-    "2.8.1": { "date": "2026-06-09", "type": "structural-evidence", "label": "Runtime Evidence Report" },
-    "2.9.0": { "date": "2026-06-09", "type": "feature", "label": "Runtime Evidence Dashboard & Cap Expansion" },
-    "2.9.1": { "date": "2026-06-10", "type": "security-patch", "label": "Dashboard Token Boundary Security Patch" },
-    "2.10.0": { "date": "2026-06-10", "type": "feature", "label": "Public Evidence Surface / Dashboard Truth Boundary" },
-    "2.10.1": { "date": "2026-06-11", "type": "hardening", "label": "Evidence Surface Hardening" },
-    "2.11.0": { "date": "2026-06-11", "type": "productization", "label": "Self-Serve Beta Readiness" }
+    "2.3.0": {
+      "date": "2026-05-28",
+      "type": "feature",
+      "label": "Hunk-to-Symbol Impact Mapping"
+    },
+    "2.4.0": {
+      "date": "2026-05-29",
+      "type": "feature",
+      "label": "Dependency & Workflow Risk Intelligence"
+    },
+    "2.5.0": {
+      "date": "2026-05-30",
+      "type": "feature",
+      "label": "Native Git Write Expansion"
+    },
+    "2.5.1": {
+      "date": "2026-05-31",
+      "type": "security",
+      "label": "Security Boundary Stabilization"
+    },
+    "2.5.2": {
+      "date": "2026-06-01",
+      "type": "feature",
+      "label": "Real Desktop Relay Connection"
+    },
+    "2.5.3": {
+      "date": "2026-06-02",
+      "type": "feature",
+      "label": "Persistent Onboarding & Project Switching"
+    },
+    "2.6.0": {
+      "date": "2026-06-08",
+      "type": "feature",
+      "label": "Controlled Low-Risk Autonomy Pilot"
+    },
+    "2.7.0": {
+      "date": "2026-06-09",
+      "type": "observability",
+      "label": "Autonomy Observability & Pilot Evaluation"
+    },
+    "2.8.0": {
+      "date": "2026-06-09",
+      "type": "ergonomics",
+      "label": "Docs Autonomy Expansion (Configurable Cap)"
+    },
+    "2.8.1": {
+      "date": "2026-06-09",
+      "type": "structural-evidence",
+      "label": "Runtime Evidence Report"
+    },
+    "2.9.0": {
+      "date": "2026-06-09",
+      "type": "feature",
+      "label": "Runtime Evidence Dashboard & Cap Expansion"
+    },
+    "2.9.1": {
+      "date": "2026-06-10",
+      "type": "security-patch",
+      "label": "Dashboard Token Boundary Security Patch"
+    },
+    "2.10.0": {
+      "date": "2026-06-10",
+      "type": "feature",
+      "label": "Public Evidence Surface / Dashboard Truth Boundary"
+    },
+    "2.10.1": {
+      "date": "2026-06-11",
+      "type": "hardening",
+      "label": "Evidence Surface Hardening"
+    },
+    "2.11.0": {
+      "date": "2026-06-11",
+      "type": "productization",
+      "label": "Self-Serve Beta Readiness"
+    },
+    "2.12.0": {
+      "date": "2026-06-11",
+      "type": "evidence-intake",
+      "label": "External Beta Evidence Intake"
+    }
   }
 }
