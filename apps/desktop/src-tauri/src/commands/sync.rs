@@ -222,7 +222,11 @@ pub struct ConnectRelayRequest {
     pub token_scope: String,
 }
 
-/// Connect to a relay (stores client state, actual WebSocket managed by frontend).
+/// Connect to a relay.
+///
+/// Stores the relay client configuration but does NOT start the relay actor.
+/// The relay actor requires a live WebSocket connection managed by the async runtime.
+/// Returns honest status: connected=false, relay_available=false until actor is running.
 #[tauri::command]
 pub fn connect_relay_cmd(
     state: State<'_, SyncState>,
@@ -241,7 +245,13 @@ pub fn connect_relay_cmd(
         &request.relay_url,
     );
 
-    let status = client.status();
+    // Get status BEFORE storing — this reflects the truth:
+    // we have a configured client but no live relay connection.
+    let mut status = client.status();
+    status.connected = false;
+    status.relay_available = false;
+    status.last_error = Some("Relay actor not started. Configuration stored.".to_string());
+
     *state.relay_client.lock().unwrap() = Some(client);
     Ok(status)
 }
@@ -268,6 +278,7 @@ pub fn relay_status_cmd(
     match guard.as_ref() {
         Some(client) => Ok(client.status()),
         None => Ok(loro_engine::relay::RelayStatus {
+            state: loro_engine::relay::RelayState::Unavailable,
             connected: false,
             peer_id: 0,
             workspace_id: String::new(),

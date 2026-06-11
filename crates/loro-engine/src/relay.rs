@@ -13,9 +13,27 @@ use crate::protocol::{
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
 
+/// Relay connection state machine.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum RelayState {
+    /// No relay client configured.
+    Unavailable,
+    /// Client configured but not connected (actor not started).
+    Configured,
+    /// WebSocket connection established, not yet authenticated.
+    Connected,
+    /// Authenticated and exchanging deltas.
+    Authenticated,
+    /// Actively syncing deltas.
+    Syncing,
+    /// Error state (see last_error).
+    Error,
+}
+
 /// Status of the relay connection.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RelayStatus {
+    pub state: RelayState,
     pub connected: bool,
     pub peer_id: u64,
     pub workspace_id: String,
@@ -83,7 +101,14 @@ impl RelayClient {
             .unwrap_or("unknown")
             .to_string();
 
+        let state = if self.connected {
+            RelayState::Connected
+        } else {
+            RelayState::Configured
+        };
+
         RelayStatus {
+            state,
             connected: self.connected,
             peer_id: self.peer_id,
             workspace_id: self.workspace_id.clone(),
@@ -92,7 +117,7 @@ impl RelayClient {
             queued_deltas: self.queued_deltas.len(),
             token_scope: self.token_scope.clone(),
             last_sync: self.last_sync.clone(),
-            relay_available: true, // Updated on connection attempt
+            relay_available: false, // Updated on connection attempt
             reconnect_attempt: 0,
             last_error: None,
         }

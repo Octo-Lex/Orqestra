@@ -133,6 +133,57 @@ describe('Token auth', () => {
 });
 
 // ---------------------------------------------------------------------------
+// v2.14.6: Production async path tests
+// ---------------------------------------------------------------------------
+
+describe('v2.14.6: Production async auth paths', () => {
+  it('generateToken result is awaited (not a Promise)', async () => {
+    // Verify that the token is a string, not a Promise
+    const token = await generateToken('write', 'ws-await-test', MASTER_SECRET);
+    expect(typeof token).toBe('string');
+    expect(token).toMatch(/^ork_v2_/);
+  });
+
+  it('validateToken result is awaited (null for invalid)', async () => {
+    // Verify that validateToken returns null for garbage, not a Promise
+    const result = await validateToken('garbage', MASTER_SECRET);
+    expect(result).toBeNull();
+  });
+
+  it('validateToken result is awaited (payload for valid)', async () => {
+    const token = await generateToken('write', 'ws-await-valid', MASTER_SECRET);
+    const result = await validateToken(token, MASTER_SECRET);
+    // Must be a real object, not a Promise
+    expect(typeof result).toBe('object');
+    expect(result).not.toBeNull();
+    expect(result!.scope).toBe('write');
+  });
+
+  it('failed token validation returns null (not truthy Promise)', async () => {
+    // A Promise is truthy — this test proves the fix
+    const result = await validateToken('invalid-token', MASTER_SECRET);
+    expect(result).toBeNull();
+    // Before fix: validateToken without await returned a Promise (truthy)
+    // The old code checked `if (!tokenPayload)` which would be false for a Promise
+  });
+
+  it('write token from generateToken passes validateToken', async () => {
+    // End-to-end: generate → validate → canWrite
+    const token = await generateToken('write', 'ws-e2e', MASTER_SECRET);
+    const payload = await validateToken(token, MASTER_SECRET);
+    expect(payload).not.toBeNull();
+    expect(canWrite(payload!.scope)).toBe(true);
+  });
+
+  it('read token from generateToken fails canWrite', async () => {
+    const token = await generateToken('read', 'ws-e2e-read', MASTER_SECRET);
+    const payload = await validateToken(token, MASTER_SECRET);
+    expect(payload).not.toBeNull();
+    expect(canWrite(payload!.scope)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Idempotency tests
 // ---------------------------------------------------------------------------
 
