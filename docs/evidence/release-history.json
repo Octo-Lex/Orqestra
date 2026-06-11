@@ -87,6 +87,11 @@
       "date": "2026-06-11",
       "type": "evidence-review",
       "label": "First External Beta Evidence Review"
+    },
+    "2.14.0": {
+      "date": "2026-06-11",
+      "type": "external-beta-session",
+      "label": "First Real External Beta Session"
     }
   }
 }
