@@ -1,11 +1,11 @@
 {
   "release": {
-    "name": "Orqestra v2.9.0",
-    "tag": "v2.9.0",
+    "name": "Orqestra v2.11.0",
+    "tag": "v2.11.0",
     "channel": "public-beta",
-    "release_version": "2.9.0",
-    "app_version": "2.9.0",
-    "date": "2026-06-04"
+    "release_version": "2.11.0",
+    "app_version": "2.11.0",
+    "date": "2026-06-11"
   },
   "provenance": {
     "tag_commit": "0000000000000000000000000000000000000000",
@@ -692,6 +692,18 @@
       "no_path_allowlist_changes": true,
       "no_link_fix_special_case": true,
       "v2_6_0_v2_7_0_v2_8_0_tests_green": true
+    },
+    "self_serve_beta_readiness": {
+      "enabled": true,
+      "beta_checklist": "present",
+      "demo_scenario": "present",
+      "platform_matrix": "present",
+      "diagnostics_bundle_beta_summary": true,
+      "ai_degraded_mode_explicit": true,
+      "no_autonomy_expansion": true,
+      "no_silent_mocks": true,
+      "no_dashboard_writes": true,
+      "external_beta_user_data": false
     }
   }
 }

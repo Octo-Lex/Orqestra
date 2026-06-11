@@ -32,6 +32,7 @@ pub struct RedactionSummary {
 
 /// Create a diagnostic bundle at the given output directory.
 /// v2.0.0: 11 files total (5 existing + 6 new).
+/// v2.11.0: +1 beta-readiness-summary.json
 /// All data is read from existing state. Non-mutating.
 pub fn create_diagnostic_bundle(
     output_dir: &std::path::Path,
@@ -52,6 +53,8 @@ pub fn create_diagnostic_bundle(
     sync_status_json: &str,
     coherence_json: &str,
     operational_risk_json: &str,
+    // v2.11.0: beta readiness summary
+    beta_readiness_json: &str,
 ) -> Result<DiagnosticBundleResult, String> {
     let timestamp = chrono::Utc::now().format("%Y%m%d-%H%M%S");
     let bundle_name = format!("orqestra-diagnostics-{}", timestamp);
@@ -132,6 +135,12 @@ pub fn create_diagnostic_bundle(
             "operational-risk.json",
             operational_risk_json,
             "Operational risk classification (redacted)",
+        ),
+        // v2.11.0: Beta readiness summary
+        (
+            "beta-readiness-summary.json",
+            beta_readiness_json,
+            "Self-serve beta readiness checks (redacted)",
         ),
     ];
 

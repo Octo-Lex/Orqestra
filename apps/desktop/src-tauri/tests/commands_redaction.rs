@@ -201,10 +201,11 @@ fn bundle_export_produces_11_files() {
         "{}",  // sync-status
         "{}",  // coherence
         "{}",  // operational-risk
+        "{\"readiness\":\"test\"}",  // v2.11.0: beta-readiness
     ).expect("bundle creation must succeed");
 
-    // Must have exactly 17 files: 15 data + project-validation + sync-status + coherence + operational-risk + README.txt
-    assert_eq!(result.files.len(), 17, "Bundle must contain 15 data + project-validation + sync-status + coherence + operational-risk + README.txt");
+    // Must have exactly 18 files: 16 data + project-validation + sync-status + coherence + operational-risk + beta-readiness + README.txt
+    assert_eq!(result.files.len(), 18, "Bundle must contain 16 data files + README.txt");
 
     // Verify expected file names
     let names: Vec<&str> = result.files.iter().map(|f| f.name.as_str()).collect();
@@ -224,6 +225,7 @@ fn bundle_export_produces_11_files() {
     assert!(names.contains(&"sync-status.json"), "Missing sync-status.json");
     assert!(names.contains(&"coherence.json"), "Missing coherence.json");
     assert!(names.contains(&"operational-risk.json"), "Missing operational-risk.json");
+    assert!(names.contains(&"beta-readiness-summary.json"), "Missing beta-readiness-summary.json");
     assert!(names.contains(&"README.txt"), "Missing README.txt");
 
     // Redaction summary must claim no raw secrets
@@ -257,6 +259,7 @@ fn bundle_export_does_not_mutate_repo() {
         "{}",  // sync-status
         "{}",  // coherence
         "{}",  // operational-risk
+        "{}",  // v2.11.0: beta-readiness
     );
 
     let status_after = git_bridge::native_git_status(&root).expect("status after");

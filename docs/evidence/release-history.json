@@ -14,6 +14,9 @@
     "2.8.0": { "date": "2026-06-09", "type": "ergonomics", "label": "Docs Autonomy Expansion (Configurable Cap)" },
     "2.8.1": { "date": "2026-06-09", "type": "structural-evidence", "label": "Runtime Evidence Report" },
     "2.9.0": { "date": "2026-06-09", "type": "feature", "label": "Runtime Evidence Dashboard & Cap Expansion" },
-    "2.9.1": { "date": "2026-06-10", "type": "security-patch", "label": "Dashboard Token Boundary Security Patch" }
+    "2.9.1": { "date": "2026-06-10", "type": "security-patch", "label": "Dashboard Token Boundary Security Patch" },
+    "2.10.0": { "date": "2026-06-10", "type": "feature", "label": "Public Evidence Surface / Dashboard Truth Boundary" },
+    "2.10.1": { "date": "2026-06-11", "type": "hardening", "label": "Evidence Surface Hardening" },
+    "2.11.0": { "date": "2026-06-11", "type": "productization", "label": "Self-Serve Beta Readiness" }
   }
 }

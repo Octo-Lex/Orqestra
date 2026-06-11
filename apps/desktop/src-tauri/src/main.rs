@@ -112,6 +112,7 @@ fn main() {
             // v1.0.3: Diagnostics and recovery
             commands::diagnostics::export_diagnostics_cmd,
             commands::diagnostics::get_recovery_advice_cmd,
+            commands::diagnostics::get_beta_readiness_cmd,
             commands::diagnostics::get_structured_error_cmd,
             // v2.0.0: First-run probe commands (non-mutating)
             commands::diagnostics::check_git_available_cmd,

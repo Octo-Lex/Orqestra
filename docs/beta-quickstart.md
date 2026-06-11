@@ -1,21 +1,22 @@
 # Orqestra Public Beta Quickstart
 
 **Audience:** Technical reviewers evaluating the Orqestra public beta.
+**Version:** v2.11.0
 
 ---
 
 ## 1. Download
 
-Download `Orqestra_1.0.6_x64-setup.exe` from the [latest release](https://github.com/Elephant-Rock-Lab/Orqestra/releases/latest).
+Download the latest installer from the [latest release](https://github.com/Octo-Lex/Orqestra/releases/latest).
 
-Windows x64 is the only tested platform for this beta.
+Windows x64 is the only tested platform for this beta. See [platform support](beta/platform-support.md) for macOS/Linux status.
 
 ## 2. Verify
 
 Open PowerShell and run:
 
 ```powershell
-Get-FileHash .\Orqestra_1.0.6_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_*_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare the hash against `checksums.txt` or `release-manifest.json` attached to the release.
@@ -24,7 +25,7 @@ Compare the hash against `checksums.txt` or `release-manifest.json` attached to 
 
 Run the installer. The installer is **unsigned** — Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
-See [Troubleshooting](troubleshooting.md#windows-smartscreen-warning) if you get a download or install block.
+See [Troubleshooting](beta/troubleshooting.md#windows-smartscreen-warning) if you get a download or install block.
 
 ## 4. Launch
 
@@ -33,35 +34,61 @@ Open Orqestra from the Start menu. The onboarding wizard appears.
 ## 5. Try the Sample Project
 
 1. In the onboarding wizard, click **"Try sample project"**
-2. A demo project with 4 tasks is generated
+2. A demo project with tasks is generated
 3. Switch between **Table**, **Gantt**, and **Kanban** views
-4. Open the **Setup** panel to see environment status
+4. Open the **Readiness** panel to see environment status
 
-## 6. Check the Dashboard
+## 6. Check Environment Readiness
 
-Open [orqestra.pages.dev](https://orqestra.pages.dev) in a browser. Verify it shows current roadmap data. Check the footer for the generation timestamp and source commit.
+The readiness panel shows the status of:
 
-## 7. Try No-Key Beta Mode
+| Component | What It Checks |
+|-----------|---------------|
+| Git | Installed, repo detected, branch, working tree state |
+| Credentials | OS keychain available |
+| AI Service | localhost:8000 reachable |
+| Dashboard | Export capability |
 
-No API key is needed. In this mode:
-- Roadmap parsing works
-- All PM views work
-- Dashboard works
-- AI features show as "degraded" — this is correct and expected
+Each check has clear guidance for any issues.
+
+## 7. Check the Dashboard
+
+Open [orqestra.pages.dev](https://orqestra.pages.dev) in a browser. The **Evidence** tab shows:
+
+- Release history
+- Test count trends
+- Security boundaries
+- Autonomy policy
+- Runtime evidence
+- Data freshness
+
+No token required. Evidence is static (build-time, not live telemetry).
+
+## 8. AI Modes
+
+### No AI Service (default)
+
+Without the AI service running:
+- All PM views work (Table, Kanban, Gantt)
+- Git history works
+- Dashboard export works
 - Diagnostics export works
+- AI agent features show as **"Unavailable"** with clear guidance
+- **No mock or fake output** appears
 
-See the **Setup** panel for the full readiness report.
+This is the expected state for most beta evaluators.
 
-## 8. Optional: Real-AI Maintainer Mode
+### With AI Service
 
-If you have a `ZAI_API_KEY`:
+If you have access to the AI service:
 
-1. Create `services/ai/.env` with `ZAI_API_KEY=your-key`
-2. Start the AI service: `cd services/ai && uv run uvicorn orqestra_ai.main:app`
-3. Restart Orqestra and check the **Setup** panel — AI should show "real-ai" mode
-4. Try the docs-agent or bugfix-agent — both produce review-only proposals
+1. Start the AI service on localhost:8000
+2. Check the readiness panel — AI should show "Connected"
+3. Run the docs-agent on a Markdown file
+4. Review the diff in the diff viewer
+5. Accept or reject — no write happens without explicit acceptance
 
-**All AI outputs are review-only.** No autonomous commits occur.
+**All AI outputs are review-only. `auto_commit` is always false.**
 
 ## 9. Open Your Own Project
 
@@ -84,27 +111,36 @@ Task description here.
 
 ## 10. Export Diagnostics
 
-Open the **Diagnostics** panel and click **Export Diagnostics Bundle**. The bundle is automatically redacted — no secrets are included.
+Open the **Diagnostics** panel and click **Export Diagnostics Bundle**.
+
+The bundle includes:
+- App version and platform info
+- Environment readiness report
+- Git provider diagnostics
+- AI health check
+- Credential status
+- Agent matrix
+- Beta readiness summary
+- Patch governance status
+- Roadmap status
+
+**The bundle never contains:** tokens, PATs, API keys, raw secret strings, or unhashed project paths.
 
 ## 11. Report Feedback
 
-- [Install issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=install_issue.yml)
-- [AI mode issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=ai_mode_issue.yml)
-- [Dashboard issue](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=dashboard_issue.yml)
-- [Bug report](https://github.com/Elephant-Rock-Lab/Orqestra/issues/new?template=bug_report.yml)
+- [Bug report](https://github.com/Octo-Lex/Orqestra/issues/new?template=bug_report.yml)
 
-**Do not paste API keys or secrets in issues.**
+**Do not paste API keys or secrets in issues.** Export diagnostics and attach the redacted bundle instead.
 
 ---
 
 ## What This Beta Does Not Include
 
 - Signed installer (SmartScreen warnings are expected)
-- macOS artifacts
-- Verified Linux artifacts
-- Autonomous agent commits (all AI is review-only)
-- Architect agent (mock-mode)
-- ML-Master exploration (stub)
-- CRDT real-time sync (backlog)
+- macOS artifacts (source build only)
+- Verified Linux artifacts (source build only)
+- Autonomous agent commits (all AI is review-only, `auto_commit` is always false)
+- Cloud real-time sync (not yet implemented)
+- Production security certification
 
-See the full [Known Limitations](../README.md#known-limitations) in the README.
+See the full [demo scenario](beta/demo-scenario.md) for a step-by-step walkthrough.
