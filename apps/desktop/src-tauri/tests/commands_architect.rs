@@ -85,18 +85,16 @@ fn missing_ai_service_returns_error() {
     let task = serde_json::json!({"id": "TEST-001", "title": "Test task", "labels": []});
     let task_str = serde_json::to_string(&task).unwrap();
 
-    // Call the Tauri command — AI service is almost certainly not running
-    // during tests, so this should return an error, not a fake plan
+    // Use a non-standard port to avoid collision with a running dev service.
+    // The test verifies the error path when no AI service is available.
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-        // We can't call the Tauri command directly in tests,
-        // but we can simulate the error path
         let client = reqwest::blocking::Client::new();
         let response = client
-            .post("http://localhost:8000/agent/architect")
+            .post("http://localhost:18321/agent/architect")
             .json(&serde_json::json!({"task": task}))
             .timeout(std::time::Duration::from_millis(500))
             .send();
-        // Should fail — no AI service running
+        // Should fail — no AI service running on this port
         assert!(response.is_err(), "Expected error when AI service unavailable, got success");
     }));
     assert!(result.is_ok(), "Should not panic on missing service");

@@ -16,8 +16,9 @@ import { ReadinessPanel } from './setup/ReadinessPanel';
 import { DiagnosticsPanel } from './setup/DiagnosticsPanel';
 import { open } from '@tauri-apps/plugin-dialog';
 import {
-  persistPat,
-  loadPersistedPat,
+  hasStoredPat,
+  storePat,
+  clearStoredPat,
   gitPullRoadmap,
   gitPushRoadmap,
   type GitResult,
@@ -49,8 +50,8 @@ export default function App() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle' });
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
-  // PAT lives in React state
-  const [pat, setPat] = useState<string | null>(null);
+  // PAT state — managed by Rust/keychain, not persisted in frontend
+  const [hasPat, setHasPat] = useState(false);
   const [patInput, setPatInput] = useState('');
   const [patError, setPatError] = useState<string | null>(null);
 
@@ -69,7 +70,6 @@ export default function App() {
           setShowOnboarding(true);
         }
       } catch {
-        // If onboarding state unavailable, show onboarding
         setShowOnboarding(true);
       }
       setOnboardingChecked(true);
@@ -77,11 +77,11 @@ export default function App() {
     checkOnboarding();
   }, []);
 
-  // Load persisted PAT
+  // Check keychain PAT status
   useEffect(() => {
-    loadPersistedPat()
-      .then(p => { if (p) setPat(p); })
-      .catch(() => {});
+    hasStoredPat()
+      .then(stored => setHasPat(stored))
+      .catch(() => setHasPat(false));
   }, []);
 
   function handleOnboardingComplete(root: string) {
@@ -97,22 +97,36 @@ export default function App() {
   async function handleSavePat() {
     setPatError(null);
     try {
-      await persistPat(patInput);
-      setPat(patInput);
+      // PAT is stored in OS keychain by Rust — never written to disk by frontend
+      await storePat(patInput);
+      setHasPat(true);
       setPatInput('');
     } catch (e) {
       setPatError(e instanceof Error ? e.message : String(e));
     }
   }
 
+  async function handleClearPat() {
+    try {
+      await clearStoredPat();
+      setHasPat(false);
+    } catch (e) {
+      setPatError(e instanceof Error ? e.message : String(e));
+    }
+  }
+
   async function handlePull() {
-    if (!projectRoot || !pat) {
-      setSyncStatus({ state: 'error', action: 'Pull', message: 'GitHub PAT not configured.' });
+    if (!projectRoot) {
+      setSyncStatus({ state: 'error', action: 'Pull', message: 'No project open.' });
+      return;
+    }
+    if (!hasPat) {
+      setSyncStatus({ state: 'error', action: 'Pull', message: 'GitHub PAT not configured. Save it in Settings.' });
       return;
     }
     setSyncStatus({ state: 'loading', action: 'Pull' });
     try {
-      const result: GitResult = await gitPullRoadmap(projectRoot, pat);
+      const result: GitResult = await gitPullRoadmap(projectRoot);
       setSyncStatus(result.success
         ? { state: 'success', action: 'Pull', message: result.stdout.trim() || 'Up to date.' }
         : { state: 'error', action: 'Pull', message: result.stderr.trim() || 'Unknown error.' }
@@ -124,13 +138,17 @@ export default function App() {
   }
 
   async function handlePush() {
-    if (!projectRoot || !pat) {
-      setSyncStatus({ state: 'error', action: 'Push', message: 'GitHub PAT not configured.' });
+    if (!projectRoot) {
+      setSyncStatus({ state: 'error', action: 'Push', message: 'No project open.' });
+      return;
+    }
+    if (!hasPat) {
+      setSyncStatus({ state: 'error', action: 'Push', message: 'GitHub PAT not configured. Save it in Settings.' });
       return;
     }
     setSyncStatus({ state: 'loading', action: 'Push' });
     try {
-      const result: GitResult = await gitPushRoadmap(projectRoot, pat);
+      const result: GitResult = await gitPushRoadmap(projectRoot);
       const combined = result.stderr.trim() || result.stdout.trim();
       setSyncStatus(result.success
         ? { state: 'success', action: 'Push', message: result.stdout.trim() || 'Pushed.' }
@@ -161,7 +179,6 @@ export default function App() {
     setTasks(loadedTasks);
   }
 
-  // Show onboarding wizard
   if (!onboardingChecked) {
     return (
       <div style={{ padding: '2rem', color: '#94a3b8', fontFamily: 'system-ui', textAlign: 'center' }}>
@@ -214,18 +231,22 @@ export default function App() {
           {showSettings && (
             <div style={{ marginBottom: '1rem', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', background: '#fafafa' }}>
               <div style={{ marginBottom: '0.5rem', fontWeight: 'bold' }}>GitHub PAT</div>
+              <div style={{ marginBottom: '0.25rem', fontSize: '0.85em', color: '#666' }}>
+                Stored in OS keychain. Never written to disk by the frontend.
+              </div>
               <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                 <input
                   type="password"
                   value={patInput}
                   onChange={e => setPatInput(e.target.value)}
-                  placeholder={pat ? '(saved -- leave blank to keep)' : 'ghp_xxxxxxxxxxxx'}
+                  placeholder="ghp_xxxxxxxxxxxx"
                   style={{ flexGrow: 1, padding: '0.25rem 0.5rem' }}
                 />
-                <button onClick={handleSavePat} disabled={!patInput.trim()}>Save</button>
+                <button onClick={handleSavePat} disabled={!patInput.trim()}>Save to Keychain</button>
+                {hasPat && <button onClick={handleClearPat}>Remove</button>}
               </div>
               {patError && <div style={{ color: 'red', marginTop: '0.25rem' }}>{patError}</div>}
-              {pat && !patError && <div style={{ color: 'green', marginTop: '0.25rem', fontSize: '0.85em' }}>PAT stored.</div>}
+              {hasPat && !patError && <div style={{ color: 'green', marginTop: '0.25rem', fontSize: '0.85em' }}>PAT stored in keychain.</div>}
             </div>
           )}
 

@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.14.1] - 2026-06-11
+
+### Fixed
+- **P0**: Removed plaintext PAT persistence from frontend (`credentials.json`). OS keychain is now the sole credential authority.
+- **P0**: Removed fabricated agent mock fallback (`mockResponse()`). Missing AI service returns structured unavailable error instead of inventing results.
+- **P1**: Wired `BugfixAgentPanel` and `ArchitectAgentPanel` into active UI. Removed "Run All Agents" button that used the mock path.
+- **P1**: Aligned release identity: `Cargo.toml`, `tauri.conf.json`, `package.json`, and docs now read `2.14.1`.
+- **P2**: Relay dependency audit — `npm audit fix` applied, 0 production vulnerabilities.
+- **P2**: AI service test port isolated to `18321` — no longer assumes port 8000 is empty.
+
+### Non-scope
+- External beta evidence status remains `none`
+- No telemetry, upload, dashboard writes, live API, or autonomy expansion
+- No validation claim
+
 ## [2.14.0] - 2026-06-11
 
 ### Added
