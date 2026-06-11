@@ -128,7 +128,7 @@
     "v2.14.6_ci_verified": true,
     "v2.14.6_rust_tests": 831,
     "v2.14.6_dashboard_tests": 53,
-    "v2.14.6_worker_tests": 30
+    "v2.14.6_worker_tests": 35
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
@@ -152,7 +152,7 @@
     "real_ai_demo": "pass",
     "rust_tests_count": 831,
     "dashboard_tests_count": 53,
-    "worker_tests_count": 30
+    "worker_tests_count": 35
   },
   "limitations": [
     "Unsigned Windows installer",
