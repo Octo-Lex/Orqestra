@@ -3,7 +3,7 @@
     "name": "Orqestra v2.14.1",
     "tag": "v2.14.1",
     "channel": "public-beta",
-    "release_version": "2.14.1",
+    "release_version": "2.14.5",
     "app_version": "2.14.1",
     "date": "2026-06-11"
   },
@@ -124,17 +124,17 @@
     "linux": "demo/v1.0.12-linux-native-smoke.md",
     "linux_wslg_evidence": "demo/v1.0.11-linux-wslg-smoke.md",
     "macos": "demo/v1.0.8-macos-feasibility.md",
-    "note": "v1.0.x smoke evidence is historical. v2.14.1 verification via CI.",
-    "v2.14.1_ci_verified": true,
-    "v2.14.1_rust_tests": 809,
-    "v2.14.1_dashboard_tests": 53,
-    "v2.14.1_worker_tests": 24
+    "note": "v1.0.x smoke evidence is historical. v2.14.5 verification via CI.",
+    "v2.14.5_ci_verified": true,
+    "v2.14.5_rust_tests": 827,
+    "v2.14.5_dashboard_tests": 53,
+    "v2.14.5_worker_tests": 24
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
-    "release": "v2.14.1",
-    "generated_from_commit": "v2.14.1 tag"
+    "release": "v2.14.5",
+    "generated_from_commit": "fcc0d1a995503e5896c63309561bbfd588bf2e1a"
   },
   "diagnostics": {
     "installer_diagnostics": "docs/installer-diagnostics.md",
@@ -150,7 +150,7 @@
     "linux_native_smoke": "pass",
     "dashboard_status": "200 OK",
     "real_ai_demo": "pass",
-    "rust_tests_count": 809,
+    "rust_tests_count": 827,
     "dashboard_tests_count": 53,
     "worker_tests_count": 24
   },
