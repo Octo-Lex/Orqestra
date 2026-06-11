@@ -119,15 +119,15 @@
       "version": "2.13.0",
       "rust": 808,
       "worker": 24,
-      "dashboard": 48,
-      "total": 880
+      "dashboard": 46,
+      "total": 878
     },
     {
       "version": "2.14.0",
       "rust": 808,
       "worker": 24,
-      "dashboard": 54,
-      "total": 886
+      "dashboard": 53,
+      "total": 885
     }
   ]
 }
