@@ -1,0 +1,230 @@
+# External Beta Evidence Review Process
+
+**Version:** v2.13.0
+**Purpose:** How to review real external beta evidence bundles and update public evidence honestly.
+
+---
+
+## Overview
+
+This document defines the manual review process for external beta evidence bundles exported through the v2.12.0 consent-gated intake path. It covers how bundles are received, verified, classified, and turned into aggregate public evidence.
+
+**Key rule:** Accepted evidence means the evidence is usable. It does not mean the product succeeded.
+
+---
+
+## 1. How Beta Bundles Are Received
+
+Beta evidence bundles are submitted manually by external beta users:
+
+1. User exports a local bundle via the desktop app (Readiness panel → Export Beta Evidence)
+2. User reviews the bundle contents locally
+3. User shares the bundle through one of:
+   - Attached to a GitHub issue
+   - Sent via the beta feedback channel
+   - Shared through agreed-upon beta communication channel
+
+No automatic upload exists. No telemetry collects bundles.
+
+---
+
+## 2. How Consent Is Verified
+
+Every reviewed bundle must have a valid `beta-evidence-manifest.json` with:
+
+```json
+{
+  "bundle_type": "external-beta-evidence",
+  "collection_mode": "local_export",
+  "uploaded_automatically": false,
+  "consent": {
+    "explicit": true,
+    "timestamp": "..."
+  }
+}
+```
+
+**Rejection criteria:**
+- `consent.explicit` is not `true`
+- `uploaded_automatically` is not `false`
+- `collection_mode` is not `"local_export"`
+- Manifest is missing or malformed
+
+---
+
+## 3. How Redaction Is Checked
+
+Scan the bundle for forbidden patterns:
+
+| Pattern | Action |
+|---------|--------|
+| `ghp_`, `gho_`, `ghu_`, `ghs_` (GitHub PATs) | Reject |
+| `sk-` followed by 20+ alphanumeric chars | Reject |
+| `Bearer ` followed by token-like strings | Reject |
+| Raw absolute paths (e.g., `C:\Users\`, `/home/`) | Reject |
+| Raw file contents (multi-line code blocks) | Reject |
+| Remote URLs containing `@` or `://user:pass` | Reject |
+
+If any forbidden pattern is found, the bundle may still be usable after manual redaction, but must be re-verified before acceptance.
+
+---
+
+## 4. How Session Outcome Is Classified
+
+Session outcomes from `beta-session-outcome.json`:
+
+| Outcome | Meaning |
+|---------|---------|
+| `completed` | All steps passed, no warnings |
+| `completed_with_warnings` | Core path completed, some features degraded |
+| `blocked` | A blocking failure prevented completion |
+| `abandoned` | User stopped before completing |
+| `unknown` | Insufficient data to classify |
+
+**Important:** A `blocked` or `abandoned` session can still be accepted as valid evidence. The evidence value is in knowing what happened, not in the product succeeding.
+
+---
+
+## 5. How Failures Are Categorized
+
+The 16 failure codes from `beta-failure-taxonomy.json`:
+
+| Code | Severity | Category |
+|------|----------|----------|
+| INSTALL_BLOCKED | blocking | install |
+| SMARTSCREEN_WARNING | warning | install |
+| APP_LAUNCH_FAILED | critical | app_launch |
+| REPO_OPEN_FAILED | blocking | repo |
+| ROADMAP_NOT_FOUND | warning | roadmap |
+| GIT_UNAVAILABLE | warning | git |
+| KEYCHAIN_UNAVAILABLE | warning | credential |
+| AI_SERVICE_UNAVAILABLE | warning | ai_service |
+| AGENT_FLOW_FAILED | warning | agent |
+| DIFF_REVIEW_FAILED | warning | diff_review |
+| DASHBOARD_EXPORT_FAILED | warning | dashboard |
+| EVIDENCE_SCHEMA_INVALID | warning | evidence |
+| DIAGNOSTICS_EXPORT_FAILED | warning | diagnostics |
+| USER_ABANDONED | info | user_action |
+| UNKNOWN_FAILURE | warning | unknown |
+| CONSENT_DECLINED | info | consent |
+
+Aggregate failure codes are recorded in the review artifact.
+
+---
+
+## 6. How Aggregate Facts Are Extracted
+
+From each accepted bundle, extract:
+
+- Session outcome (one of 5 values)
+- Observed failure codes (list)
+- Whether feedback was provided (boolean only, not content)
+- Platform (OS/arch aggregate)
+- Review decision (accepted/accepted_with_warnings/rejected/needs_follow_up)
+
+Do NOT extract:
+- Raw feedback text
+- Raw free-text responses
+- Raw repo identity
+- Raw path hashes
+- User identity
+- Exact timestamps
+- Bundle file contents
+
+---
+
+## 7. What Must Never Be Published
+
+| Category | Rule |
+|----------|------|
+| Raw feedback text | Never publish free-text responses |
+| Raw bundle contents | Never commit or publish the actual bundle files |
+| Raw repo identity | Never publish repo names, URLs, or hashed paths |
+| Raw user identity | Never publish names, emails, or identifying info |
+| Raw timestamps | Never publish exact session timestamps |
+| Validation claims | Never claim "externally validated" without explicit threshold |
+
+---
+
+## 8. How to Reject Unusable Evidence
+
+Reject a bundle if:
+
+- Consent is missing or invalid
+- Redaction check fails and cannot be remediated
+- Bundle is synthetic/fabricated (not from a real external user)
+- Bundle was generated by internal CI, demo scripts, or maintainer rehearsal
+- Source type is not `external_beta_user`
+- Manifest is forged or tampered
+
+Rejection does not mean the user did something wrong. It means the evidence cannot be used for public updates.
+
+---
+
+## 9. Review Decisions
+
+| Decision | Meaning |
+|----------|---------|
+| `accepted` | Evidence is usable, structurally valid, consented, and redacted |
+| `accepted_with_warnings` | Evidence is usable but has minor issues (e.g., degraded session) |
+| `rejected` | Evidence is not usable (consent failure, redaction failure, synthetic) |
+| `needs_follow_up` | Evidence may be usable after clarification or re-export |
+
+---
+
+## 10. Review Artifact
+
+All review results are recorded in:
+
+```
+docs/evidence/external-beta-review.json
+```
+
+This artifact contains only aggregate counts and privacy flags. It never contains per-user details.
+
+---
+
+## 11. Dashboard Update Rules
+
+The public dashboard may show:
+
+```
+External Beta Data: none
+```
+
+or, only after at least one real accepted bundle:
+
+```
+External Beta Data: present
+Reviewed bundles: N
+Accepted bundles: N
+Collection mode: local export only
+Consent required: yes
+Automatic upload: no
+Public data: aggregate only
+```
+
+The dashboard must never show:
+- "Externally validated"
+- "Product validated"
+- "User approved"
+- "Production ready"
+- Raw feedback quotes
+- Raw bundle contents
+- Per-user details
+
+---
+
+## 12. Synthetic Fixture Rules
+
+Fixtures may exist for testing:
+
+```
+fixtures/beta-evidence/redacted-valid-bundle/
+```
+
+Rules:
+- Must be labeled `synthetic: true` in manifest
+- Must NOT count as external beta evidence
+- Must NOT flip dashboard status to `present`
+- Must NOT increment any review count
