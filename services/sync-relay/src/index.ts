@@ -7,15 +7,12 @@
  *   GET  /sync             — WebSocket upgrade → SyncRoom Durable Object
  */
 
+import { type Env } from './types';
 import { SyncRoom } from './SyncRoom';
 import { generateToken, validateToken, type TokenScope } from './auth';
 
 export { SyncRoom };
 
-interface Env {
-  SYNC_ROOM: DurableObjectNamespace;
-  ORQESTRA_SYNC_MASTER: string;
-}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
