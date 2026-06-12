@@ -6,7 +6,7 @@ Orqestra is a local-first desktop application that turns a Git repository into a
 
 ## Classification
 
-Orqestra is a **governed AI-native development beta** for technical reviewers and early adopters. The current sealed release is **v2.14.7** with 942 passing tests. v2.14.8 (relay security hotfix) is pending with 957 tests across 4 suites (Rust, Worker, Dashboard, Python), governed file IO, truthful relay status, provider-agnostic AI configuration, and consent-gated external evidence intake.
+Orqestra is a **governed AI-native development beta** for technical reviewers and early adopters. The current sealed release is **v2.14.8** with 957 passing tests across 4 suites (Rust, Worker, Dashboard, Python), governed file IO, truthful relay status, provider-agnostic AI configuration, and consent-gated external evidence intake.
 
 > **Note:** The canonical truth source for release metadata is `release-manifest.json`. The dashboard evidence surface at [orqestra.pages.dev](https://orqestra.pages.dev) shows aggregate static data. No external beta session has occurred yet.
 
