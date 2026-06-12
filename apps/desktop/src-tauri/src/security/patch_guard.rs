@@ -107,7 +107,16 @@ fn is_server_allowed(agent_type: &AgentType, path: &str) -> bool {
     }
 
     server_paths.iter().any(|prefix| {
-        normalized.starts_with(prefix) || normalized == prefix.trim_end_matches('/')
+        // Directory prefix: match path followed by '/' or exactly equal
+        // File prefix: exact match only
+        let prefix_trimmed = prefix.trim_end_matches('/');
+        if prefix_trimmed.ends_with('/') || prefix.contains('.') == false {
+            // Directory: match if path starts with "dir/" or equals "dir"
+            normalized.starts_with(&format!("{}/", prefix_trimmed)) || normalized == *prefix_trimmed
+        } else {
+            // File: exact match only (README.md must not match README.md.bak)
+            normalized == *prefix_trimmed
+        }
     })
 }
 

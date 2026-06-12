@@ -51,6 +51,8 @@ export class SyncRoom implements DurableObject {
 
   private env: Env;
 
+  private roomWorkspaceId: string = '';
+
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
@@ -58,6 +60,14 @@ export class SyncRoom implements DurableObject {
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+
+    // Extract authoritative workspace ID from URL (set by Worker routing)
+    if (url.pathname === '/sync') {
+      const wsId = url.searchParams.get('workspace');
+      if (wsId) {
+        this.roomWorkspaceId = wsId;
+      }
+    }
 
     // WebSocket upgrade
     if (url.pathname === '/sync' && request.headers.get('Upgrade') === 'websocket') {
@@ -137,8 +147,15 @@ export class SyncRoom implements DurableObject {
       return;
     }
 
-    // Validate token
+    // Fail closed: reject if master secret is not configured
     const masterSecret = this.env.ORQESTRA_SYNC_MASTER || '';
+    if (!masterSecret) {
+      this.sendError(ws, message_id, 'SERVER_CONFIG_ERROR', 'Server authentication not configured');
+      ws.close(4003, 'Server config error');
+      return;
+    }
+
+    // Validate token
     const tokenPayload = await validateToken(token, masterSecret);
     if (!tokenPayload) {
       this.sendError(ws, message_id, 'UNAUTHORIZED', 'Invalid token');
@@ -146,8 +163,15 @@ export class SyncRoom implements DurableObject {
       return;
     }
 
-    // Check workspace scope
-    if (tokenPayload.workspace_id !== '*' && tokenPayload.workspace_id !== workspace_id) {
+    // Fail closed: workspace identity is authoritative from URL routing, not client message
+    if (!this.roomWorkspaceId) {
+      this.sendError(ws, message_id, 'ROOM_WORKSPACE_MISSING', 'Room workspace identity not established');
+      ws.close(4003, 'Room workspace missing');
+      return;
+    }
+
+    // Check workspace scope against authoritative ROOM workspace (never client-declared)
+    if (tokenPayload.workspace_id !== '*' && tokenPayload.workspace_id !== this.roomWorkspaceId) {
       this.sendError(ws, message_id, 'UNAUTHORIZED', 'Token not valid for this workspace');
       ws.close(4001, 'Unauthorized');
       return;
@@ -174,7 +198,7 @@ export class SyncRoom implements DurableObject {
   }
 
   private async handleDelta(ws: WebSocket, msg: ClientMessage & { type: 'delta' }) {
-    const { message_id, peer_id, file_path, sequence, data } = msg;
+    const { message_id, file_path, sequence, data } = msg;
 
     // Dedupe
     if (this.seenMessages.has(message_id)) {
@@ -182,9 +206,13 @@ export class SyncRoom implements DurableObject {
       return;
     }
 
-    // Check write scope
-    const peer = this.peers.get(peer_id);
-    if (!peer || !peer.scope || !canWrite(peer.scope.scope)) {
+    // Authorize: find peer by WebSocket, not by message-provided peer_id
+    const peer = this.findPeerBySocket(ws);
+    if (!peer) {
+      this.sendError(ws, message_id, 'UNAUTHORIZED', 'Socket has not joined the room');
+      return;
+    }
+    if (!peer.scope || !canWrite(peer.scope.scope)) {
       this.sendError(ws, message_id, ERR_READ_ONLY_SCOPE, 'Read-only token cannot push deltas');
       return;
     }
@@ -197,14 +225,14 @@ export class SyncRoom implements DurableObject {
       type: 'delta',
       protocol_version: PROTOCOL_VERSION,
       message_id,
-      from_peer: peer_id,
+      from_peer: peer.peer_id,
       file_path,
       sequence,
       data,
     };
 
     for (const [id, p] of this.peers) {
-      if (id !== peer_id && p.websocket.readyState === WebSocket.READY_STATE_OPEN) {
+      if (id !== peer.peer_id && p.websocket.readyState === WebSocket.READY_STATE_OPEN) {
         p.websocket.send(JSON.stringify(broadcast));
       }
     }
@@ -214,7 +242,7 @@ export class SyncRoom implements DurableObject {
   }
 
   private async handleSnapshot(ws: WebSocket, msg: ClientMessage & { type: 'snapshot' }) {
-    const { message_id, peer_id, file_path, data } = msg;
+    const { message_id, file_path, data } = msg;
 
     // Dedupe
     if (this.seenMessages.has(message_id)) {
@@ -222,9 +250,13 @@ export class SyncRoom implements DurableObject {
       return;
     }
 
-    // Check write scope
-    const peer = this.peers.get(peer_id);
-    if (!peer || !peer.scope || !canWrite(peer.scope.scope)) {
+    // Authorize: find peer by WebSocket, not by message-provided peer_id
+    const peer = this.findPeerBySocket(ws);
+    if (!peer) {
+      this.sendError(ws, message_id, 'UNAUTHORIZED', 'Socket has not joined the room');
+      return;
+    }
+    if (!peer.scope || !canWrite(peer.scope.scope)) {
       this.sendError(ws, message_id, ERR_READ_ONLY_SCOPE, 'Read-only token cannot push snapshots');
       return;
     }
@@ -327,6 +359,16 @@ export class SyncRoom implements DurableObject {
         try { peer.websocket.send(message); } catch { /* ignore */ }
       }
     }
+  }
+
+  /** Find the peer associated with a given WebSocket. */
+  private findPeerBySocket(ws: WebSocket): Peer | undefined {
+    for (const [, peer] of this.peers) {
+      if (peer.websocket === ws) {
+        return peer;
+      }
+    }
+    return undefined;
   }
 
   private trackMessage(messageId: string) {

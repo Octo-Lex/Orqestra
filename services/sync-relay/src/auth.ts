@@ -78,7 +78,18 @@ export async function validateToken(
   token: string,
   masterSecret: string,
 ): Promise<TokenPayload | null> {
+  // Fail closed: reject empty tokens or empty master secret
+  if (!token || !masterSecret) {
+    return null;
+  }
+
+  // Master secret must have minimum length (16 chars)
+  if (masterSecret.length < 16) {
+    return null;
+  }
+
   // Master token is admin (checked first, before prefix check)
+  // Both token and masterSecret are guaranteed non-empty at this point
   if (timingSafeEqualHex(token, masterSecret) && token.length === masterSecret.length) {
     return { scope: 'admin', workspace_id: '*', timestamp: 0, hmac: '', version: 'master' };
   }

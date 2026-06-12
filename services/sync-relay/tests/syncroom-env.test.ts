@@ -97,6 +97,7 @@ describe('v2.14.6: SyncRoom handleJoin production path', () => {
     const env = createMockEnv(MASTER_SECRET);
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Token generated with wrong master
@@ -122,6 +123,7 @@ describe('v2.14.6: SyncRoom handleJoin production path', () => {
     const env = createMockEnv(MASTER_SECRET);
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     const validToken = await generateToken('write', 'ws-test', MASTER_SECRET);
@@ -146,6 +148,7 @@ describe('v2.14.6: SyncRoom handleJoin production path', () => {
     const env = createMockEnv(MASTER_SECRET);
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Master token is the master secret itself
@@ -163,6 +166,7 @@ describe('v2.14.6: SyncRoom handleJoin production path', () => {
     const env = createMockEnv(MASTER_SECRET);
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Token for ws-correct, but joining ws-wrong
@@ -184,6 +188,7 @@ describe('v2.14.6: SyncRoom handleJoin production path', () => {
     const env = createMockEnv(MASTER_SECRET);
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     const joinMsg = buildJoinMessage('garbage-token-value');
