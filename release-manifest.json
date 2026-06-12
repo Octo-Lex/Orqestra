@@ -134,7 +134,7 @@
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
     "release": "v2.14.8",
-    "generated_from_commit": "2675d6511be2bb0d67e3f2a3f1da2f23f2c15f50"
+    "generated_from_commit": "fa8970f9f67516f03ae68c95dc3a04a31ac64cb9"
   },
   "diagnostics": {
     "installer_diagnostics": "docs/installer-diagnostics.md",

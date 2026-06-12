@@ -163,9 +163,15 @@ export class SyncRoom implements DurableObject {
       return;
     }
 
-    // Check workspace scope against ROOM workspace (authoritative), not message workspace
-    const authoritativeWorkspace = this.roomWorkspaceId || workspace_id;
-    if (tokenPayload.workspace_id !== '*' && tokenPayload.workspace_id !== authoritativeWorkspace) {
+    // Fail closed: workspace identity is authoritative from URL routing, not client message
+    if (!this.roomWorkspaceId) {
+      this.sendError(ws, message_id, 'ROOM_WORKSPACE_MISSING', 'Room workspace identity not established');
+      ws.close(4003, 'Room workspace missing');
+      return;
+    }
+
+    // Check workspace scope against authoritative ROOM workspace (never client-declared)
+    if (tokenPayload.workspace_id !== '*' && tokenPayload.workspace_id !== this.roomWorkspaceId) {
       this.sendError(ws, message_id, 'UNAUTHORIZED', 'Token not valid for this workspace');
       ws.close(4001, 'Unauthorized');
       return;
