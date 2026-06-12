@@ -105,15 +105,6 @@ async def run_architect_agent(request: ArchitectRequest) -> ArchitectResponse:
     Never writes files or creates patches.
     If the AI service is unavailable, returns an error (no fake plans).
     """
-    import os
-    from .provider import ProviderConfigMissingError
-
-    api_key = os.environ.get("ORQESTRA_AI_API_KEY")
-    if not api_key:
-        raise ProviderConfigMissingError(
-            "ORQESTRA_AI_API_KEY not set — architect agent requires AI service"
-        )
-
     # Build bounded prompt from context
     task_title = request.task.get("title", "Unknown task")
     task_labels = request.task.get("labels", [])
@@ -158,7 +149,7 @@ Be specific. Reference actual symbol names and file paths from the context.
 If insufficient context, state what is needed rather than guessing."""
 
     # Call AI service
-    plan_data = await _call_ai_service(api_key, prompt)
+    plan_data = await _call_ai_service(prompt)
 
     plan = ArchitectPlan(
         plan_id=f"arch-{uuid.uuid4().hex[:12]}",
@@ -223,7 +214,7 @@ def _clamp_confidence(value: float) -> float:
     return max(0.0, min(1.0, float(value)))
 
 
-async def _call_ai_service(api_key: str, prompt: str) -> dict:
+async def _call_ai_service(prompt: str) -> dict:
     """Call the centralized AI provider. Raises on failure — no fake plans."""
     from .provider import call_ai
 
