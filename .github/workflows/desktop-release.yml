@@ -146,6 +146,18 @@ jobs:
         with:
           path: artifacts
 
+      - name: Stage release metadata
+        shell: bash
+        run: |
+          mkdir -p dist
+          if [ -f release-manifest.json ]; then
+            cp release-manifest.json dist/release-manifest.json
+            echo "Copied repo release-manifest.json to dist/"
+          else
+            echo "No repo release-manifest.json found; will generate from provenance"
+          fi
+          cp checksums.txt dist/checksums.txt 2>/dev/null || true
+
       - name: Generate release manifest with provenance
         shell: bash
         run: |
