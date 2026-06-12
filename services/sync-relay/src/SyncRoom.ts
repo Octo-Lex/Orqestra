@@ -27,6 +27,7 @@ import {
   type ServerPeerLeave,
   type ServerDelta,
 } from './protocol';
+import { type Env } from './types';
 import { validateToken, canWrite, type TokenPayload } from './auth';
 
 interface Peer {
@@ -48,8 +49,11 @@ export class SyncRoom implements DurableObject {
   private seenMessages: Set<string> = new Set();
   private snapshots: Map<string, Snapshot> = new Map();
 
-  constructor(state: DurableObjectState, _env: unknown) {
+  private env: Env;
+
+  constructor(state: DurableObjectState, env: Env) {
     this.state = state;
+    this.env = env;
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -134,8 +138,8 @@ export class SyncRoom implements DurableObject {
     }
 
     // Validate token
-    const masterSecret = (this.state.env as Record<string, string>).ORQESTRA_SYNC_MASTER || '';
-    const tokenPayload = validateToken(token, masterSecret);
+    const masterSecret = this.env.ORQESTRA_SYNC_MASTER || '';
+    const tokenPayload = await validateToken(token, masterSecret);
     if (!tokenPayload) {
       this.sendError(ws, message_id, 'UNAUTHORIZED', 'Invalid token');
       ws.close(4001, 'Unauthorized');

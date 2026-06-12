@@ -7,15 +7,12 @@
  *   GET  /sync             — WebSocket upgrade → SyncRoom Durable Object
  */
 
+import { type Env } from './types';
 import { SyncRoom } from './SyncRoom';
 import { generateToken, validateToken, type TokenScope } from './auth';
 
 export { SyncRoom };
 
-interface Env {
-  SYNC_ROOM: DurableObjectNamespace;
-  ORQESTRA_SYNC_MASTER: string;
-}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -44,7 +41,7 @@ export default {
           return new Response(JSON.stringify({ error: 'Invalid scope' }), { status: 400 });
         }
 
-        const token = generateToken(body.scope, body.workspace_id, env.ORQESTRA_SYNC_MASTER);
+        const token = await generateToken(body.scope, body.workspace_id, env.ORQESTRA_SYNC_MASTER);
         return new Response(JSON.stringify({ token, scope: body.scope }), {
           headers: { 'Content-Type': 'application/json' },
         });
