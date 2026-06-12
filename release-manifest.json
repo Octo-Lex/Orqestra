@@ -128,7 +128,7 @@
     "v2.14.8_ci_verified": true,
     "v2.14.8_rust_tests": 831,
     "v2.14.8_dashboard_tests": 53,
-    "v2.14.8_worker_tests": 48
+    "v2.14.8_worker_tests": 50
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
@@ -152,7 +152,7 @@
     "real_ai_demo": "pass",
     "rust_tests_count": 831,
     "dashboard_tests_count": 53,
-    "worker_tests_count": 48,
+    "worker_tests_count": 50,
     "python_tests_count": 23
   },
   "limitations": [
