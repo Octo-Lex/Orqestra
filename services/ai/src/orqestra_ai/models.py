@@ -23,7 +23,7 @@ class SemanticIntent(BaseModel):
     affected_apis: list[str]
     risk_assessment: dict  # breaking_change, migration_required, rollback_complexity
     confidence: float  # 0.0–1.0
-    reasoning_trace: str  # the model's chain of thought
+    rationale: str  # short decision summary (not chain-of-thought)
 
 
 class EmbedRequest(BaseModel):
@@ -47,7 +47,7 @@ class ExplorationResult(BaseModel):
     adr_draft: str
     affected_files: list[str]
     confidence: float
-    reasoning_trace: str
+    rationale: str  # short decision summary (not chain-of-thought)
 
 
 class HistoryQuery(BaseModel):

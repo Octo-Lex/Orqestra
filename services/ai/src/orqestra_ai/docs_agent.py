@@ -5,9 +5,9 @@ The docs agent only edits documentation files (README.md, docs/*, roadmap/*, CHA
 """
 
 import os
-import httpx
 from typing import Optional
 from pydantic import BaseModel
+from .provider import call_ai, AIProviderError
 
 
 class DocsContextFile(BaseModel):
@@ -110,55 +110,33 @@ AFTER:
 <replacement text>
 --- END EDIT ---"""
 
-    # Call Z.ai gateway
-    api_key = os.environ.get("ZAI_API_KEY", "")
-    base_url = os.environ.get("ZAI_BASE_URL", "https://api.z.ai/api/anthropic")
-
-    if not api_key:
-        # Fallback: return a mock response with instructions
+    # Call centralized AI provider
+    try:
+        text = await call_ai(
+            prompt=prompt,
+            system_prompt="You are the Orqestra documentation agent. Propose edits to documentation files only.",
+            max_tokens=2000,
+            temperature=0.3,
+        )
+    except AIProviderError as e:
         return DocsAgentResponse(
-            summary=f"Docs agent would process task '{task_title}' — no API key configured",
-            confidence=0.5,
+            summary=f"AI service error: {e.message}",
+            confidence=0.0,
             has_breaking_change=False,
             edits=[],
-            notes=["ZAI_API_KEY not set — returning mock response"],
+            notes=[f"Error [{e.code}]: {e.message}"],
         )
-
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(
-                base_url.rstrip("/") + "/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "content-type": "application/json",
-                    "anthropic-version": "2023-06-01",
-                },
-                json={
-                    "model": "claude-sonnet-4-20250514",
-                    "max_tokens": 2000,
-                    "messages": [{"role": "user", "content": prompt}],
-                },
-            )
-            response.raise_for_status()
-            result = response.json()
-
-        # Extract text from response
-        text = ""
-        for block in result.get("content", []):
-            if block.get("type") == "text":
-                text += block.get("text", "")
-
-        # Parse the response
-        return _parse_agent_response(text, task_title)
-
     except Exception as e:
         return DocsAgentResponse(
-            summary=f"Docs agent failed: {str(e)[:100]}",
+            summary=f"AI service error: {str(e)[:100]}",
             confidence=0.0,
             has_breaking_change=False,
             edits=[],
             notes=[f"Error: {str(e)[:200]}"],
         )
+
+    # Parse the response
+    return _parse_agent_response(text, task_title)
 
 
 def _parse_agent_response(text: str, task_title: str) -> DocsAgentResponse:
