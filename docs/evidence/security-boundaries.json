@@ -34,9 +34,36 @@
     "dashboard_authority": {
       "status": "read-only evidence surface",
       "accepted_tokens": "ork_read_* only",
-      "scopes": ["private"],
-      "rejected": ["admin scope", "write scope", "former hardcoded token", "ork_write_*"],
+      "scopes": [
+        "private"
+      ],
+      "rejected": [
+        "admin scope",
+        "write scope",
+        "former hardcoded token",
+        "ork_write_*"
+      ],
       "description": "Dashboard is not the authority plane. Desktop remains the governed control plane."
+    },
+    "relay_auth_fail_closed": {
+      "since": "v2.14.8",
+      "description": "validateToken rejects empty token, empty master secret, and master secrets shorter than 16 characters",
+      "enforced_by": "auth.ts validateToken()"
+    },
+    "peer_authorization_socket_bound": {
+      "since": "v2.14.8",
+      "description": "Delta and snapshot authorization uses WebSocket-bound peer identity, not client-supplied peer_id",
+      "enforced_by": "SyncRoom.ts findPeerBySocket()"
+    },
+    "workspace_isolation_fail_closed": {
+      "since": "v2.14.8",
+      "description": "Room workspace identity from URL routing is authoritative; missing roomWorkspaceId fails closed",
+      "enforced_by": "SyncRoom.ts handleJoin()"
+    },
+    "path_boundary_matching": {
+      "since": "v2.14.8",
+      "description": "File allowlist uses exact match; directory allowlist uses directory-boundary match (README.md does not authorize README.md.bak)",
+      "enforced_by": "patch_guard.rs and docs_agent.py"
     }
   }
 }

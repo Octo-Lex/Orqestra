@@ -92,6 +92,26 @@
       "date": "2026-06-11",
       "type": "external-beta-session",
       "label": "First Real External Beta Session"
+    },
+    "v2.14.8": {
+      "date": "2026-06-13",
+      "type": "hotfix",
+      "summary": "Relay Security & Release Truth Hotfix",
+      "changes": [
+        "Relay auth fail-closed (empty token/secret rejected, min 16-char secret)",
+        "WebSocket-bound peer authorization via findPeerBySocket()",
+        "Room workspace fail-closed (ROOM_WORKSPACE_MISSING)",
+        "Path-boundary matching (exact file, directory boundary)",
+        "15 relay security regression tests",
+        "Release truth alignment"
+      ],
+      "tests": {
+        "rust": 831,
+        "worker": 50,
+        "dashboard": 53,
+        "python": 23,
+        "total": 957
+      }
     }
   }
 }
