@@ -1,10 +1,10 @@
 {
   "release": {
-    "name": "Orqestra v2.14.6",
-    "tag": "v2.14.6",
+    "name": "Orqestra v2.14.7",
+    "tag": "v2.14.7",
     "channel": "public-beta",
-    "release_version": "2.14.6",
-    "app_version": "2.14.6",
+    "release_version": "2.14.7",
+    "app_version": "2.14.7",
     "date": "2026-06-11"
   },
   "provenance": {
@@ -50,7 +50,7 @@
       "final_artifact_state": "unsigned-final",
       "source": "local-build",
       "historical": true,
-      "note": "Legacy v2.14.1 artifact. No v2.14.6 installer has been built yet."
+      "note": "Legacy v2.14.1 artifact. No v2.14.7 installer has been built yet."
     },
     {
       "name": "Orqestra_2.9.0_x64.AppImage",
@@ -64,16 +64,16 @@
       "verification_status": "smoke-passed-native-desktop",
       "source": "pending",
       "historical": true,
-      "note": "Legacy v2.14.1 artifact. No v2.14.6 installer has been built yet."
+      "note": "Legacy v2.14.1 artifact. No v2.14.7 installer has been built yet."
     }
   ],
   "platforms": {
     "windows-x64": {
       "status": "tested",
       "release_blocking": true,
-      "artifact": "pending-v2.14.6-rebuild",
+      "artifact": "pending-v2.14.7-rebuild",
       "signed": false,
-      "smoke_evidence": "v2.14.6 evidence in CI runs",
+      "smoke_evidence": "v2.14.7 evidence in CI runs",
       "notes": "Unsigned tested public beta installer",
       "note": "v1.0.12 artifact was historical. Current platform evidence is in CI.",
       "smoke_evidence_historical": "demo/v1.0.12-windows-smoke.md"
@@ -81,7 +81,7 @@
     "linux-x64": {
       "status": "tested",
       "release_blocking": false,
-      "artifact": "pending-v2.14.6-rebuild",
+      "artifact": "pending-v2.14.7-rebuild",
       "signed": false,
       "compile_status": "pass",
       "bundle_status": "pass",
@@ -91,7 +91,7 @@
       "native_desktop_smoke": true,
       "previous_runtime_evidence": "runtime-evidence-wslg",
       "notes": "Linux AppImage passed native smoke verification on Ubuntu 24.04.4 GNOME. Dashboard URL/version was verified externally because browser launch was deferred in the headless VM.",
-      "smoke_evidence": "v2.14.6 evidence in CI runs",
+      "smoke_evidence": "v2.14.7 evidence in CI runs",
       "runtime_environment": {
         "distribution": "Ubuntu",
         "version": "24.04.4 LTS",
@@ -124,17 +124,17 @@
     "linux": "demo/v1.0.12-linux-native-smoke.md",
     "linux_wslg_evidence": "demo/v1.0.11-linux-wslg-smoke.md",
     "macos": "demo/v1.0.8-macos-feasibility.md",
-    "note": "v1.0.x smoke evidence is historical. v2.14.6 verification via CI.",
-    "v2.14.6_ci_verified": true,
-    "v2.14.6_rust_tests": 831,
-    "v2.14.6_dashboard_tests": 53,
-    "v2.14.6_worker_tests": 35
+    "note": "v1.0.x smoke evidence is historical. v2.14.7 verification via CI.",
+    "v2.14.7_ci_verified": true,
+    "v2.14.7_rust_tests": 831,
+    "v2.14.7_dashboard_tests": 53,
+    "v2.14.7_worker_tests": 35
   },
   "dashboard": {
     "url": "https://orqestra.pages.dev",
     "status": "200 OK",
-    "release": "v2.14.6",
-    "generated_from_commit": "a3d9f7a6b27e45cf57e021c5d8b25be7e4177aa8"
+    "release": "v2.14.7",
+    "generated_from_commit": "2675d6511be2bb0d67e3f2a3f1da2f23f2c15f50"
   },
   "diagnostics": {
     "installer_diagnostics": "docs/installer-diagnostics.md",
@@ -152,7 +152,8 @@
     "real_ai_demo": "pass",
     "rust_tests_count": 831,
     "dashboard_tests_count": 53,
-    "worker_tests_count": 35
+    "worker_tests_count": 35,
+    "python_tests_count": 23
   },
   "limitations": [
     "Unsigned Windows installer",
@@ -507,7 +508,7 @@
       "agent_endpoints_optional": true,
       "redaction_machine_checked": true,
       "redaction_tests": 8,
-      "readme_download_link": "v2.14.6 (current)",
+      "readme_download_link": "v2.14.7 (current)",
       "classification": "governed AI-native development beta",
       "new_docs": [
         "patch-governance.md",

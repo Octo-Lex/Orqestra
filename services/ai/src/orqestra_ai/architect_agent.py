@@ -105,12 +105,6 @@ async def run_architect_agent(request: ArchitectRequest) -> ArchitectResponse:
     Never writes files or creates patches.
     If the AI service is unavailable, returns an error (no fake plans).
     """
-    import os
-
-    api_key = os.environ.get("ZAI_API_KEY")
-    if not api_key:
-        raise ValueError("ZAI_API_KEY not set — architect agent requires AI service")
-
     # Build bounded prompt from context
     task_title = request.task.get("title", "Unknown task")
     task_labels = request.task.get("labels", [])
@@ -155,7 +149,7 @@ Be specific. Reference actual symbol names and file paths from the context.
 If insufficient context, state what is needed rather than guessing."""
 
     # Call AI service
-    plan_data = await _call_ai_service(api_key, prompt)
+    plan_data = await _call_ai_service(prompt)
 
     plan = ArchitectPlan(
         plan_id=f"arch-{uuid.uuid4().hex[:12]}",
@@ -220,34 +214,19 @@ def _clamp_confidence(value: float) -> float:
     return max(0.0, min(1.0, float(value)))
 
 
-async def _call_ai_service(api_key: str, prompt: str) -> dict:
-    """Call the ZAI API. Raises on failure — no fake plans."""
-    import httpx
+async def _call_ai_service(prompt: str) -> dict:
+    """Call the centralized AI provider. Raises on failure — no fake plans."""
+    from .provider import call_ai
 
-    url = "https://api.zukijourney.com/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "You are an architecture planning assistant. Produce valid JSON only."},
-            {"role": "user", "content": prompt},
-        ],
-        "temperature": 0.3,
-        "max_tokens": 2000,
-    }
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        response = await client.post(url, headers=headers, json=payload)
-        response.raise_for_status()
-
-    data = response.json()
-    content = data["choices"][0]["message"]["content"]
+    raw = await call_ai(
+        prompt=prompt,
+        system_prompt="You are an architecture planning assistant. Produce valid JSON only.",
+        max_tokens=2000,
+        temperature=0.3,
+    )
 
     # Strip markdown code fences if present
-    content = content.strip()
+    content = raw.strip()
     if content.startswith("```json"):
         content = content[7:]
     if content.startswith("```"):

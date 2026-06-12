@@ -1,7 +1,14 @@
-import anthropic
+"""
+Semantic intent extraction from git diffs.
+
+Uses the centralized AI provider. Desktop calls localhost AI service,
+never a named vendor. No chain-of-thought is requested or stored.
+"""
+
 import json
 import os
 from .models import DiffRequest, SemanticIntent
+from .provider import call_ai, ProviderUnavailableError, ProviderConfigMissingError
 
 SYSTEM_PROMPT = """You are a code analysis assistant. Given a git diff and commit message,
 extract structured semantic information about what changed and why.
@@ -17,14 +24,11 @@ Respond with valid JSON matching this schema:
     "rollback_complexity": "low/medium/high"
   },
   "confidence": 0.0-1.0,
-  "reasoning_trace": "your chain of thought"
-}"""
+  "rationale": "one-sentence decision summary explaining your classification"
+}
 
-# Initialize Anthropic SDK pointing to the Z.ai proxy gateway
-client = anthropic.AsyncAnthropic(
-    api_key=os.environ.get("ZAI_API_KEY"),
-    base_url="https://api.z.ai/api/anthropic",
-)
+Important: "rationale" should be a brief summary of your classification reasoning,
+NOT a full chain-of-thought. Keep it to one sentence."""
 
 
 async def extract_intent(request: DiffRequest) -> SemanticIntent:
@@ -38,14 +42,13 @@ Codebase context: {request.repo_context or 'not provided'}
 
 Extract the semantic intent as JSON."""
 
-    message = await client.messages.create(
-        model="glm-5.1",
+    raw = await call_ai(
+        prompt=user_message,
+        system_prompt=SYSTEM_PROMPT,
         max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": user_message}],
+        temperature=0.2,
     )
 
-    raw = message.content[0].text
     # Strip markdown code fences if present
     if raw.startswith("```"):
         raw = raw.split("```")[1]
