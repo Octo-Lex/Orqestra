@@ -128,6 +128,16 @@
       "worker": 24,
       "dashboard": 53,
       "total": 885
+    },
+    {
+      "version": "v2.14.8",
+      "rust": 831,
+      "worker": 50,
+      "dashboard": 53,
+      "python": 23,
+      "total": 957,
+      "date": "2026-06-13",
+      "notes": "Relay security hotfix: auth fail-closed, socket-bound peer auth, room workspace fail-closed, path-boundary matching"
     }
   ]
 }
