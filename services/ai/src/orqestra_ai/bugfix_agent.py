@@ -12,8 +12,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 from .models import TaskContext
-import os
-import httpx
+from .provider import call_ai, AIProviderError
 
 router = APIRouter()
 
@@ -112,45 +111,20 @@ Provide a summary, confidence score, and any edits as before/after pairs.
 If you cannot safely fix the bug with only the provided files, explain why and request additional files.
 """
 
-    # Call the AI service (Z.ai gateway)
-    ai_base = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/anthropic")
-    ai_key = os.getenv("ZAI_API_KEY", "")
-    ai_model = os.getenv("ZAI_MODEL", "glm-5.1")
-
-    if not ai_key:
-        # No AI key available — return a structured "needs configuration" response
-        return BugfixResponse(
-            summary="[AI service not configured] Bugfix agent requires ZAI_API_KEY.",
-            confidence=0.0,
-            notes=[
-                "Set ZAI_API_KEY environment variable to enable real AI analysis.",
-                f"Task: {task_id} — {task_title}",
-                f"Selected files: {', '.join(f.path for f in files)}",
-                "Agent is ready — only the AI backend needs configuration.",
-            ],
-        )
-
+    # Call centralized AI provider
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            response = await client.post(
-                ai_base,
-                headers={
-                    "Authorization": f"Bearer {ai_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": ai_model,
-                    "messages": [
-                        {"role": "user", "content": prompt}
-                    ],
-                    "max_tokens": 4096,
-                    "temperature": 0.3,
-                },
-            )
-            response.raise_for_status()
-            ai_body = response.json()
-            ai_text = ai_body.get("choices", [{}])[0].get("message", {}).get("content", "")
-
+        ai_text = await call_ai(
+            prompt=prompt,
+            system_prompt="You are a bugfix agent. Analyze the task and propose fixes for the provided files only.",
+            max_tokens=4096,
+            temperature=0.3,
+        )
+    except AIProviderError as e:
+        return BugfixResponse(
+            summary=f"AI service error: {e.message}",
+            confidence=0.0,
+            notes=[f"Error [{e.code}]: {e.message}"],
+        )
     except Exception as e:
         return BugfixResponse(
             summary=f"AI service error: {str(e)}",

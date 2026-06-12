@@ -8,5 +8,5 @@ async def explore(request: ExploreRequest) -> ExplorationResult:
         adr_draft="",
         affected_files=[],
         confidence=0.0,
-        reasoning_trace="stub",
+        rationale="Exploration stub — not yet implemented.",
     )
