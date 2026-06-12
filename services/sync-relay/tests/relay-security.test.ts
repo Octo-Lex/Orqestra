@@ -147,6 +147,7 @@ describe('v2.14.8: WebSocket-bound peer auth', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Send delta WITHOUT joining first
@@ -164,6 +165,7 @@ describe('v2.14.8: WebSocket-bound peer auth', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Join with read-only token
@@ -188,6 +190,7 @@ describe('v2.14.8: WebSocket-bound peer auth', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Join with write token
@@ -210,6 +213,7 @@ describe('v2.14.8: WebSocket-bound peer auth', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
 
     // Peer 1 joins with write
     const ws1 = createMockWebSocket();
@@ -244,6 +248,7 @@ describe('v2.14.8: Workspace isolation', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     // Set room workspace to ws-A (simulating URL routing)
@@ -267,6 +272,7 @@ describe('v2.14.8: Workspace isolation', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     room['roomWorkspaceId'] = 'ws-A';
@@ -285,6 +291,7 @@ describe('v2.14.8: Workspace isolation', () => {
     const env = createMockEnv();
     const state = createMockState();
     const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
     const ws = createMockWebSocket();
 
     room['roomWorkspaceId'] = 'ws-test';
@@ -296,5 +303,51 @@ describe('v2.14.8: Workspace isolation', () => {
     const sent = ws._sent.map(s => JSON.parse(s));
     const welcome = sent.find(m => m.type === 'welcome');
     expect(welcome).toBeDefined();
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// P0: Room workspace authority (no client fallback)
+// ---------------------------------------------------------------------------
+
+describe('v2.14.8: Room workspace authority', () => {
+  it('SyncRoom without roomWorkspaceId rejects join (no client fallback)', async () => {
+    const env = createMockEnv();
+    const state = createMockState();
+    const room = new SyncRoom(state, env);
+    // Do NOT set roomWorkspaceId — testing fail-closed behavior
+    const ws = createMockWebSocket();
+
+    const token = await generateToken('write', 'ws-test', MASTER_SECRET);
+    const joinMsg = buildJoinMessage(token, 'ws-test', 1);
+    await room.webSocketMessage(ws as unknown as WebSocket, joinMsg);
+
+    const sent = ws._sent.map(s => JSON.parse(s));
+    const errorMsg = sent.find(m => m.type === 'error');
+    expect(errorMsg).toBeDefined();
+    expect(errorMsg!.code).toBe('ROOM_WORKSPACE_MISSING');
+
+    expect(ws._closed).not.toBeNull();
+    expect(ws._closed!.code).toBe(4003);
+  });
+
+  it('SyncRoom with roomWorkspaceId accepts matching token', async () => {
+    const env = createMockEnv();
+    const state = createMockState();
+    const room = new SyncRoom(state, env);
+    room['roomWorkspaceId'] = 'ws-test';
+    const ws = createMockWebSocket();
+
+    room['roomWorkspaceId'] = 'ws-test';
+
+    const token = await generateToken('write', 'ws-test', MASTER_SECRET);
+    const joinMsg = buildJoinMessage(token, 'ws-test', 1);
+    await room.webSocketMessage(ws as unknown as WebSocket, joinMsg);
+
+    const sent = ws._sent.map(s => JSON.parse(s));
+    const welcome = sent.find(m => m.type === 'welcome');
+    expect(welcome).toBeDefined();
+    expect(ws._closed).toBeNull();
   });
 });

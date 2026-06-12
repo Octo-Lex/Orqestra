@@ -6,28 +6,32 @@ Orqestra is a local-first desktop application that turns a Git repository into a
 
 ## Classification
 
-Orqestra is a **governed AI-native development beta** for technical reviewers and early adopters. The current release is **v1.9.0** with 447 passing tests, three bounded agents (docs, bugfix, architect), patch governance, code intelligence, and hybrid native Git operations.
+Orqestra is a **governed AI-native development beta** for technical reviewers and early adopters. The current sealed release is **v2.14.7** with 955 passing tests across 4 suites (Rust, Worker, Dashboard, Python), governed file IO, truthful relay status, provider-agnostic AI configuration, and consent-gated external evidence intake.
+
+> **Note:** The canonical truth source for release metadata is `release-manifest.json`. The dashboard evidence surface at [orqestra.pages.dev](https://orqestra.pages.dev) shows aggregate static data. No external beta session has occurred yet.
 
 ## Quick Start for Beta Reviewers
 
 ### 1. Download
 
-Download `Orqestra_2.0.0_x64-setup.exe` from [GitHub Releases](https://github.com/Elephant-Rock-Lab/Orqestra/releases).
+Download the latest installer from [GitHub Releases](https://github.com/Octo-Lex/Orqestra/releases).
 
 The installer is **unsigned**. Windows SmartScreen will warn you. Click "More info" → "Run anyway".
 
 ### 2. Verify SHA256
 
 ```powershell
-Get-FileHash .\Orqestra_2.0.0_x64-setup.exe -Algorithm SHA256
+Get-FileHash .\Orqestra_x64-setup.exe -Algorithm SHA256
 ```
 
 Compare against `checksums.txt` or `release-manifest.json` attached to the release.
 
+> The installer is unsigned. Windows SmartScreen will warn. Click "More info" → "Run anyway".
+
 ### 3. Verify Signature
 
 ```powershell
-Get-AuthenticodeSignature .\Orqestra_2.0.0_x64-setup.exe
+Get-AuthenticodeSignature .\Orqestra_x64-setup.exe
 ```
 
 Expected: `Status: NotSigned` — the installer is unsigned because no code-signing certificate has been configured.
