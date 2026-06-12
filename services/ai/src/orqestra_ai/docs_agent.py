@@ -54,8 +54,15 @@ def _is_allowed_path(path: str) -> bool:
         normalized = normalized[1:]
 
     for prefix in ALLOWED_PREFIXES:
-        if normalized.startswith(prefix) or normalized == prefix.rstrip("/"):
-            return True
+        if prefix.endswith('/'):
+            # Directory: match if path starts with "dir/" or equals "dir"
+            prefix_dir = prefix.rstrip('/')
+            if normalized.startswith(f"{prefix_dir}/") or normalized == prefix_dir:
+                return True
+        else:
+            # File: exact match only (README.md must not match README.md.bak)
+            if normalized == prefix:
+                return True
     return False
 
 
