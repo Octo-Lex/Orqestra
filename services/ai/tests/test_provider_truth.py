@@ -191,3 +191,73 @@ class TestAgentResultShapes:
         # Plan has no chain-of-thought either
         plan_fields = ArchitectResponse.model_fields["plan"]
         assert plan_fields is not None
+
+
+# ---------------------------------------------------------------------------
+# Architect agent: routes through centralized provider
+# ---------------------------------------------------------------------------
+
+class TestArchitectProviderRouting:
+    """Prove architect agent uses call_ai() without direct env/vendor branching."""
+
+    def test_architect_no_direct_os_import_in_endpoint(self):
+        """The run_architect_agent function should not import os or read env directly."""
+        import inspect
+        from orqestra_ai.architect_agent import run_architect_agent
+
+        source = inspect.getsource(run_architect_agent)
+        assert "os.environ" not in source, (
+            "run_architect_agent must not read os.environ directly"
+        )
+        assert "ZAI_API_KEY" not in source, (
+            "run_architect_agent must not reference vendor-specific env vars"
+        )
+        assert "ORQESTRA_AI_API_KEY" not in source, (
+            "run_architect_agent must not gate on API key — call_ai() handles that"
+        )
+
+    def test_architect_call_ai_service_has_no_api_key_param(self):
+        """_call_ai_service should not take an api_key parameter."""
+        import inspect
+        from orqestra_ai.architect_agent import _call_ai_service
+
+        sig = inspect.signature(_call_ai_service)
+        params = list(sig.parameters.keys())
+        assert "api_key" not in params, (
+            f"_call_ai_service should not take api_key param. Got: {params}"
+        )
+        assert "prompt" in params, (
+            f"_call_ai_service should take prompt param. Got: {params}"
+        )
+
+    def test_architect_uses_call_ai(self):
+        """_call_ai_service should import and use call_ai from provider."""
+        import inspect
+        from orqestra_ai.architect_agent import _call_ai_service
+
+        source = inspect.getsource(_call_ai_service)
+        assert "call_ai" in source, (
+            "_call_ai_service must use call_ai from provider module"
+        )
+
+    def test_docs_agent_no_vendor_references(self):
+        """docs_agent.py should have no vendor-specific references."""
+        import inspect
+        from orqestra_ai.docs_agent import docs_agent
+
+        source = inspect.getsource(docs_agent)
+        assert "Z.ai" not in source
+        assert "zukijourney" not in source
+        assert "ZAI_API_KEY" not in source
+        assert "ZAI_BASE_URL" not in source
+
+    def test_bugfix_agent_no_vendor_references(self):
+        """bugfix_agent.py should have no vendor-specific references."""
+        import inspect
+        from orqestra_ai.bugfix_agent import run_bugfix_agent
+
+        source = inspect.getsource(run_bugfix_agent)
+        assert "Z.ai" not in source
+        assert "zukijourney" not in source
+        assert "ZAI_API_KEY" not in source
+        assert "ZAI_BASE_URL" not in source

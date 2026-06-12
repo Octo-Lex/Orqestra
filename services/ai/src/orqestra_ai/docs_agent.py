@@ -63,7 +63,7 @@ async def docs_agent(request: DocsAgentRequest) -> DocsAgentResponse:
     """
     Execute the docs agent: analyze task, propose documentation edits.
 
-    Uses the Z.ai gateway to generate edits, constrained to allowed paths.
+    Uses the centralized AI provider to generate edits, constrained to allowed paths.
     """
     constraints = request.constraints or DocsConstraints()
 
