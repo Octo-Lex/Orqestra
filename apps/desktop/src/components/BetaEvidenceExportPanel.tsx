@@ -17,6 +17,10 @@ export const BetaEvidenceExportPanel: React.FC<BetaEvidenceExportPanelProps> = (
   const [ackLocalOnly, setAckLocalOnly] = useState(false);
   const [exportPath, setExportPath] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  // v2.14.11: Feedback capture fields
+  const [feedbackText, setFeedbackText] = useState('');
+  const [frictionRating, setFrictionRating] = useState<number | null>(null);
+  const [wouldContinue, setWouldContinue] = useState<boolean | null>(null);
 
   const canExport = ackRedaction && ackLocalOnly;
 
@@ -58,6 +62,33 @@ export const BetaEvidenceExportPanel: React.FC<BetaEvidenceExportPanelProps> = (
         },
         steps,
         failures: failures.length > 0 ? failures : null,
+        // v2.14.11: Pass actual user feedback so beta-feedback.json is populated
+        feedback: feedbackText.trim() || wouldContinue !== null ? {
+          feedback_type: 'external_beta',
+          role: 'developer',
+          experience_level: 'intermediate',
+          ratings: {
+            overall_confidence: frictionRating !== null ? (10 - frictionRating) : null,
+            install_clarity: null,
+            onboarding_clarity: null,
+            readiness_clarity: null,
+            pm_views_usefulness: null,
+            ai_degraded_mode_clarity: null,
+            dashboard_evidence_clarity: null,
+          },
+          free_text: {
+            what_worked: null,
+            what_confused_you: null,
+            what_blocked_you: null,
+            what_should_change_before_wider_beta: feedbackText.trim() || null,
+          },
+          share_permission: {
+            allow_aggregate_use: true,
+            allow_quote_use: !!ackRedaction,
+          },
+          _v2_14_11_friction_rating: frictionRating,
+          _v2_14_11_would_continue: wouldContinue,
+        } : null,
       }) as { ok: boolean; path?: string; files?: string[]; code?: string };
 
       if (result.ok) {
@@ -134,6 +165,46 @@ export const BetaEvidenceExportPanel: React.FC<BetaEvidenceExportPanelProps> = (
             <li>Full file contents</li>
             <li>Remote URLs containing credentials</li>
           </ul>
+        </div>
+
+        <div style={styles.section}>
+          <h4 style={styles.sectionTitle}>Your Feedback</h4>
+          <p style={styles.feedbackHint}>
+            Your feedback will be included in the evidence bundle.
+            It helps improve the onboarding experience for future beta participants.
+          </p>
+          <textarea
+            style={styles.feedbackInput}
+            placeholder="What worked? What was confusing? What should change?"
+            value={feedbackText}
+            onChange={(e) => setFeedbackText(e.target.value)}
+            rows={4}
+          />
+          <div style={styles.ratingRow}>
+            <span style={styles.ratingLabel}>Friction level (0=smooth, 10=blocked):</span>
+            {[0,1,2,3,4,5,6,7,8,9,10].map(n => (
+              <button
+                key={n}
+                style={{
+                  ...styles.ratingBtn,
+                  backgroundColor: frictionRating === n ? '#6366f1' : 'transparent',
+                  color: frictionRating === n ? '#fff' : '#94a3b8',
+                }}
+                onClick={() => setFrictionRating(n)}
+              >{n}</button>
+            ))}
+          </div>
+          <div style={styles.ratingRow}>
+            <span style={styles.ratingLabel}>Would you continue using Orqestra?</span>
+            <button
+              style={{ ...styles.youNoBtn, backgroundColor: wouldContinue === true ? '#22c55e' : 'transparent', color: wouldContinue === true ? '#fff' : '#94a3b8' }}
+              onClick={() => setWouldContinue(true)}
+            >Yes</button>
+            <button
+              style={{ ...styles.youNoBtn, backgroundColor: wouldContinue === false ? '#ef4444' : 'transparent', color: wouldContinue === false ? '#fff' : '#94a3b8' }}
+              onClick={() => setWouldContinue(false)}
+            >No</button>
+          </div>
         </div>
 
         <div style={styles.consentSection}>
@@ -308,5 +379,52 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '12px',
     color: '#64748b',
     margin: '4px 0 0 0',
+  },
+  // v2.14.11: Feedback capture styles
+  feedbackHint: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    margin: '0 0 8px 0',
+    lineHeight: '1.4',
+  },
+  feedbackInput: {
+    width: '100%',
+    padding: '8px',
+    borderRadius: '6px',
+    border: '1px solid #475569',
+    backgroundColor: '#0f172a',
+    color: '#e2e8f0',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    resize: 'vertical' as const,
+    marginBottom: '8px',
+    boxSizing: 'border-box' as const,
+  },
+  ratingRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    marginBottom: '8px',
+    flexWrap: 'wrap' as const,
+  },
+  ratingLabel: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    marginRight: '4px',
+  },
+  ratingBtn: {
+    padding: '2px 8px',
+    borderRadius: '4px',
+    border: '1px solid #475569',
+    fontSize: '11px',
+    cursor: 'pointer',
+    minWidth: '28px',
+  },
+  youNoBtn: {
+    padding: '4px 12px',
+    borderRadius: '4px',
+    border: '1px solid #475569',
+    fontSize: '12px',
+    cursor: 'pointer',
   },
 };

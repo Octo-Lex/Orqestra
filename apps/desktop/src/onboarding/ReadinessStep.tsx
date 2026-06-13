@@ -23,16 +23,22 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // v2.14.11: Both calls are async on the Rust side now (spawn_blocking).
+    // They won't freeze the UI even if they take several seconds.
     getReadiness(projectRoot || undefined).then(r => {
       setReport(r);
       setLoading(false);
     }).catch(() => setLoading(false));
 
-    // v2.11.0: Fetch beta readiness summary
     invoke('get_beta_readiness_cmd', { projectRoot: projectRoot || null })
       .then((data) => setBetaReadiness(data as typeof betaReadiness))
       .catch(() => { /* beta readiness is optional */ });
   }, [projectRoot]);
+
+  // v2.14.11: Determine actionable state for the user
+  const aiAvailable = betaReadiness?.checks?.ai_service_reachable === true ||
+    (report?.ai.service_status === 'reachable');
+  const repoSelected = !!projectRoot;
 
   const statusColor = (status: string) => {
     switch (status) {
@@ -50,10 +56,56 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
         <h2 style={styles.heading}>Environment Readiness</h2>
       </div>
 
-      {loading && <p style={styles.loading}>Checking environment...</p>}
+      {/* v2.14.11: Guided Next Steps Panel */}
+      <div style={styles.guidedPanel}>
+        <h3 style={styles.guidedTitle}>📋 Next Steps</h3>
+        <ol style={styles.guidedList}>
+          <li style={repoSelected ? styles.stepDone : styles.stepCurrent}>
+            {repoSelected ? '✅' : '👉'} <strong>Open a repository</strong>
+            {repoSelected
+              ? ` — ${projectRoot}`
+              : ' — Click "Open Workspace" below to select a Git repository'}
+          </li>
+          <li style={styles.stepPending}>
+            ⬜ <strong>Review environment</strong> — Check the status items below
+          </li>
+          <li style={aiAvailable ? styles.stepDone : styles.stepOptional}>
+            {aiAvailable ? '✅' : '⚙️'} <strong>AI agents</strong>
+            {aiAvailable
+              ? ' — AI service is available. Try the docs or bugfix agent.'
+              : ' — Optional. AI service is not configured. You can still use project management, Git, and evidence export without it.'}
+          </li>
+          <li style={styles.stepPending}>
+            ⬜ <strong>Export beta evidence</strong> — When you're done testing, export a bundle below
+          </li>
+        </ol>
+      </div>
 
+      {/* Actionable status banner */}
+      {betaReadiness && (
+        <div style={{
+          ...styles.statusBanner,
+          backgroundColor: betaReadiness.readiness === 'ready' ? '#14532d' :
+            '#78350f',
+        }}>
+          {betaReadiness.readiness === 'ready'
+            ? '✅ Ready — all core features available'
+            : '⚠️ Ready with warnings — some features are limited (see below)'}
+          {!aiAvailable && (
+            <span style={styles.statusNote}>
+              {' — '}Agent features need AI service. Everything else works.
+            </span>
+          )}
+        </div>
+      )}
+
+      {loading && <p style={styles.loading}>Checking environment... (this won't freeze the app)</p>}
+
+      {/* Collapsible details */}
       {report && (
-        <>
+        <details style={styles.detailsSection}>
+          <summary style={styles.detailsSummary}>Technical Details</summary>
+
           {/* App info */}
           <div style={styles.section}>
             <h3 style={styles.sectionTitle}>Application</h3>
@@ -82,7 +134,7 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
 
           {/* AI */}
           <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>AI Service</h3>
+            <h3 style={styles.sectionTitle}>AI Service {!aiAvailable && <span style={styles.optionalBadge}>optional</span>}</h3>
             <div style={styles.row}>
               <span>Service</span>
               <span style={{ color: statusColor(report.ai.service_status) }}>
@@ -95,15 +147,14 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
                 {report.ai.api_key_status}
               </span>
             </div>
-            <div style={styles.row}>
-              <span>Mode</span>
-              <span style={{ color: statusColor(report.ai.mode) }}>
-                {report.ai.mode === 'real' ? 'Real AI enabled' :
-                 report.ai.mode === 'degraded_mock' ? 'Degraded (mock)' : 'Unavailable'}
-              </span>
-            </div>
             {report.ai.last_error && (
               <p style={styles.errorNote}>{report.ai.last_error}</p>
+            )}
+            {!aiAvailable && (
+              <p style={styles.hintNote}>
+                AI service is optional. To enable agents, start the Python AI service
+                and configure an API key. Project management and evidence export work without it.
+              </p>
             )}
           </div>
 
@@ -122,23 +173,6 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
             </div>
           </div>
 
-          {/* Dashboard */}
-          <div style={styles.section}>
-            <h3 style={styles.sectionTitle}>Dashboard</h3>
-            <div style={styles.row}>
-              <span>Local JSON</span>
-              <span style={{ color: statusColor(report.dashboard.local_json) }}>
-                {report.dashboard.local_json}
-              </span>
-            </div>
-            <div style={styles.row}>
-              <span>Live URL</span>
-              <span style={{ color: statusColor(report.dashboard.live_url_status) }}>
-                {report.dashboard.live_url_status}
-              </span>
-            </div>
-          </div>
-
           {/* Warnings */}
           {report.warnings.length > 0 && (
             <div style={styles.section}>
@@ -151,83 +185,25 @@ export const ReadinessStep: React.FC<Props> = ({ projectRoot, onComplete, onBack
               ))}
             </div>
           )}
-
-          {/* v2.11.0: Beta Readiness Summary */}
-          {betaReadiness && (
-            <div style={styles.section}>
-              <h3 style={styles.sectionTitle}>Beta Readiness</h3>
-              <div style={{
-                ...styles.readinessBadge,
-                backgroundColor: betaReadiness.readiness === 'ready' ? '#166534' :
-                  betaReadiness.blocking ? '#7f1d1d' : '#92400e',
-              }}>
-                {betaReadiness.readiness === 'ready' ? '✓ Ready' :
-                 betaReadiness.blocking ? '✗ Blocked' : '⚠ Ready with Warnings'}
-              </div>
-
-              {/* Checks */}
-              <div style={{ marginTop: '8px' }}>
-                {Object.entries(betaReadiness.checks).map(([key, value]) => (
-                  <div key={key} style={styles.row}>
-                    <span>{key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
-                    <span style={{ color: value === true ? '#22c55e' : value === false ? '#ef4444' : '#94a3b8' }}>
-                      {value === true ? '✓' : value === false ? '✗' : '? unknown'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Repo details */}
-              {betaReadiness.repo.detected && (
-                <div style={{ marginTop: '8px' }}>
-                  <div style={styles.row}>
-                    <span>Branch</span>
-                    <span style={{ color: '#e2e8f0' }}>{betaReadiness.repo.branch}</span>
-                  </div>
-                  <div style={styles.row}>
-                    <span>Working Tree</span>
-                    <span style={{ color: betaReadiness.repo.dirty ? '#f59e0b' : '#22c55e' }}>
-                      {betaReadiness.repo.dirty ? 'Dirty (uncommitted changes)' : 'Clean'}
-                    </span>
-                  </div>
-                  <div style={styles.row}>
-                    <span>Remote</span>
-                    <span style={{ color: betaReadiness.repo.remote_configured ? '#22c55e' : '#f59e0b' }}>
-                      {betaReadiness.repo.remote_configured ? 'Configured' : 'Not configured'}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Blocked features */}
-              {betaReadiness.blocked_features.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
-                  <div style={styles.sectionTitle}>Blocked Features</div>
-                  {betaReadiness.blocked_features.map((f, i) => (
-                    <div key={i} style={{ ...styles.row, color: '#f59e0b' }}>
-                      ⚠ {f.replace(/_/g, ' ')}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* AI degraded guidance */}
-              {!betaReadiness.checks.ai_service_reachable && (
-                <div style={styles.degradedGuidance}>
-                  AI service unavailable. Project management, roadmap views, Git history, and dashboard export remain available. Agent execution requires the local AI service (localhost:8000) to be running.
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* v2.12.0: Beta Evidence Export */}
-          <BetaEvidenceExportPanel projectRoot={projectRoot} betaReadiness={betaReadiness} />
-
-          <button style={styles.completeBtn} onClick={onComplete}>
-            Open Workspace
-          </button>
-        </>
+        </details>
       )}
+
+      {/* Beta readiness warnings (non-blocking) */}
+      {betaReadiness && betaReadiness.warnings.length > 0 && (
+        <div style={styles.warningsPanel}>
+          <h3 style={styles.sectionTitle}>Notices</h3>
+          {betaReadiness.warnings.map((w, i) => (
+            <div key={i} style={styles.noticeRow}>• {w}</div>
+          ))}
+        </div>
+      )}
+
+      {/* v2.12.0: Beta Evidence Export (with feedback capture) */}
+      <BetaEvidenceExportPanel projectRoot={projectRoot} betaReadiness={betaReadiness} />
+
+      <button style={styles.completeBtn} onClick={onComplete}>
+        Open Workspace
+      </button>
     </div>
   );
 };
@@ -253,26 +229,90 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     color: '#f1f5f9',
   },
+  // v2.14.11: Guided panel
+  guidedPanel: {
+    backgroundColor: '#1e293b',
+    borderRadius: '8px',
+    padding: '16px',
+    marginBottom: '12px',
+    border: '1px solid #334155',
+  },
+  guidedTitle: {
+    fontSize: '14px',
+    fontWeight: 600,
+    color: '#f1f5f9',
+    margin: '0 0 12px 0',
+  },
+  guidedList: {
+    fontSize: '13px',
+    color: '#cbd5e1',
+    lineHeight: '2',
+    paddingLeft: '20px',
+    margin: 0,
+  },
+  stepDone: {
+    color: '#22c55e',
+  },
+  stepCurrent: {
+    color: '#6366f1',
+    fontWeight: 600,
+  },
+  stepPending: {
+    color: '#64748b',
+  },
+  stepOptional: {
+    color: '#f59e0b',
+  },
+  // v2.14.11: Status banner
+  statusBanner: {
+    padding: '10px 12px',
+    borderRadius: '6px',
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#fff',
+    marginBottom: '12px',
+  },
+  statusNote: {
+    fontWeight: 400,
+    fontSize: '12px',
+    opacity: 0.9,
+  },
   loading: {
     color: '#94a3b8',
     fontSize: '13px',
     textAlign: 'center' as const,
+    padding: '8px',
+  },
+  // Collapsible technical details
+  detailsSection: {
+    marginBottom: '12px',
+    backgroundColor: '#111827',
+    borderRadius: '8px',
+    padding: '8px 12px',
+  },
+  detailsSummary: {
+    cursor: 'pointer',
+    fontSize: '13px',
+    color: '#64748b',
+    fontWeight: 600,
+    padding: '4px 0',
   },
   section: {
-    marginBottom: '16px',
+    marginBottom: '12px',
+    marginTop: '8px',
   },
   sectionTitle: {
-    fontSize: '13px',
+    fontSize: '12px',
     fontWeight: 600,
-    color: '#94a3b8',
+    color: '#64748b',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.5px',
-    margin: '0 0 8px 0',
+    margin: '0 0 6px 0',
   },
   row: {
     display: 'flex',
     justifyContent: 'space-between',
-    padding: '4px 0',
+    padding: '3px 0',
     fontSize: '13px',
     color: '#e2e8f0',
   },
@@ -281,8 +321,24 @@ const styles: Record<string, React.CSSProperties> = {
     color: '#f59e0b',
     margin: '4px 0 0 0',
   },
+  hintNote: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    margin: '6px 0 0 0',
+    lineHeight: '1.4',
+  },
+  optionalBadge: {
+    fontSize: '10px',
+    backgroundColor: '#3730a3',
+    color: '#c7d2fe',
+    padding: '1px 6px',
+    borderRadius: '4px',
+    marginLeft: '6px',
+    textTransform: 'none' as const,
+    letterSpacing: '0',
+  },
   warningCard: {
-    fontSize: '13px',
+    fontSize: '12px',
     color: '#e2e8f0',
     padding: '8px',
     backgroundColor: '#1e1e2e',
@@ -290,9 +346,21 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: '6px',
   },
   recovery: {
-    fontSize: '12px',
+    fontSize: '11px',
     color: '#94a3b8',
     margin: '4px 0 0 0',
+  },
+  // Warnings panel
+  warningsPanel: {
+    backgroundColor: '#1e1e2e',
+    borderRadius: '8px',
+    padding: '12px',
+    marginBottom: '12px',
+  },
+  noticeRow: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    lineHeight: '1.6',
   },
   completeBtn: {
     width: '100%',
@@ -305,23 +373,5 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     cursor: 'pointer',
     marginTop: '16px',
-  },
-  readinessBadge: {
-    display: 'inline-block',
-    padding: '6px 12px',
-    borderRadius: '6px',
-    fontSize: '13px',
-    fontWeight: 600,
-    color: '#fff',
-    marginBottom: '8px',
-  },
-  degradedGuidance: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    backgroundColor: '#1e1e2e',
-    padding: '8px',
-    borderRadius: '6px',
-    marginTop: '8px',
-    lineHeight: '1.4',
   },
 };

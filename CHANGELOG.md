@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.14.11] - 2026-06-13
+
+### Fixed
+- **P0-1**: Environment readiness checks moved to `spawn_blocking` — no more UI freeze / Windows "not responding" during scan
+- **P0-2**: Beta readiness no longer duplicates the full environment scan internally
+- **P0-3**: Replaced raw technical status dump with guided "Next Steps" panel. Technical details collapsed by default.
+- **P0-4**: Beta evidence export now captures actual user feedback (free text, friction rating, would-continue) instead of writing "no feedback provided"
+- **P1**: Missing `roadmap/` directory is no longer marked as blocking — it's an optional notice
+- **P1**: AI service unavailable degrades only agent execution, not the whole beta path
+- **P1**: Readiness label never says "Blocked" for missing optional features
+
+### Changed
+- `get_readiness_cmd` and `get_beta_readiness_cmd` are now `async fn` with `spawn_blocking`
+- Internal sync helpers (`get_readiness_impl`, `get_beta_readiness_impl`) extracted for testability
+- `ReadinessStep.tsx` rewritten with guided onboarding flow
+- `BetaEvidenceExportPanel.tsx` now includes feedback input fields
+
+### Non-scope
+- Evidence status remains `none`, `external_beta_user_data: false`
+- No external validation claim
+- F4 (architect JSON truncation) remains P2, deferred
+
 ## [2.14.10] - 2026-06-13
 
 ### Fixed

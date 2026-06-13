@@ -99,7 +99,20 @@ pub struct ReadinessWarning {
 // ---------------------------------------------------------------------------
 
 #[command]
-pub fn get_readiness_cmd(project_root: Option<String>) -> CommandResult<ReadinessReport> {
+pub async fn get_readiness_cmd(project_root: Option<String>) -> CommandResult<ReadinessReport> {
+    // v2.14.11: Run on blocking thread pool to avoid freezing the UI.
+    // The readiness checks spawn subprocesses and make HTTP requests
+    // that can take 5-10 seconds total.
+    tokio::task::spawn_blocking(move || {
+        get_readiness_impl(project_root)
+    })
+    .await
+    .map_err(|e| CommandError {
+        code: "READINESS_THREAD_ERROR",
+        message: format!("Readiness check thread failed: {}", e),
+    })?}
+
+pub fn get_readiness_impl(project_root: Option<String>) -> CommandResult<ReadinessReport> {
     let generated_at = chrono::Utc::now().to_rfc3339();
 
     // App info
