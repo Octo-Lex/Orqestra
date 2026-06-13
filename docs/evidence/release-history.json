@@ -113,6 +113,44 @@
         "total": 957
       },
       "label": "Relay Security & Release Truth Hotfix"
+    },
+    "v2.14.9": {
+      "date": "2026-06-13",
+      "type": "hotfix",
+      "summary": "Release Artifact Pipeline Correction",
+      "changes": [
+        "create-release dist/ creation fix",
+        "final_artifact_state on all artifacts",
+        "Platform status built-but-unverified for CI-only builds"
+      ],
+      "tests": {
+        "rust": 831,
+        "worker": 50,
+        "dashboard": 53,
+        "python": 23,
+        "total": 957
+      },
+      "label": "Release Artifact Pipeline Correction"
+    },
+    "v2.14.10": {
+      "date": "2026-06-13",
+      "type": "hotfix",
+      "summary": "External Repo Empty-State Hotfix (dogfooding-driven)",
+      "changes": [
+        "F1: Missing roadmap/ directory no longer crashes deps/export (P0 beta blocker)",
+        "F2: Provider API path configurable via ORQESTRA_AI_API_PATH",
+        "F3: Provider timeout increased from 45s to 120s",
+        "3 Rust regression tests for empty-roadmap state",
+        "3 Python provider tests for API path and timeout"
+      ],
+      "tests": {
+        "rust": 834,
+        "worker": 50,
+        "dashboard": 53,
+        "python": 26,
+        "total": 963
+      },
+      "label": "External Repo Empty-State Hotfix"
     }
   }
 }
