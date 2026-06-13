@@ -382,3 +382,91 @@ fn parse_artifact_type(s: &str) -> CommandResult<ArtifactType> {
     serde_json::from_value(serde_json::Value::String(s.to_string()))
         .map_err(|e| format!("Unknown artifact type '{}': {}", s, e))
 }
+
+// ---------------------------------------------------------------------------
+// Orient stage — mechanical repo scan
+// ---------------------------------------------------------------------------
+
+/// Run the Orient stage: scan repo and generate project knowledge pack.
+#[command]
+pub fn lifecycle_run_orient_cmd(project_root: String) -> CommandResult<serde_json::Value> {
+    let root = Path::new(&project_root);
+    let profile = super::orient::run_orient(root).map_err(|e| e)?;
+    Ok(serde_json::json!({
+        "ok": true,
+        "profile": profile,
+    }))
+}
+
+// ---------------------------------------------------------------------------
+// Discover stage — feature intake
+// ---------------------------------------------------------------------------
+
+/// Create a feature intake record (Discover stage).
+#[command]
+pub fn lifecycle_create_intake_cmd(
+    project_root: String,
+    feature_title: String,
+    problem_brief: String,
+    affected_users: String,
+    repo_area: String,
+    constraints: String,
+    out_of_scope: String,
+) -> CommandResult<serde_json::Value> {
+    let root = Path::new(&project_root);
+
+    // Generate feature ID
+    let feature_id = format!("feat-{}", chrono::Utc::now().timestamp());
+
+    // Ensure feature directory
+    let lifecycle = super::event_log::lifecycle_root(root);
+    let feature_dir = lifecycle.join("features").join(&feature_id).join("intake");
+    std::fs::create_dir_all(&feature_dir).map_err(err)?;
+
+    // Write problem-brief.md
+    let brief = format!(
+        "# Feature: {}\n\n## Problem Brief\n{}\n\n## Affected Users\n{}\n\n## Repo Area\n{}\n\n## Constraints\n{}\n\n## Out of Scope\n{}\n",
+        feature_title, problem_brief, affected_users, repo_area, constraints, out_of_scope
+    );
+    std::fs::write(feature_dir.join("problem-brief.md"), &brief).map_err(err)?;
+
+    // Write assumptions.json (user must fill)
+    let assumptions = serde_json::json!({
+        "schema_version": 1,
+        "assumptions": [],
+        "note": "Add explicit assumptions before requesting gate approval."
+    });
+    std::fs::write(
+        feature_dir.join("assumptions.json"),
+        serde_json::to_string_pretty(&assumptions).map_err(err)?,
+    ).map_err(err)?;
+
+    // Write open-questions.md (user must fill)
+    std::fs::write(
+        feature_dir.join("open-questions.md"),
+        "# Open Questions\n\n- [ ] Add unresolved questions that block definition\n",
+    ).map_err(err)?;
+
+    // Record artifacts
+    let timestamp = chrono::Utc::now().to_rfc3339();
+    for (art_type, path) in [
+        (ArtifactType::ProblemBrief, format!("features/{}/intake/problem-brief.md", feature_id)),
+        (ArtifactType::Assumptions, format!("features/{}/intake/assumptions.json", feature_id)),
+        (ArtifactType::OpenQuestions, format!("features/{}/intake/open-questions.md", feature_id)),
+    ] {
+        let event = LifecycleEvent::ArtifactCreated {
+            artifact_type: art_type,
+            path,
+            feature_id: Some(feature_id.clone()),
+            timestamp: timestamp.clone(),
+            actor: "human".to_string(),
+        };
+        let _ = super::event_log::append_event(root, &event);
+    }
+
+    Ok(serde_json::json!({
+        "ok": true,
+        "feature_id": feature_id,
+        "path": format!("features/{}/intake/", feature_id),
+    }))
+}

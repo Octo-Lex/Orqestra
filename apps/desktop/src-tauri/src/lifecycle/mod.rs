@@ -5,4 +5,5 @@
 
 pub mod commands;
 pub mod event_log;
+pub mod orient;
 pub mod types;

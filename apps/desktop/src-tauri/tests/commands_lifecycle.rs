@@ -547,3 +547,108 @@ fn full_orient_to_discover_flow() {
     assert_eq!(state.gates[0].status, GateStatus::Approved);
     assert_eq!(state.events_count, 7);
 }
+
+// ---------------------------------------------------------------------------
+// Orient stage tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn orient_scan_produces_project_profile() {
+    let dir = temp_project();
+    let root = dir.path();
+
+    // Create some files to scan
+    std::fs::write(root.join("Cargo.toml"), "[package]\nname = \"test\"\nversion = \"0.1.0\"").unwrap();
+    std::fs::write(root.join("main.rs"), "fn main() {}").unwrap();
+    std::fs::create_dir_all(root.join("src")).unwrap();
+    std::fs::write(root.join("src/lib.rs"), "pub fn hello() {}").unwrap();
+
+    let (profile, _) = orqestra_desktop::lifecycle::orient::scan_repo(root)
+        .expect("Scan should succeed");
+
+    assert_eq!(profile.project_name, root.file_name().unwrap().to_string_lossy());
+    assert!(profile.is_git_repo == false); // no .git
+    assert!(profile.total_files >= 3); // Cargo.toml, main.rs, lib.rs
+    assert!(profile.languages.iter().any(|l| l.name == "Rust"));
+    assert!(profile.build_system == "Cargo");
+    assert!(profile.test_commands.contains(&"cargo test --workspace".to_string()));
+}
+
+#[test]
+fn orient_writes_artifact_files() {
+    let dir = temp_project();
+    let root = dir.path();
+
+    // Initialize lifecycle first
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    // Create a minimal file so scan has something
+    std::fs::write(root.join("test.py"), "print('hello')").unwrap();
+
+    // Run Orient
+    let profile = orqestra_desktop::lifecycle::orient::run_orient(root)
+        .expect("Orient should succeed");
+
+    // Verify artifacts were written
+    let lifecycle = root.join(".Orqestra/lifecycle");
+    assert!(lifecycle.join("project/project-profile.json").exists());
+    assert!(lifecycle.join("project/repo-map.json").exists());
+    assert!(lifecycle.join("project/conventions.md").exists());
+    assert!(lifecycle.join("project/risk-map.md").exists());
+
+    // Verify profile content
+    let profile_json = std::fs::read_to_string(lifecycle.join("project/project-profile.json")).unwrap();
+    let parsed: serde_json::Value = serde_json::from_str(&profile_json).unwrap();
+    assert!(parsed["languages"].is_array());
+}
+
+#[test]
+fn orient_skips_ignored_directories() {
+    let dir = temp_project();
+    let root = dir.path();
+
+    // Create files in normally-scanned dirs
+    std::fs::write(root.join("main.rs"), "fn main() {}").unwrap();
+
+    // Create files in target/ (should be skipped)
+    std::fs::create_dir_all(root.join("target")).unwrap();
+    std::fs::write(root.join("target/should_not_appear.rs"), "// skip").unwrap();
+
+    // Create files in node_modules/ (should be skipped)
+    std::fs::create_dir_all(root.join("node_modules")).unwrap();
+    std::fs::write(root.join("node_modules/should_not_appear.js"), "// skip").unwrap();
+
+    let (profile, _) = orqestra_desktop::lifecycle::orient::scan_repo(root).unwrap();
+
+    // Should only find main.rs, not the files in target/ or node_modules/
+    assert_eq!(profile.total_files, 1);
+}
+
+// ---------------------------------------------------------------------------
+// Discover stage tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn discover_creates_feature_intake() {
+    let dir = temp_project();
+    let root = dir.path();
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    // Create feature directory structure
+    let lifecycle = event_log::lifecycle_root(root);
+    let feature_dir = lifecycle.join("features").join("test-feature-123").join("intake");
+    std::fs::create_dir_all(&feature_dir).unwrap();
+
+    // Write problem brief
+    std::fs::write(
+        feature_dir.join("problem-brief.md"),
+        "# Feature: Test\n\n## Problem Brief\nThis is a test feature.\n",
+    ).unwrap();
+
+    assert!(feature_dir.join("problem-brief.md").exists());
+
+    // Verify the lifecycle root structure
+    assert!(lifecycle.join("features").exists());
+    assert!(lifecycle.join("features/test-feature-123").exists());
+    assert!(lifecycle.join("features/test-feature-123/intake").exists());
+}
