@@ -15,7 +15,8 @@ use md_indexer::coordinator::parse_coordinator;
 use md_indexer::evidence_schema::validate_evidence_dir;
 use md_indexer::graph::render_dot;
 use md_indexer::index_roadmap;
-use md_indexer::types::TaskStatus;
+use md_indexer::types::{IndexResult, TaskStatus};
+use md_indexer::error::IndexerError;
 
 #[derive(Parser)]
 #[command(name = "orqestra")]
@@ -162,8 +163,18 @@ fn main() {
 
     let roadmap_dir = cli.project_root.join("roadmap");
 
+    // F1 (v2.14.10): A missing roadmap/ directory is NOT an error.
+    // External repos without roadmap/ get an empty-state result.
+    // Only other indexer errors (IO, parse) are fatal.
     let result = match index_roadmap(&roadmap_dir) {
         Ok(r) => r,
+        Err(IndexerError::DirectoryNotFound(_)) => {
+            eprintln!("warning: no roadmap/ directory found — treating as empty roadmap");
+            IndexResult {
+                tasks: Vec::new(),
+                errors: Vec::new(),
+            }
+        }
         Err(e) => {
             eprintln!("error: {}", e);
             process::exit(1);
@@ -561,5 +572,68 @@ mod evidence_export_tests {
         assert_eq!(max_cap, 10, "max_session_cap in evidence must be 10");
         let auto_commit = policy.get("auto_commit").unwrap().as_bool().unwrap();
         assert!(!auto_commit, "auto_commit in evidence must be false");
+    }
+
+    // -----------------------------------------------------------------------
+    // v2.14.10: External repo empty-state regression tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_export_with_no_roadmap_directory() {
+        // F1 regression: export must succeed on a repo with no roadmap/
+        let tmp = tempfile::tempdir().unwrap();
+        let project_root = tmp.path();
+        let roadmap_dir = project_root.join("roadmap");
+        // Intentionally do NOT create roadmap_dir
+
+        // Simulate the main() empty-state path: DirectoryNotFound → empty result
+        let result = match md_indexer::index_roadmap(&roadmap_dir) {
+            Ok(r) => r,
+            Err(md_indexer::error::IndexerError::DirectoryNotFound(_)) => {
+                md_indexer::types::IndexResult {
+                    tasks: Vec::new(),
+                    errors: Vec::new(),
+                }
+            }
+            Err(e) => panic!("unexpected error: {}", e),
+        };
+
+        assert!(result.tasks.is_empty());
+        assert!(result.errors.is_empty());
+
+        // build_export must still produce valid output
+        let export = build_export(&result.tasks, &roadmap_dir, project_root);
+        assert_eq!(export.summary.total_tasks, 0);
+        assert_eq!(export.summary.done, 0);
+        assert!(export.tasks.is_empty());
+        // Sprints should be empty (no _index.md)
+        assert!(export.sprints.is_empty());
+    }
+
+    #[test]
+    fn test_deps_render_with_no_tasks() {
+        // F1 regression: deps must render an empty graph, not crash
+        let tasks: Vec<md_indexer::types::Task> = Vec::new();
+        let mut buf = Vec::new();
+        // render_dot should handle empty task list
+        let result = render_dot(&tasks, &mut buf);
+        assert!(result.is_ok(), "render_dot should handle empty tasks");
+        let output = String::from_utf8(buf).unwrap();
+        assert!(output.contains("digraph"), "output should still be valid DOT");
+    }
+
+    #[test]
+    fn test_index_roadmap_missing_dir_returns_correct_error_variant() {
+        // F1 regression: missing directory must return DirectoryNotFound,
+        // not some other error variant
+        let tmp = tempfile::tempdir().unwrap();
+        let missing = tmp.path().join("nonexistent-roadmap");
+
+        let result = md_indexer::index_roadmap(&missing);
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            md_indexer::error::IndexerError::DirectoryNotFound(_) => { /* expected */ }
+            other => panic!("expected DirectoryNotFound, got: {}", other),
+        }
     }
 }

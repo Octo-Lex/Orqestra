@@ -21,6 +21,9 @@ from typing import Optional
 # The authoritative provider path. Desktop calls localhost; the Python
 # service routes to whatever backend is configured here.
 _BASE_URL = os.environ.get("ORQESTRA_AI_BASE_URL", "http://localhost:18321")
+# Allow callers to override the API path suffix. Default is OpenAI-compatible.
+# Some providers (e.g. ZhipuAI v4) use a different path.
+_API_PATH = os.environ.get("ORQESTRA_AI_API_PATH", "/v1/chat/completions")
 _API_KEY = os.environ.get("ORQESTRA_AI_API_KEY", "")
 _MODEL = os.environ.get("ORQESTRA_AI_MODEL", "local-default")
 
@@ -110,8 +113,8 @@ async def call_ai(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            url = f"{_BASE_URL.rstrip('/')}/v1/chat/completions"
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            url = f"{_BASE_URL.rstrip('/')}{_API_PATH}"
             response = await client.post(url, headers=headers, json=payload)
             response.raise_for_status()
     except httpx.ConnectError as e:

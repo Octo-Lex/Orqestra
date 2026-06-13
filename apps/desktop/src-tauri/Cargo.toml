@@ -1,6 +1,6 @@
 [package]
 name = "orqestra-desktop"
-version = "2.14.9"
+version = "2.14.10"
 edition = "2021"
 
 [lib]

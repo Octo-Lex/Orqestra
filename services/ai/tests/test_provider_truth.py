@@ -108,6 +108,39 @@ class TestProviderConfiguration:
         assert "z.ai" not in json_str
 
 
+class TestProviderApiPathConfigurable:
+    """v2.14.10 (F2): Provider API path must be configurable via env var."""
+
+    def test_default_api_path_is_openai_compatible(self, monkeypatch):
+        monkeypatch.delenv("ORQESTRA_AI_API_PATH", raising=False)
+        import importlib
+        import orqestra_ai.provider as provider_mod
+        importlib.reload(provider_mod)
+        assert provider_mod._API_PATH == "/v1/chat/completions"
+
+    def test_custom_api_path_can_be_set(self, monkeypatch):
+        monkeypatch.setenv("ORQESTRA_AI_API_PATH", "/chat/completions")
+        import importlib
+        import orqestra_ai.provider as provider_mod
+        importlib.reload(provider_mod)
+        assert provider_mod._API_PATH == "/chat/completions"
+
+
+class TestProviderTimeout:
+    """v2.14.10 (F3): Provider timeout must be 120s, not 45s."""
+
+    def test_timeout_is_120_seconds(self):
+        import inspect
+        from orqestra_ai.provider import call_ai
+        source = inspect.getsource(call_ai)
+        assert "120.0" in source, (
+            "call_ai timeout must be 120.0s for remote provider compatibility"
+        )
+        assert "45.0" not in source, (
+            "call_ai timeout must not be the old 45.0s value"
+        )
+
+
 # ---------------------------------------------------------------------------
 # Error states
 # ---------------------------------------------------------------------------

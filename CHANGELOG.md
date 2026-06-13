@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
+## [2.14.10] - 2026-06-13
+
+### Fixed
+- **P0 (F1)**: `orqestra deps` and `export` no longer crash on repos without `roadmap/` directory. Missing directory treated as empty roadmap with stderr warning. Exit code 0. Uncovered by dogfooding against QwenPaw repository.
+- **P1 (F2)**: Provider API path now configurable via `ORQESTRA_AI_API_PATH` env var (default `/v1/chat/completions`). Enables non-OpenAI providers like ZhipuAI.
+- **P1 (F3)**: Provider timeout increased from 45s to 120s for remote provider compatibility.
+
+### Added
+- 3 Rust regression tests: empty-roadmap export, empty-task DOT render, DirectoryNotFound error variant verification
+- 3 Python provider tests: default API path, custom API path, timeout value assertion
+
+### Non-scope
+- Evidence status remains `none`, `external_beta_user_data: false`
+- No external validation claim
+- F4–F6 (architect JSON parse, bugfix 422 UX, complex prompt timeout) deferred to post-beta hardening
+
 ## [2.14.1] - 2026-06-11
 
 ### Fixed
