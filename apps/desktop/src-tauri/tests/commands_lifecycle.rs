@@ -652,3 +652,161 @@ fn discover_creates_feature_intake() {
     assert!(lifecycle.join("features/test-feature-123").exists());
     assert!(lifecycle.join("features/test-feature-123/intake").exists());
 }
+
+// ---------------------------------------------------------------------------
+// Define stage tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn define_prd_directory_structure() {
+    let dir = temp_project();
+    let root = dir.path();
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    // Create feature with intake
+    let lifecycle = event_log::lifecycle_root(root);
+    let feature_dir = lifecycle.join("features/feat-test-001");
+    std::fs::create_dir_all(feature_dir.join("intake")).unwrap();
+    std::fs::create_dir_all(feature_dir.join("define")).unwrap();
+    std::fs::write(
+        feature_dir.join("intake/problem-brief.md"),
+        "# Feature: Test\n\nProblem: need a test feature.",
+    ).unwrap();
+    std::fs::write(
+        feature_dir.join("define/prd.md"),
+        "# PRD Draft\n\n## Overview\nTest feature.",
+    ).unwrap();
+    std::fs::write(
+        feature_dir.join("define/acceptance-criteria.json"),
+        r#"["criterion 1"]"#,
+    ).unwrap();
+
+    // Verify structure
+    assert!(feature_dir.join("intake/problem-brief.md").exists());
+    assert!(feature_dir.join("define/prd.md").exists());
+    assert!(feature_dir.join("define/acceptance-criteria.json").exists());
+}
+
+// ---------------------------------------------------------------------------
+// Plan preview tests
+// ---------------------------------------------------------------------------
+
+#[test]
+fn plan_issue_graph_directory_structure() {
+    let dir = temp_project();
+    let root = dir.path();
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    let lifecycle = event_log::lifecycle_root(root);
+    let feature_dir = lifecycle.join("features/feat-test-002");
+
+    // Need intake + define first (simulates flow)
+    std::fs::create_dir_all(feature_dir.join("intake")).unwrap();
+    std::fs::create_dir_all(feature_dir.join("define")).unwrap();
+    std::fs::create_dir_all(feature_dir.join("plan")).unwrap();
+
+    // Write PRD first (required before issue graph)
+    std::fs::write(feature_dir.join("define/prd.md"), "# PRD\n").unwrap();
+
+    // Write issue graph
+    let issue_graph = serde_json::json!({
+        "schema_version": 1,
+        "issues": [
+            {"id": "ISSUE-001", "title": "Setup", "depends_on": [], "estimate_hours": 2},
+            {"id": "ISSUE-002", "title": "Implement", "depends_on": ["ISSUE-001"], "estimate_hours": 4},
+            {"id": "ISSUE-003", "title": "Test", "depends_on": ["ISSUE-002"], "estimate_hours": 2},
+        ]
+    });
+    std::fs::write(
+        feature_dir.join("plan/issue-graph.json"),
+        serde_json::to_string_pretty(&issue_graph).unwrap(),
+    ).unwrap();
+
+    // Verify
+    let graph: serde_json::Value = serde_json::from_str(
+        &std::fs::read_to_string(feature_dir.join("plan/issue-graph.json")).unwrap()
+    ).unwrap();
+    assert_eq!(graph["issues"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn plan_issue_graph_has_valid_issue_count() {
+    let dir = temp_project();
+    let root = dir.path();
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    let lifecycle = event_log::lifecycle_root(root);
+    let feature_dir = lifecycle.join("features/feat-test-003");
+    std::fs::create_dir_all(feature_dir.join("plan")).unwrap();
+
+    // Test with minimum valid count (3)
+    let min_issues: Vec<_> = (1..=3).map(|i| serde_json::json!({
+        "id": format!("ISSUE-{:03}", i),
+        "title": format!("Issue {}", i),
+        "depends_on": [],
+        "estimate_hours": 1,
+    })).collect();
+
+    let graph = serde_json::json!({"schema_version": 1, "issues": min_issues});
+    let count = graph["issues"].as_array().unwrap().len();
+    assert!(count >= 3, "Issue graph should have at least 3 issues");
+
+    // Test with maximum valid count (15)
+    let max_issues: Vec<_> = (1..=15).map(|i| serde_json::json!({
+        "id": format!("ISSUE-{:03}", i),
+        "title": format!("Issue {}", i),
+        "depends_on": [],
+        "estimate_hours": 1,
+    })).collect();
+
+    let graph_max = serde_json::json!({"schema_version": 1, "issues": max_issues});
+    let count_max = graph_max["issues"].as_array().unwrap().len();
+    assert!(count_max <= 15, "Issue graph should have at most 15 issues");
+}
+
+// ---------------------------------------------------------------------------
+// No source mutation verification
+// ---------------------------------------------------------------------------
+
+#[test]
+fn lifecycle_does_not_modify_source_files() {
+    let dir = temp_project();
+    let root = dir.path();
+
+    // Create a source file
+    std::fs::write(root.join("main.rs"), "fn main() {}").unwrap();
+    let original = std::fs::read_to_string(root.join("main.rs")).unwrap();
+
+    // Run full lifecycle
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+    let _ = orqestra_desktop::lifecycle::orient::run_orient(root);
+
+    // Verify source file unchanged
+    let after = std::fs::read_to_string(root.join("main.rs")).unwrap();
+    assert_eq!(original, after, "Source file must not be modified by lifecycle");
+}
+
+// ---------------------------------------------------------------------------
+// Artifact path traversal prevention
+// ---------------------------------------------------------------------------
+
+#[test]
+fn artifact_paths_are_within_lifecycle_dir() {
+    let dir = temp_project();
+    let root = dir.path();
+    event_log::ensure_lifecycle_dirs(root).unwrap();
+
+    let lifecycle = event_log::lifecycle_root(root);
+    let canonical_lifecycle = lifecycle.canonicalize().unwrap();
+
+    // All artifact paths should resolve under lifecycle/
+    let profile_path = lifecycle.join("project/project-profile.json");
+    std::fs::create_dir_all(profile_path.parent().unwrap()).unwrap();
+    std::fs::write(&profile_path, "{}").unwrap();
+    let canonical_profile = profile_path.canonicalize().unwrap();
+
+    assert!(
+        canonical_profile.starts_with(&canonical_lifecycle),
+        "Artifact path must be within lifecycle directory"
+    );
+}

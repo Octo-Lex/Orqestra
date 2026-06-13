@@ -470,3 +470,230 @@ pub fn lifecycle_create_intake_cmd(
         "path": format!("features/{}/intake/", feature_id),
     }))
 }
+
+// ---------------------------------------------------------------------------
+// Define stage — PRD draft generation
+// ---------------------------------------------------------------------------
+
+/// Generate a PRD draft via AI service (Define stage).
+#[command]
+pub async fn lifecycle_generate_prd_cmd(
+    project_root: String,
+    feature_id: String,
+    feature_title: String,
+    problem_brief: String,
+    constraints: String,
+) -> CommandResult<serde_json::Value> {
+    let root = Path::new(&project_root);
+
+    // Verify intake exists
+    let intake_path = format!("features/{}/intake/problem-brief.md", feature_id);
+    let lifecycle = super::event_log::lifecycle_root(root);
+    if !lifecycle.join(&intake_path).exists() {
+        return Err(format!("Cannot generate PRD: intake not found for feature {}", feature_id));
+    }
+
+    // Load project profile if available
+    let profile = std::fs::read_to_string(lifecycle.join("project/project-profile.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str::<serde_json::Value>(&s).ok());
+
+    // Call AI service
+    let client = reqwest::Client::new();
+    let payload = serde_json::json!({
+        "feature_title": feature_title,
+        "problem_brief": problem_brief,
+        "project_profile": profile,
+        "constraints": constraints,
+    });
+
+    let resp = client
+        .post("http://localhost:8000/lifecycle/define/prd")
+        .json(&payload)
+        .timeout(std::time::Duration::from_secs(120))
+        .send()
+        .await;
+
+    match resp {
+        Ok(r) => {
+            let status = r.status();
+            let body: serde_json::Value = r.json().await
+                .map_err(|e| format!("Failed to parse AI response: {}", e))?;
+
+            if status.as_u16() >= 400 {
+                return Err(format!("AI service error {}: {}", status, body));
+            }
+
+            let ok = body.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
+            if !ok {
+                // F4 mitigation: structured error, not crash
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": body.get("error").cloned().unwrap_or(serde_json::Value::Null),
+                    "error_code": body.get("error_code").cloned().unwrap_or(serde_json::Value::Null),
+                    "raw_response_preserved": body.get("raw_response_preserved").cloned().unwrap_or(serde_json::Value::Bool(false)),
+                }));
+            }
+
+            // Write artifacts
+            let define_dir = lifecycle.join(format!("features/{}/define", feature_id));
+            std::fs::create_dir_all(&define_dir).map_err(err)?;
+
+            let prd_md = body.get("prd_markdown")
+                .and_then(|v| v.as_str())
+                .unwrap_or("# PRD Draft\n\n(No content generated)");
+            std::fs::write(define_dir.join("prd.md"), prd_md).map_err(err)?;
+
+            let acceptance = body.get("acceptance_criteria").cloned().unwrap_or(serde_json::json!([]));
+            std::fs::write(define_dir.join("acceptance-criteria.json"),
+                serde_json::to_string_pretty(&acceptance).map_err(err)?).map_err(err)?;
+
+            let non_scope = body.get("non_scope").cloned().unwrap_or(serde_json::json!([]));
+            let non_scope_md = format!("# Non-Scope\n\n{}",
+                non_scope.as_array()
+                    .map(|arr| arr.iter()
+                        .filter_map(|v| v.as_str())
+                        .map(|s| format!("- {}", s))
+                        .collect::<Vec<_>>().join("\n"))
+                    .unwrap_or_else(|| "(none specified)".to_string()));
+            std::fs::write(define_dir.join("non-scope.md"), &non_scope_md).map_err(err)?;
+
+            // Record artifacts
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            for (art_type, path) in [
+                (ArtifactType::Prd, format!("features/{}/define/prd.md", feature_id)),
+                (ArtifactType::AcceptanceCriteria, format!("features/{}/define/acceptance-criteria.json", feature_id)),
+                (ArtifactType::NonScope, format!("features/{}/define/non-scope.md", feature_id)),
+            ] {
+                let event = LifecycleEvent::ArtifactCreated {
+                    artifact_type: art_type,
+                    path,
+                    feature_id: Some(feature_id.clone()),
+                    timestamp: timestamp.clone(),
+                    actor: "product-manager".to_string(),
+                };
+                let _ = super::event_log::append_event(root, &event);
+            }
+
+            Ok(serde_json::json!({
+                "ok": true,
+                "prd_path": format!("features/{}/define/prd.md", feature_id),
+                "confidence": body.get("confidence").cloned().unwrap_or(serde_json::json!(0.0)),
+            }))
+        }
+        Err(e) => {
+            // AI service unavailable — return structured error, don't crash
+            Ok(serde_json::json!({
+                "ok": false,
+                "error": format!("Cannot reach AI service: {}", e),
+                "error_code": "provider_unavailable",
+            }))
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Plan preview — Issue graph generation
+// ---------------------------------------------------------------------------
+
+/// Generate an issue graph preview via AI (Plan stage).
+#[command]
+pub async fn lifecycle_generate_issue_graph_cmd(
+    project_root: String,
+    feature_id: String,
+    feature_title: String,
+    prd_summary: String,
+) -> CommandResult<serde_json::Value> {
+    let root = Path::new(&project_root);
+    let lifecycle = super::event_log::lifecycle_root(root);
+
+    // Verify PRD exists
+    let prd_path = lifecycle.join(format!("features/{}/define/prd.md", feature_id));
+    if !prd_path.exists() {
+        return Err(format!("Cannot generate issue graph: PRD not found for feature {}", feature_id));
+    }
+
+    // Call AI service
+    let client = reqwest::Client::new();
+    let payload = serde_json::json!({
+        "feature_title": feature_title,
+        "prd_summary": prd_summary,
+    });
+
+    let resp = client
+        .post("http://localhost:8000/lifecycle/plan/issue-graph")
+        .json(&payload)
+        .timeout(std::time::Duration::from_secs(120))
+        .send()
+        .await;
+
+    match resp {
+        Ok(r) => {
+            let body: serde_json::Value = r.json().await
+                .map_err(|e| format!("Failed to parse AI response: {}", e))?;
+
+            let ok = body.get("ok").and_then(|v| v.as_bool()).unwrap_or(false);
+            if !ok {
+                return Ok(serde_json::json!({
+                    "ok": false,
+                    "error": body.get("error").cloned().unwrap_or(serde_json::Value::Null),
+                    "error_code": body.get("error_code").cloned().unwrap_or(serde_json::Value::Null),
+                    "raw_response_preserved": body.get("raw_response_preserved").cloned().unwrap_or(serde_json::Value::Bool(false)),
+                }));
+            }
+
+            let issues = body.get("issues").cloned().unwrap_or(serde_json::json!([]));
+
+            // Write artifacts
+            let plan_dir = lifecycle.join(format!("features/{}/plan", feature_id));
+            std::fs::create_dir_all(&plan_dir).map_err(err)?;
+
+            let issue_graph = serde_json::json!({
+                "schema_version": 1,
+                "feature_id": feature_id,
+                "issues": issues,
+                "generated_by": "orqestra-lifecycle-plan-preview",
+                "generated_at": chrono::Utc::now().to_rfc3339(),
+            });
+            std::fs::write(plan_dir.join("issue-graph.json"),
+                serde_json::to_string_pretty(&issue_graph).map_err(err)?).map_err(err)?;
+
+            // Write simple test plan
+            let issue_count = issues.as_array().map(|a| a.len()).unwrap_or(0);
+            let test_plan = format!(
+                "# Test Plan (Preview)\n\nFeature: {}\nIssues: {}\n\n## Test Strategy\n\n- Each issue should have a corresponding test\n- Integration test for the full feature\n- Manual smoke test of acceptance criteria\n",
+                feature_title, issue_count
+            );
+            std::fs::write(plan_dir.join("test-plan.md"), &test_plan).map_err(err)?;
+
+            // Record artifacts
+            let timestamp = chrono::Utc::now().to_rfc3339();
+            for (art_type, path) in [
+                (ArtifactType::IssueGraph, format!("features/{}/plan/issue-graph.json", feature_id)),
+                (ArtifactType::TestPlan, format!("features/{}/plan/test-plan.md", feature_id)),
+            ] {
+                let event = LifecycleEvent::ArtifactCreated {
+                    artifact_type: art_type,
+                    path,
+                    feature_id: Some(feature_id.clone()),
+                    timestamp: timestamp.clone(),
+                    actor: "tech-lead".to_string(),
+                };
+                let _ = super::event_log::append_event(root, &event);
+            }
+
+            Ok(serde_json::json!({
+                "ok": true,
+                "issue_count": issue_count,
+                "issue_graph_path": format!("features/{}/plan/issue-graph.json", feature_id),
+            }))
+        }
+        Err(e) => {
+            Ok(serde_json::json!({
+                "ok": false,
+                "error": format!("Cannot reach AI service: {}", e),
+                "error_code": "provider_unavailable",
+            }))
+        }
+    }
+}

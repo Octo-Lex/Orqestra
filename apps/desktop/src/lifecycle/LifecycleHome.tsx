@@ -1,7 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import type { LifecycleState, StageInfo, LifecycleStageName } from '../lifecycle/types';
 import { IMPLEMENTED_STAGES } from '../lifecycle/types';
-import { lifecycleGetState, lifecycleInit, lifecycleApproveGate, lifecycleRejectGate } from '../lifecycle/api';
+import {
+  lifecycleGetState, lifecycleInit, lifecycleApproveGate, lifecycleRejectGate,
+} from '../lifecycle/api';
+import { invoke } from '@tauri-apps/api/core';
 
 interface Props {
   projectRoot: string;
@@ -23,6 +26,18 @@ export const LifecycleHome: React.FC<Props> = ({ projectRoot }) => {
   const [state, setState] = useState<LifecycleState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
+  // Orient state
+  const [profile, setProfile] = useState<any>(null);
+  // Discover state
+  const [featureId, setFeatureId] = useState<string | null>(null);
+  const [intakeForm, setIntakeForm] = useState({
+    title: '', problem: '', users: '', area: '', constraints: '', outOfScope: '',
+  });
+  // Define state
+  const [prdStatus, setPrdStatus] = useState<string | null>(null);
+  // Plan state
+  const [issueGraphStatus, setIssueGraphStatus] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     if (!projectRoot) return;
@@ -206,6 +221,200 @@ export const LifecycleHome: React.FC<Props> = ({ projectRoot }) => {
           </div>
 
           {error && <p style={styles.error}>{error}</p>}
+        </div>
+      )}
+
+      {/* Orient actions */}
+      {currentStage === 'orient' && (
+        <div style={styles.actionPanel}>
+          <button
+            style={{ ...styles.btn, ...styles.btnPrimary }}
+            onClick={async () => {
+              setActionStatus('Scanning repo...');
+              try {
+                const result: any = await invoke('lifecycle_run_orient_cmd', { projectRoot });
+                setProfile(result.profile);
+                setActionStatus('Scan complete. Artifacts generated.');
+                await refresh();
+              } catch (e) {
+                setActionStatus('Scan failed: ' + String(e));
+              }
+            }}
+          >
+            Run Orient Scan
+          </button>
+          {actionStatus && <p style={styles.actionStatus}>{actionStatus}</p>}
+          {profile && (
+            <div style={styles.profileCard}>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Languages</span>
+                <span style={styles.infoValue}>
+                  {profile.languages?.map((l: any) => `${l.name} (${l.percentage.toFixed(0)}%)`).join(', ')}
+                </span>
+              </div>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Build system</span>
+                <span style={styles.infoValue}>{profile.build_system}</span>
+              </div>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Tests</span>
+                <span style={styles.infoValue}>{profile.test_commands?.join(', ')}</span>
+              </div>
+              <div style={styles.infoRow}>
+                <span style={styles.infoLabel}>Total files</span>
+                <span style={styles.infoValue}>{profile.total_files}</span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Discover actions */}
+      {currentStage === 'discover' && (
+        <div style={styles.actionPanel}>
+          <h4 style={styles.sectionTitle}>Feature Intake</h4>
+          <input
+            style={styles.input}
+            placeholder="Feature title"
+            value={intakeForm.title}
+            onChange={e => setIntakeForm({...intakeForm, title: e.target.value})}
+          />
+          <textarea
+            style={styles.textarea}
+            placeholder="What problem are you solving?"
+            value={intakeForm.problem}
+            onChange={e => setIntakeForm({...intakeForm, problem: e.target.value})}
+            rows={3}
+          />
+          <input
+            style={styles.input}
+            placeholder="Who is affected?"
+            value={intakeForm.users}
+            onChange={e => setIntakeForm({...intakeForm, users: e.target.value})}
+          />
+          <input
+            style={styles.input}
+            placeholder="What repo area is involved?"
+            value={intakeForm.area}
+            onChange={e => setIntakeForm({...intakeForm, area: e.target.value})}
+          />
+          <input
+            style={styles.input}
+            placeholder="Any constraints?"
+            value={intakeForm.constraints}
+            onChange={e => setIntakeForm({...intakeForm, constraints: e.target.value})}
+          />
+          <input
+            style={styles.input}
+            placeholder="What is out of scope?"
+            value={intakeForm.outOfScope}
+            onChange={e => setIntakeForm({...intakeForm, outOfScope: e.target.value})}
+          />
+          <button
+            style={{ ...styles.btn, ...styles.btnPrimary, marginTop: '8px' }}
+            disabled={!intakeForm.title.trim() || !intakeForm.problem.trim()}
+            onClick={async () => {
+              setActionStatus('Creating intake...');
+              try {
+                const result: any = await invoke('lifecycle_create_intake_cmd', {
+                  projectRoot,
+                  featureTitle: intakeForm.title,
+                  problemBrief: intakeForm.problem,
+                  affectedUsers: intakeForm.users,
+                  repoArea: intakeForm.area,
+                  constraints: intakeForm.constraints,
+                  outOfScope: intakeForm.outOfScope,
+                });
+                setFeatureId(result.feature_id);
+                setActionStatus(`Intake created: ${result.feature_id}`);
+                await refresh();
+              } catch (e) {
+                setActionStatus('Failed: ' + String(e));
+              }
+            }}
+          >
+            Create Intake
+          </button>
+          {actionStatus && <p style={styles.actionStatus}>{actionStatus}</p>}
+        </div>
+      )}
+
+      {/* Define actions */}
+      {currentStage === 'define' && (
+        <div style={styles.actionPanel}>
+          {!featureId ? (
+            <p style={styles.placeholderNote}>
+              Create a feature intake in the Discover stage first.
+            </p>
+          ) : (
+            <>
+              <button
+                style={{ ...styles.btn, ...styles.btnPrimary }}
+                onClick={async () => {
+                  setPrdStatus('Generating PRD draft (requires AI service)...');
+                  try {
+                    const result: any = await invoke('lifecycle_generate_prd_cmd', {
+                      projectRoot,
+                      featureId,
+                      featureTitle: intakeForm.title,
+                      problemBrief: intakeForm.problem,
+                      constraints: intakeForm.constraints,
+                    });
+                    if (result.ok) {
+                      setPrdStatus(`PRD generated (confidence: ${result.confidence ?? 0}).`);
+                      await refresh();
+                    } else {
+                      setPrdStatus(`PRD generation failed: ${result.error_code ?? result.error ?? 'unknown'}`);
+                    }
+                  } catch (e) {
+                    setPrdStatus('Failed: ' + String(e));
+                  }
+                }}
+              >
+                Generate PRD Draft
+              </button>
+              {prdStatus && <p style={styles.actionStatus}>{prdStatus}</p>}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Plan preview actions */}
+      {currentStage === 'plan' && (
+        <div style={styles.actionPanel}>
+          {!featureId ? (
+            <p style={styles.placeholderNote}>
+              Define stage must be completed first.
+            </p>
+          ) : (
+            <>
+              <button
+                style={{ ...styles.btn, ...styles.btnPrimary }}
+                onClick={async () => {
+                  setIssueGraphStatus('Generating issue graph preview (requires AI service)...');
+                  try {
+                    const result: any = await invoke('lifecycle_generate_issue_graph_cmd', {
+                      projectRoot,
+                      featureId,
+                      featureTitle: intakeForm.title,
+                      prdSummary: intakeForm.problem,
+                    });
+                    if (result.ok) {
+                      setIssueGraphStatus(`Issue graph generated: ${result.issue_count} issues.`);
+                      await refresh();
+                    } else {
+                      setIssueGraphStatus(`Issue graph failed: ${result.error_code ?? result.error ?? 'unknown'}`);
+                    }
+                  } catch (e) {
+                    setIssueGraphStatus('Failed: ' + String(e));
+                  }
+                }}
+              >
+                Generate Issue Graph Preview
+              </button>
+              {issueGraphStatus && <p style={styles.actionStatus}>{issueGraphStatus}</p>}
+            </>
+          )}
         </div>
       )}
 
@@ -512,5 +721,46 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '13px',
     color: '#ef4444',
     marginTop: '8px',
+  },
+  // v2.15.0: Action panels
+  actionPanel: {
+    backgroundColor: '#111827',
+    borderRadius: '8px',
+    padding: '16px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '8px',
+  },
+  actionStatus: {
+    fontSize: '12px',
+    color: '#94a3b8',
+    margin: 0,
+  },
+  profileCard: {
+    backgroundColor: '#0f172a',
+    borderRadius: '6px',
+    padding: '12px',
+    marginTop: '8px',
+  },
+  input: {
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #475569',
+    backgroundColor: '#0f172a',
+    color: '#e2e8f0',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    boxSizing: 'border-box',
+  },
+  textarea: {
+    padding: '8px 12px',
+    borderRadius: '6px',
+    border: '1px solid #475569',
+    backgroundColor: '#0f172a',
+    color: '#e2e8f0',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    resize: 'vertical',
+    boxSizing: 'border-box',
   },
 };
