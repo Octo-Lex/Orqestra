@@ -12,6 +12,7 @@ import { KanbanView } from './pm/KanbanView';
 import { TimeTracking } from './pm/TimeTracking';
 import { ViewSwitcher, type ViewMode } from './pm/ViewSwitcher';
 import { OnboardingWizard } from './onboarding/OnboardingWizard';
+import { LifecycleHome } from './lifecycle/LifecycleHome';
 import { ReadinessPanel } from './setup/ReadinessPanel';
 import { DiagnosticsPanel } from './setup/DiagnosticsPanel';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -47,6 +48,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showReadiness, setShowReadiness] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showLifecycle, setShowLifecycle] = useState(true);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({ state: 'idle' });
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
@@ -213,6 +215,9 @@ export default function App() {
             <button onClick={() => setShowSettings(s => !s)}>
               {showSettings ? 'Hide Settings' : 'Settings'}
             </button>
+            <button onClick={() => setShowLifecycle(s => !s)}>
+              {showLifecycle ? 'Hide Lifecycle' : 'Lifecycle'}
+            </button>
             <button onClick={() => setShowReadiness(s => !s)}>
               {showReadiness ? 'Hide Readiness' : 'Setup'}
             </button>
@@ -220,6 +225,9 @@ export default function App() {
               {showDiagnostics ? 'Hide Diagnostics' : 'Diagnostics'}
             </button>
           </div>
+
+          {/* Lifecycle home — the workflow operating surface */}
+          {showLifecycle && <LifecycleHome projectRoot={projectRoot} />}
 
           {/* Readiness panel */}
           {showReadiness && <ReadinessPanel projectRoot={projectRoot || undefined} />}
