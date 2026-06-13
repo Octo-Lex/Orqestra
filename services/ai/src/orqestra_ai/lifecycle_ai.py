@@ -131,7 +131,33 @@ def _extract_json_from_response(text: str) -> Optional[dict]:
             except json.JSONDecodeError:
                 pass
 
+    # Strategy 5: Fix invalid escape sequences in the extracted JSON.
+    # Some models emit \3 or \d instead of \n3 or \nd. We fix known
+    # invalid escapes by replacing \X (where X is not a valid JSON escape
+    # char) with a literal backslash-escaped version or removing the escape.
+    if first_brace != -1:
+        candidate = text[first_brace:last_brace + 1] if last_brace != -1 else text[first_brace:]
+        # Also try from markdown code block content
+        for match in matches:
+            candidate = match.strip()
+            break
+        fixed = _fix_invalid_escapes(candidate)
+        if fixed != candidate:
+            try:
+                return json.loads(fixed)
+            except json.JSONDecodeError:
+                pass
+
     return None
+
+
+def _fix_invalid_escapes(text: str) -> str:
+    """Replace invalid JSON escape sequences with valid ones."""
+    import re as _re
+    # Valid JSON escape chars after backslash: " \ / b f n r t u
+    # Replace \X where X is NOT one of these with the literal char X.
+    # This handles cases like \3 → 3, \d → d (model meant \n3 or \nd)
+    return _re.sub(r'\\([^"\\\/bfnrtu])', r'\1', text)
 
 
 # ---------------------------------------------------------------------------

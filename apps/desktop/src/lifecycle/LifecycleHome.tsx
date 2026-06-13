@@ -379,6 +379,17 @@ export const LifecycleHome: React.FC<Props> = ({ projectRoot }) => {
         </div>
       )}
 
+      {/* Design actions — review gate before Plan */}
+      {currentStage === 'design' && (
+        <div style={styles.actionPanel}>
+          <p style={styles.actionStatus}>
+            Review the PRD from the Define stage. The Tech Lead should verify
+            the requirements are clear enough to plan implementation.
+            When ready, approve to advance to the Plan stage.
+          </p>
+        </div>
+      )}
+
       {/* Plan preview actions */}
       {currentStage === 'plan' && (
         <div style={styles.actionPanel}>

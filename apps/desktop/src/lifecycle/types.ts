@@ -81,5 +81,5 @@ export const ALL_STAGES: LifecycleStageName[] = [
 ];
 
 export const IMPLEMENTED_STAGES: LifecycleStageName[] = [
-  'orient', 'discover', 'define', 'plan',
+  'orient', 'discover', 'define', 'design', 'plan',
 ];
