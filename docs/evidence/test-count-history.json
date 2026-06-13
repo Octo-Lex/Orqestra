@@ -138,6 +138,26 @@
       "total": 957,
       "date": "2026-06-13",
       "notes": "Relay security hotfix: auth fail-closed, socket-bound peer auth, room workspace fail-closed, path-boundary matching"
+    },
+    {
+      "version": "v2.14.9",
+      "rust": 831,
+      "worker": 50,
+      "dashboard": 53,
+      "python": 23,
+      "total": 957,
+      "date": "2026-06-13",
+      "notes": "Release artifact pipeline correction: create-release dist/ fix, final_artifact_state, built-but-unverified"
+    },
+    {
+      "version": "v2.14.10",
+      "rust": 834,
+      "worker": 50,
+      "dashboard": 53,
+      "python": 26,
+      "total": 963,
+      "date": "2026-06-13",
+      "notes": "External repo empty-state hotfix: F1 (missing roadmap/ graceful), F2 (provider API path configurable), F3 (timeout 120s)"
     }
   ]
 }
