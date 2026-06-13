@@ -151,6 +151,28 @@
         "total": 963
       },
       "label": "External Repo Empty-State Hotfix"
+    },
+    "v2.14.11": {
+      "date": "2026-06-13",
+      "type": "hotfix",
+      "summary": "Beta Onboarding UX + Responsiveness Hotfix",
+      "changes": [
+        "P0-1: Environment checks moved to async (spawn_blocking) \u2014 no more UI freeze",
+        "P0-2: Beta readiness no longer calls readiness twice (eliminated duplicate scan)",
+        "P0-3: Guided Next Steps panel replaces raw check dump",
+        "P0-4: Feedback capture with free text, friction rating, would-continue field",
+        "P1: Missing roadmap is optional, not blocking",
+        "P1: AI unavailable degrades agents only, not whole beta path",
+        "P1: Technical details collapsed by default"
+      ],
+      "tests": {
+        "rust": 834,
+        "worker": 50,
+        "dashboard": 53,
+        "python": 26,
+        "total": 963
+      },
+      "label": "Beta Onboarding UX + Responsiveness Hotfix"
     }
   }
 }
