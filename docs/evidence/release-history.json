@@ -173,6 +173,32 @@
         "total": 963
       },
       "label": "Beta Onboarding UX + Responsiveness Hotfix"
+    },
+    "v2.15.0": {
+      "date": "2026-06-13",
+      "type": "feature",
+      "summary": "Lifecycle Foundation",
+      "changes": [
+        "13-stage lifecycle model (Orient through Evolve)",
+        "Append-only event log in .Orqestra/lifecycle/",
+        "State derivation by replay",
+        "Gate enforcement before stage advancement",
+        "PTM v0.1.2 migration to .Orqestra/lifecycle/",
+        "Mechanical repo scanner (Orient stage)",
+        "Feature intake creation (Discover stage)",
+        "PRD draft generation with F4 mitigation (Define stage)",
+        "Issue graph preview (Plan stage)",
+        "LifecycleHome UI with stage indicator and role/skill/gate panels",
+        "30 lifecycle integration tests"
+      ],
+      "tests": {
+        "rust": 864,
+        "worker": 50,
+        "dashboard": 53,
+        "python": 26,
+        "total": 993
+      },
+      "label": "Lifecycle Foundation"
     }
   }
 }

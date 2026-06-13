@@ -168,6 +168,16 @@
       "total": 963,
       "date": "2026-06-13",
       "notes": "Beta onboarding UX hotfix: async readiness checks, guided next steps, feedback capture"
+    },
+    {
+      "version": "v2.15.0",
+      "rust": 864,
+      "worker": 50,
+      "dashboard": 53,
+      "python": 26,
+      "total": 993,
+      "date": "2026-06-13",
+      "notes": "Lifecycle Foundation: 13-stage model, event-sourced state, Orient/Discover/Define/Plan, F4 mitigation"
     }
   ]
 }

@@ -1,3 +1,45 @@
+## [2.15.0] - 2026-06-13
+
+### Added — Lifecycle Foundation
+
+Orqestra is now a development lifecycle workbench. This release implements the first 4 of 13 lifecycle stages (Orient, Discover, Define, Plan) with event-sourced state, human approval gates, and typed artifacts.
+
+**Backend:**
+- 13-stage lifecycle model (Orient → Evolve)
+- Append-only event log in .Orqestra/lifecycle/events.jsonl
+- State derivation by replay (never mutated)
+- Gate enforcement: cannot advance stage without approval
+- Migration from .Orqestra/product-team/ (PTM v0.1.2)
+- Mechanical repo scanner for Orient (no AI required)
+- Feature intake creation for Discover
+- PRD draft generation for Define (AI-enhanced, F4 mitigated)
+- Issue graph preview for Plan (AI-enhanced)
+- Path traversal prevention on all artifact operations
+- 11 new Tauri commands
+
+**AI Service:**
+- /lifecycle/define/prd endpoint
+- /lifecycle/plan/issue-graph endpoint
+- F4 Mitigation: max_tokens 4000, multi-strategy JSON extraction, raw response preservation
+
+**Frontend:**
+- LifecycleHome: workflow operating surface (not chat)
+- Stage indicator bar with 13 stages
+- Active role, skill, gate status, evidence count panels
+- Orient scan button with profile results
+- Discover intake form
+- Define PRD generation button
+- Plan issue graph generation button
+- Gate controls (Approve & Advance / Reject)
+
+**Design:**
+- Lifecycle spec v0.2.0 (canonical)
+- PTM v0.1.2 superseded
+
+### Tests
+864 Rust + 50 Worker + 53 Dashboard + 26 Python = 993
+(30 new lifecycle integration tests)
+
 # Changelog
 
 All notable changes to this project will be documented in this file.
