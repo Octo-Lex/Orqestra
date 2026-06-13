@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 mod commands;
 mod diagnostics;
+mod lifecycle;
 mod security;
 
 fn main() {
@@ -128,6 +129,20 @@ fn main() {
             commands::diagnostics::check_git_provider_cmd,
             // v2.2.0: Coherence check
             commands::diagnostics::check_dashboard_coherence_cmd,
+            // v2.15.0: Development Lifecycle
+            lifecycle::commands::lifecycle_init_cmd,
+            lifecycle::commands::lifecycle_get_state_cmd,
+            lifecycle::commands::lifecycle_request_advance_cmd,
+            lifecycle::commands::lifecycle_approve_gate_cmd,
+            lifecycle::commands::lifecycle_reject_gate_cmd,
+            lifecycle::commands::lifecycle_record_artifact_cmd,
+            lifecycle::commands::lifecycle_read_artifact_cmd,
+            lifecycle::commands::lifecycle_write_artifact_cmd,
+            // v2.15.0: Orient + Discover
+            lifecycle::commands::lifecycle_run_orient_cmd,
+            lifecycle::commands::lifecycle_create_intake_cmd,
+            lifecycle::commands::lifecycle_generate_prd_cmd,
+            lifecycle::commands::lifecycle_generate_issue_graph_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
