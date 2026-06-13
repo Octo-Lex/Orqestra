@@ -265,7 +265,7 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
     .to_string();
 
     // Run readiness check
-    let readiness = super::readiness::get_readiness_cmd(project_root.clone());
+    let readiness = super::readiness::get_readiness_impl(project_root.clone());
     let readiness_json = match &readiness {
         Ok(r) => serde_json::to_string_pretty(r).unwrap_or_else(|_| "{}".to_string()),
         Err(e) => serde_json::json!({"error": e.message}).to_string(),
@@ -511,12 +511,13 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         "evidence_schema_valid": evidence_schema_valid
     });
 
-    let blocking = !repo_detected;
+    // v2.14.11: Never block the whole beta path. Only block specific features.
+    let blocking = false;
     let mut warnings = Vec::new();
     let mut blocked_features = Vec::new();
 
     if !roadmap_found {
-        warnings.push("No roadmap files detected — project management views will be empty");
+        warnings.push("No roadmap directory found — project management views will be empty");
     }
     if !keyring_available {
         warnings.push("OS keychain unavailable — credential storage may be limited");
@@ -529,8 +530,8 @@ pub fn export_diagnostics_cmd(project_root: Option<String>) -> CommandResult<Dia
         warnings.push("Dashboard export unavailable");
     }
 
-    let readiness_label = if blocking {
-        "blocked"
+    let readiness_label = if blocked_features.is_empty() && repo_detected {
+        "ready"
     } else if !warnings.is_empty() {
         "ready_with_warnings"
     } else {
@@ -912,9 +913,21 @@ pub fn get_recovery_advice_cmd(code: String) -> CommandResult<RecoveryAdvice> {
 // ---------------------------------------------------------------------------
 
 /// Get beta readiness summary (lightweight, no file export).
+/// v2.14.11: Async to avoid blocking UI. Accepts optional pre-computed readiness
+/// to avoid duplicate environment scan.
 #[command]
-pub fn get_beta_readiness_cmd(project_root: Option<String>) -> CommandResult<serde_json::Value> {
-    let readiness = super::readiness::get_readiness_cmd(project_root.clone());
+pub async fn get_beta_readiness_cmd(project_root: Option<String>) -> CommandResult<serde_json::Value> {
+    tokio::task::spawn_blocking(move || {
+        get_beta_readiness_impl(project_root)
+    })
+    .await
+    .map_err(|e| CommandError {
+        code: "BETA_READINESS_THREAD_ERROR",
+        message: format!("Beta readiness thread failed: {}", e),
+    })?}
+
+fn get_beta_readiness_impl(project_root: Option<String>) -> CommandResult<serde_json::Value> {
+    let readiness = super::readiness::get_readiness_impl(project_root.clone());
     let readiness_json = match &readiness {
         Ok(r) => serde_json::to_string_pretty(r).unwrap_or_else(|_| "{}".to_string()),
         Err(e) => serde_json::json!({"error": e.message}).to_string(),
@@ -1038,12 +1051,13 @@ pub fn get_beta_readiness_cmd(project_root: Option<String>) -> CommandResult<ser
         "evidence_schema_valid": evidence_schema_valid
     });
 
-    let blocking = !repo_detected;
+    // v2.14.11: Never block the whole beta path. Only block specific features.
+    let blocking = false;
     let mut warnings = Vec::new();
     let mut blocked_features = Vec::new();
 
     if !roadmap_found {
-        warnings.push("No roadmap files detected — project management views will be empty");
+        warnings.push("No roadmap directory found — project management views will be empty");
     }
     if !keyring_available {
         warnings.push("OS keychain unavailable — credential storage may be limited");
@@ -1056,8 +1070,8 @@ pub fn get_beta_readiness_cmd(project_root: Option<String>) -> CommandResult<ser
         warnings.push("Dashboard export unavailable");
     }
 
-    let readiness_label = if blocking {
-        "blocked"
+    let readiness_label = if blocked_features.is_empty() && repo_detected {
+        "ready"
     } else if !warnings.is_empty() {
         "ready_with_warnings"
     } else {
