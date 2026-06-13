@@ -158,6 +158,16 @@
       "total": 963,
       "date": "2026-06-13",
       "notes": "External repo empty-state hotfix: F1 (missing roadmap/ graceful), F2 (provider API path configurable), F3 (timeout 120s)"
+    },
+    {
+      "version": "v2.14.11",
+      "rust": 834,
+      "worker": 50,
+      "dashboard": 53,
+      "python": 26,
+      "total": 963,
+      "date": "2026-06-13",
+      "notes": "Beta onboarding UX hotfix: async readiness checks, guided next steps, feedback capture"
     }
   ]
 }
