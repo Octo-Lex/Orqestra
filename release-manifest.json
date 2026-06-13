@@ -1,11 +1,11 @@
 {
   "release": {
-    "name": "Orqestra v2.14.9",
-    "tag": "v2.14.9",
+    "name": "Orqestra v2.14.10",
+    "tag": "v2.14.10",
     "channel": "public-beta",
-    "release_version": "2.14.9",
-    "app_version": "2.14.9",
-    "date": "2026-06-11"
+    "release_version": "2.14.10",
+    "app_version": "2.14.10",
+    "date": "2026-06-13"
   },
   "provenance": {
     "tag_commit": "0000000000000000000000000000000000000000",
