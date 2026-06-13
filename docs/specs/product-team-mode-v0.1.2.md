@@ -1,6 +1,10 @@
+> **⚠️ SUPERSEDED** — This spec is absorbed and expanded by `orqestra-lifecycle-v0.2.0.md`.
+> Retained as historical reference. All new work follows the lifecycle spec.
+
 # Orqestra Product Team Mode Specification
 
 **Version:** 0.1.2-draft  
+**Status:** Superseded by lifecycle v0.2.0 — retained for reference
 **Date:** 2026-06-13  
 **Status:** Design baseline — implementation blocked until v2.15.0 external evidence gate is sealed  
 **Scope:** Defines how Orqestra will support governed multi-agent product team workflows with an integrated engineering skill system  
