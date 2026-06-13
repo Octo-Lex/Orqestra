@@ -212,14 +212,17 @@ jobs:
             ],
             "platforms": {
               "windows-x64": {
-                "status": "tested",
+                "status": "built-but-unverified",
                 "artifact": "${WIN_NAME}",
                 "signed": false,
+                "compile_status": "pass",
+                "bundle_status": "pass",
+                "smoke_tested": false,
                 "notes": "Unsigned public beta installer"
               },
               "macos-arm64": { "status": "not-built", "artifact": null, "signed": false, "notarized": false, "notes": "Deferred" },
               "macos-x64": { "status": "not-built", "artifact": null, "signed": false, "notarized": false, "notes": "Deferred" },
-              "linux-x64": { "status": "built-but-unverified", "artifact": null, "signed": false, "notes": "Not recommended for public beta users" }
+              "linux-x64": { "status": "built-but-unverified", "artifact": null, "signed": false, "compile_status": "pass", "bundle_status": "pass", "smoke_tested": false, "notes": "Not recommended for public beta users" }
             },
             "verification": {
               "rust_tests": "pass",
