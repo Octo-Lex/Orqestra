@@ -206,7 +206,8 @@ jobs:
                 "sha256": "${WIN_SHA256}",
                 "size_bytes": ${WIN_SIZE:-0},
                 "signed": false,
-                "source": "github-actions"
+                "source": "github-actions",
+                "final_artifact_state": "ci-built"
               }
             ],
             "platforms": {
