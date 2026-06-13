@@ -138,6 +138,9 @@ fn main() {
             lifecycle::commands::lifecycle_record_artifact_cmd,
             lifecycle::commands::lifecycle_read_artifact_cmd,
             lifecycle::commands::lifecycle_write_artifact_cmd,
+            // v2.15.0: Orient + Discover
+            lifecycle::commands::lifecycle_run_orient_cmd,
+            lifecycle::commands::lifecycle_create_intake_cmd,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
